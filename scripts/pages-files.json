@@ -3,6 +3,8 @@
   "src/app.mjs",
   "src/engine.mjs",
   "src/boardTargets.mjs",
+  "src/boardView.mjs",
+  "src/feedback.mjs",
   "src/styles.css",
   "assets/Cerconexo_wordmark_original.png"
 ]

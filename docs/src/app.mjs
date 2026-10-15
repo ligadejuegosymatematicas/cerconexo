@@ -1,10 +1,13 @@
-import {CELL_COUNT,SIZE,PLAYERS,GAME_VERSION,initialState,adjacent,wallKey,wallSet,regions,territory,activeIds,availableMoves,wallOptions,applyTurn,verifyState,pieceById,coords} from './engine.mjs';
-import {moveHitBox,wallHitPolygon} from './boardTargets.mjs';
+import {initialState,territory,activeIds,availableMoves,wallOptions,applyTurn,verifyState,pieceById} from './engine.mjs';
+import {createBoardView} from './boardView.mjs';
+import {InteractionGate,createFeedback} from './feedback.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY='wallgo-league-v2';
 const TEAM_NAME={A:'Equipo A',B:'Equipo B'};
-const TOKEN_FILL={A:'#f79c38',B:'#34bceb'};
+const gate=new InteractionGate();
+const boardView=createBoardView($('board'));
+const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$('prompt')});
 let game=initialState(),draft={path:[8]};
 let endShown=false;
 const piece=(id)=>pieceById(game,id);
@@ -20,90 +23,61 @@ function loadGame(){
   draft={path:game.over?[]:[piece(game.currentActor).pos]};
 }
 function newGame(){
+  gate.reset();feedback.reset();
   game=initialState();endShown=false;
   draft={path:[piece(game.currentActor).pos]};
   $('endScreen').hidden=true;
-  safeStore();render();
+  safeStore();render();announceTurn();
 }
-function step(to){
-  if(game.over||draft.path.length>=3)return;
-  const from=draft.path[draft.path.length-1];
+function announceTurn(){
+  feedback.turnStarted({actor:game.currentActor,team:game.turnTeam});
+}
+function setBusy(){
+  boardView.setBusy(gate.busy);
+  $('cancel').disabled=gate.busy;
+}
+async function step(to){
+  if(gate.busy||game.over||draft.path.length>=3)return;
+  const from=draft.path.at(-1);
   if(!availableMoves(game,game.currentActor,from).includes(to))return;
-  draft.path.push(to);
-  render();
+  const ticket=gate.begin(),actor=game.currentActor;
+  draft.path.push(to);render();
+  await feedback.move(boardView.token(actor),from,to);
+  if(!gate.finish(ticket))return;
+  setBusy();
 }
-function build(to){
-  if(game.over)return;
-  try{
-    game=applyTurn(game,{actor:game.currentActor,path:draft.path,to});
-    draft={path:game.over?[]:[piece(game.currentActor).pos]};
-    safeStore();render();
-  }catch(error){
-    $('prompt').textContent=error.message;
+async function build(to){
+  if(gate.busy||game.over||!wallOptions(game,draft.path.at(-1)).includes(to))return;
+  let next;
+  try{next=applyTurn(game,{actor:game.currentActor,path:draft.path,to});}
+  catch(error){feedback.notice(error.message);return;}
+  const before=activeIds(game),ticket=gate.begin();
+  game=next;
+  // Confirmar y guardar una sola vez, ANTES del efecto: recargar es seguro.
+  safeStore();setBusy();
+  await feedback.wall(boardView.revealWall(game.lastMove.wall));
+  if(!gate.finish(ticket))return;
+  draft={path:game.over?[]:[piece(game.currentActor).pos]};
+  render();announceTurn();
+  const after=activeIds(game),secured=[...before].filter(id=>!after.has(id));
+  if(secured.length)feedback.notice(secured.length===1?`${secured[0]} aseguró su territorio`:`${secured.join(' y ')} aseguraron su territorio`);
+}
+async function cancel(){
+  if(gate.busy||game.over||draft.path.length<2)return;
+  const ticket=gate.begin(),actor=game.currentActor;
+  setBusy();
+  for(let i=draft.path.length-1;i>0;i--){
+    await feedback.move(boardView.token(actor),draft.path[i],draft.path[i-1]);
+    if(!gate.current(ticket))return;
   }
-}
-function cancel(){
-  if(game.over)return;
+  if(!gate.finish(ticket))return;
   draft={path:[piece(game.currentActor).pos]};render();
-}
-function wallCoord(a,b){
-  const r=Math.floor(a/SIZE), c=a%SIZE, x=60+c*80, y=60+r*80;
-  if(b===a+1)return [x+80,y,x+80,y+80];
-  if(b===a-1)return [x,y,x,y+80];
-  if(b===a+7)return [x,y+80,x+80,y+80];
-  if(b===a-7)return [x,y,x+80,y];
-  throw new Error('No son casillas adyacentes');
-}
-function edgeSVG(cls,a,b,extras=''){
-  const [x1,y1,x2,y2]=wallCoord(a,b);
-  return `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${extras}/>`;
-}
-function svgBoard(){
-  const rs=regions(game), rFor=new Array(CELL_COUNT), closed=wallSet(game), isOver=game.over;
-  for(const r of rs)for(const c of r.cells)rFor[c]=r.type;
-  const base={A:'#f4be83',B:'#a6dcf0',mixed:'#f1e4cc',empty:'url(#empty-region)'};
-  let out='<defs><pattern id="empty-region" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#bac5ca"/><path d="M0 12L12 0" stroke="#8298a6" stroke-width="2"/></pattern></defs><rect x="37" y="37" width="606" height="606" rx="15" fill="#132e45"/><rect x="56" y="56" width="568" height="568" rx="5" fill="#f1e4cc"/>';
-  for(let a=0;a<CELL_COUNT;a++){
-    const r=Math.floor(a/SIZE),c=a%SIZE, x=60+c*80, y=60+r*80;
-    out+=`<rect class="board-cell" x="${x}" y="${y}" width="80" height="80" fill="${base[rFor[a]]}"/>`;
-  }
-  for(let a=0;a<CELL_COUNT;a++)for(const b of adjacent(a))if(b>a){
-    out+=edgeSVG(closed.has(wallKey(a,b))?'wall-built':'wall-dash',a,b);
-  }
-  out+='<rect class="wall-perimeter" x="60" y="60" width="560" height="560"/>';
-  for(let c=0;c<SIZE;c++)out+=`<text x="${100+c*80}" y="41" text-anchor="middle" font-size="23" font-weight="750" fill="#b4c4d5">${c+1}</text>`;
-  for(let r=0;r<SIZE;r++)out+=`<text x="43" y="${105+r*80}" text-anchor="middle" font-size="23" font-weight="750" fill="#b4c4d5">${r+1}</text>`;
-  const actor=game.currentActor, active=activeIds(game);
-  if(!isOver){
-    const destinations=availableMoves(game,actor,draft.path[draft.path.length-1]);
-    if(draft.path.length<3)for(const a of destinations){
-      const x=60+(a%SIZE)*80+40, y=60+Math.floor(a/SIZE)*80+40;
-      const from=draft.path[draft.path.length-1];
-      const hit=moveHitBox(x-40,y-40,60+(from%SIZE)*80,60+Math.floor(from/SIZE)*80);
-      out+=`<g role="button" tabindex="0" class="possible-cell" data-to="${a}" aria-label="Mover a fila ${coords(a).row}, columna ${coords(a).col}"><circle class="move-halo" cx="${x}" cy="${y}" r="21"/><circle class="move-target" cx="${x}" cy="${y}" r="12"/><rect class="move-hit" x="${hit.x}" y="${hit.y}" width="${hit.width}" height="${hit.height}"/></g>`;
-    }
-  }
-  for(const p of game.pieces){
-    const current=(p.id===actor&&!isOver), isInactive=!active.has(p.id);
-    const at=current&&draft.path.length?draft.path[draft.path.length-1]:p.pos;
-    const cx=100+(at%SIZE)*80,cy=100+Math.floor(at/SIZE)*80;
-    out+=`<g class="piece-token ${isInactive?'token-isolated':''}" aria-label="${p.id}${isInactive?', territorio asegurado':''}"><circle cx="${cx}" cy="${cy+3}" r="25" fill="#111c21" opacity=".32"/><circle class="${current?'token-active':'token-outer'}" cx="${cx}" cy="${cy}" r="24" fill="${TOKEN_FILL[p.team]}"/><text class="token-label" x="${cx}" y="${cy+5}" text-anchor="middle">${p.id}</text>${isInactive?`<text class="marker-check" x="${cx+23}" y="${cy-15}" text-anchor="middle">✓</text>`:''}</g>`;
-  }
-  if(!isOver){
-    const from=draft.path[draft.path.length-1];
-    for(const to of wallOptions(game,from)){
-      const [x1,y1,x2,y2]=wallCoord(from,to);
-      const side=to===from-7?'arriba':to===from+7?'abajo':to===from+1?'a la derecha':'a la izquierda';
-      const hit=wallHitPolygon(x1,y1,x2,y2).map(p=>p.join(',')).join(' ');
-      out+=`<g role="button" tabindex="0" class="wall-pick" data-wall="${to}" aria-label="Construir muro ${side} de fila ${coords(from).row}, columna ${coords(from).col}"><line class="wall-glow" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><polygon class="wall-hit" points="${hit}"/></g>`;
-    }
-  }
-  return out;
 }
 function render(){
   const actor=game.currentActor;
   const {score}=territory(game),active=activeIds(game);
-  $('board').innerHTML=svgBoard();
+  boardView.render(game,draft,{busy:gate.busy});
+  setBusy();
   $('scoreA').textContent=score.A;
   $('scoreB').textContent=score.B;
   $('mixedCount').textContent=score.mixed;
@@ -113,7 +87,7 @@ function render(){
     $(`active${team}`).innerHTML=['1','2'].map(n=>{
       const id=`${team}${n}`,isolated=!active.has(id),current=id===actor&&!game.over;
       const status=isolated?'Territorio asegurado':current?'Su turno':'En juego';
-      return `<div class="player ${isolated?'is-isolated':''} ${current?'is-current':''}" id="player-${id}" ${current?'aria-current="true"':''}><span class="player-id">${id}</span><span class="player-state">${isolated?'✓ ':''}${status}</span></div>`;
+      return `<div title="${id} · ${status}" aria-label="${id}, ${status}" class="player ${isolated?'is-isolated':''} ${current?'is-current':''}" id="player-${id}" ${current?'aria-current="true"':''}><span class="player-id">${id}</span><span class="player-state"><span class="state-full">${isolated?'✓ ':''}${status}</span><span class="state-short" aria-hidden="true">${isolated?'✓':current?'Turno':'·'}</span></span></div>`;
     }).join('');
   }
   $('meter').setAttribute('aria-label',`Casillas: equipo A ${score.A}, equipo B ${score.B}, en disputa ${score.mixed}, vacías ${score.empty}`);
@@ -122,15 +96,15 @@ function render(){
   if(game.over){
     $('turnDisc').textContent='✓';$('turnName').textContent='Partida finalizada';
     $('turnBanner').classList.remove('team-b');$('stepsPill').textContent='Territorios cerrados';
-    $('prompt').textContent='Todos los territorios con fichas pertenecen exclusivamente a un equipo.';
+    feedback.message('Territorios asegurados · Partida finalizada');
     if(!endShown){showEnd(score);endShown=true;}
   }else{
     const {team}=piece(actor),steps=draft.path.length-1;
     $('turnBanner').classList.toggle('team-b',team==='B');
     $('turnDisc').textContent=actor;
     $('turnName').textContent=`${TEAM_NAME[team]} · Jugador\u00a0${actor[1]}`;
-    $('stepsPill').textContent=steps===0?'Sin desplazamiento':steps===1?'1 paso dado':'2 pasos dados';
-    $('prompt').textContent=steps===0?'Construye un muro o toca un punto azul para dar un paso.':steps===1?'Construye o da un segundo paso: puedes girar o regresar.':'Elige un borde dorado para construir tu muro.';
+    $('stepsPill').textContent=steps===0?'Elige casilla o borde':`${steps} ${steps===1?'paso':'pasos'}`;
+    feedback.message(steps===0?`Turno de ${actor} · Mueve o construye`:steps===1?'1 paso · Puedes continuar o construir':'2 pasos · Construye tu muro');
   }
 }
 function showEnd(score){
@@ -142,18 +116,24 @@ function showEnd(score){
 }
 function activateBoard(target){
   const obj=target.closest?.('[data-to],[data-wall]');
-  if(!obj)return;
+  if(!obj||gate.busy)return;
   if(obj.hasAttribute('data-wall'))build(Number(obj.dataset.wall));
   else if(obj.hasAttribute('data-to'))step(Number(obj.dataset.to));
 }
 let pointerOrigin=null;
 $('board').addEventListener('pointerdown',event=>{
-  pointerOrigin={x:event.clientX,y:event.clientY};
+  pointerOrigin={x:event.clientX,y:event.clientY,blocked:gate.busy};
+  const preview=event.target.closest?.('.wall-pick');
+  if(!gate.busy&&preview)preview.classList.add('is-pressed');
 });
-$('board').addEventListener('pointercancel',()=>{pointerOrigin=null;});
+function clearPreview(){document.querySelectorAll('.wall-pick.is-pressed').forEach(node=>node.classList.remove('is-pressed'));}
+$('board').addEventListener('pointercancel',()=>{pointerOrigin=null;clearPreview();});
+$('board').addEventListener('pointerup',clearPreview);
+$('board').addEventListener('pointerleave',clearPreview);
 $('board').addEventListener('click',event=>{
   const origin=pointerOrigin;
   pointerOrigin=null;
+  if(gate.busy||origin?.blocked)return;
   // Algunos navegadores móviles redirigen un toque cercano hacia el botón más
   // próximo. Solo aceptar la superficie realmente tocada, incluidas esquinas.
   if(event.detail>0){
@@ -166,7 +146,7 @@ $('board').addEventListener('click',event=>{
   activateBoard(event.target);
 });
 $('board').addEventListener('keydown',event=>{
-  if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;activateBoard(event.target);}
+  if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;if(!event.repeat)activateBoard(event.target);}
 });
 $('cancel').addEventListener('click',cancel);
 $('new').addEventListener('click',()=>{if(game.moves&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return;newGame();});
@@ -189,4 +169,11 @@ function placeLegend(){
 }
 compactLayout.addEventListener('change',placeLegend);
 placeLegend();
-loadGame();render();
+// visualViewport incluye la altura realmente visible al cambiar las barras del navegador.
+function fitViewport(){
+  document.documentElement.style.setProperty('--viewport-height',`${window.visualViewport?.height??window.innerHeight}px`);
+}
+window.visualViewport?.addEventListener('resize',fitViewport);
+window.addEventListener('resize',fitViewport);
+fitViewport();
+loadGame();render();announceTurn();

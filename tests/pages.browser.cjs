@@ -12,7 +12,7 @@ const assert=require('node:assert/strict');
   const report={mount:'/cerconexo/',checks:[],screens:[],resources:[]};
   try{
     for(const [width,height] of [[1440,900],[390,844]]){
-      const context=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:width<761});
+      const context=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:width<761,reducedMotion:'reduce'});
       const page=await context.newPage(),errors=[],failed=[],requests=[];
       page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>failed.push(r.url()));
       page.on('response',r=>requests.push({url:r.url(),status:r.status()}));
@@ -22,7 +22,7 @@ const assert=require('node:assert/strict');
       assert.ok(await page.locator('.official-logo').evaluate(img=>img.complete&&img.naturalWidth>0));
       const reset=async()=>{await page.evaluate(()=>localStorage.clear());await page.reload();};
       const saved=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('wallgo-league-v2'))?.game);
-      const choose=async(selector)=>{const b=await page.locator(selector).first().boundingBox();if(width<761)await page.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);else await page.mouse.click(b.x+b.width/2,b.y+b.height/2);};
+      const choose=async(selector)=>{const b=await page.locator(selector).first().boundingBox();if(width<761)await page.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);else await page.mouse.click(b.x+b.width/2,b.y+b.height/2);await page.waitForFunction(()=>document.getElementById('board').getAttribute('aria-busy')==='false');};
       for(const route of [[],[9],[15,16],[9,8]]){
         await reset();for(const to of route)await choose(`[data-to="${to}"]`);
         await choose('[data-wall]');const committed=await saved();
@@ -35,7 +35,7 @@ const assert=require('node:assert/strict');
       await reset();
       await page.mouse.move(0,0);
       const packaged=await page.screenshot();
-      const isolatedContext=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:width<761});
+      const isolatedContext=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:width<761,reducedMotion:'reduce'});
       const source=await isolatedContext.newPage();
       // El servidor comparativo se limita a los mismos archivos públicos originales.
       await source.route('**/*',async route=>{

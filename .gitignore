@@ -11,6 +11,8 @@
 !/src/app.mjs
 !/src/engine.mjs
 !/src/boardTargets.mjs
+!/src/boardView.mjs
+!/src/feedback.mjs
 !/src/styles.css
 !/assets/
 /assets/*
@@ -27,6 +29,8 @@
 !/tests/pages.test.mjs
 !/tests/pages.browser.cjs
 !/tests/pages-server.mjs
+!/tests/feedback.test.mjs
+!/tests/phase2a.browser.cjs
 !/docs/
 /docs/*
 !/docs/index.html
@@ -36,6 +40,8 @@
 !/docs/src/app.mjs
 !/docs/src/engine.mjs
 !/docs/src/boardTargets.mjs
+!/docs/src/boardView.mjs
+!/docs/src/feedback.mjs
 !/docs/src/styles.css
 !/docs/assets/
 /docs/assets/*
