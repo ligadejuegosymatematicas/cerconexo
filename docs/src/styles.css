@@ -1368,3 +1368,81 @@ h1 {
   .team-heading h3 { font-size:13px; }
 }
 
+/* Fase 2A: efectos puntuales; los contornos permanentes siguen identificando el turno. */
+.token-aura { fill:none; opacity:0; pointer-events:none; }
+.wall-confirmation { stroke:#ffe3a0; stroke-linecap:round; pointer-events:none; }
+#effectsLayer { pointer-events:none; }
+#board[aria-busy="true"] .move-hit,#board[aria-busy="true"] .wall-hit { pointer-events:none; }
+#board[aria-busy="true"] .move-halo,#board[aria-busy="true"] .move-target,#board[aria-busy="true"] .wall-glow { opacity:.3; }
+.wall-pick.is-pressed .wall-glow { stroke:#fff2a7; stroke-width:15; stroke-dasharray:none; }
+.state-short { display:none; }
+.prompt { min-height:42px; }
+
+/* La altura se reparte entre la información esencial y el tablero, sin ocultar contenido. */
+@media(max-width:760px), (max-height:500px) {
+  .app {
+    height:var(--viewport-height,100dvh); min-height:0;
+    padding:max(7px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+    display:grid; grid-template-rows:54px minmax(0,1fr); gap:8px;
+  }
+  .topbar { min-height:0; padding-right:6px; gap:5px; border-radius:12px; }
+  .official-logo { width:154px; height:34px; }
+  h1 { padding:7px; }
+  .brand-copy,.bottom-note { display:none; }
+  .header-actions { gap:5px; }
+  .icon-btn { padding:7px 8px; min-height:44px; font-size:13px; }
+  .header-actions #help .button-icon { display:none; }
+  .new-button>span:last-child { font-size:0; }
+  .new-button>span:last-child::after { content:'Nueva'; font-size:13px; }
+  .layout { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto; gap:8px; }
+  .turn-panel { display:contents; }
+  .turn-card { grid-row:1; display:grid; grid-template-columns:44px minmax(0,1fr); gap:2px 12px; padding:8px 10px; border-radius:12px; }
+  .turn-card .micro { grid-column:2; grid-row:1; font-size:12px; align-self:end; }
+  .turn-identity { display:contents; }
+  .turn-disc { grid-column:1; grid-row:1/3; width:42px; height:42px; font-size:22px; align-self:center; }
+  .turn-identity strong { grid-column:2; grid-row:2; font-size:14px; line-height:1.4; }
+  .turn-meta { display:none; }
+  .prompt { grid-column:1/-1; grid-row:3; margin:4px 0 0; padding:4px 0 0; min-height:25px; line-height:20px; font-size:13px; border-top:1px solid #35567480; }
+  .arena { grid-row:2; grid-column:1; min-height:0; padding:3px; grid-template-rows:44px minmax(0,1fr); border-radius:15px; }
+  .board-topline { font-size:12px; }
+  .board-wrap { container-type:size; }
+  .board-wrap svg { width:min(100cqw,100cqh); height:min(100cqw,100cqh); max-height:100%; }
+  .score-panel { grid-row:3; grid-column:1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 8px; padding:8px; border-radius:12px; }
+  .score-panel .section-heading { display:none; }
+  .scores,.team-score { display:contents; }
+  .team-heading { grid-row:1; padding:3px 7px; gap:6px; }
+  .team-heading h3 { font-size:13px; }
+  .team-heading>strong { font-size:30px; }
+  .team-badge { width:20px; height:20px; font-size:12px; }
+  .team-a .team-heading,.team-a .team-roster { grid-column:1; }
+  .team-b .team-heading,.team-b .team-roster { grid-column:2; }
+  .team-roster { grid-row:2; display:flex; justify-content:space-between; flex-wrap:nowrap; margin:0; padding:0; border:0; gap:3px; }
+  .player { min-height:26px; gap:4px; }
+  .player-id { font-size:12px; padding:3px; }
+  .player-state,.player.is-isolated .player-state { font-size:12px; }
+  .state-full { display:none; }
+  .state-short { display:inline; }
+  .territory-meter { grid-column:1/-1; grid-row:3; margin:1px 0; height:10px; }
+  .minor-stats { grid-column:1/-1; grid-row:4; font-size:12px; }
+  .minor-stats strong { font-size:14px; }
+  .reset-path { min-height:44px; }
+}
+
+@media(max-height:500px) and (min-width:600px) {
+  .app { grid-template-rows:48px minmax(0,1fr); gap:6px; }
+  .layout { grid-template-columns:210px minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); gap:6px; }
+  .turn-card { grid-column:1; grid-row:1; }
+  .arena { grid-column:2; grid-row:1/3; }
+  .score-panel { grid-column:1; grid-row:2; align-self:start; }
+  .team-heading { flex-wrap:nowrap; gap:4px; padding:3px; }
+  .team-heading h3 { font-size:12px; }
+  .team-badge { display:none; }
+  .team-heading>strong { font-size:26px; }
+  .player { gap:2px; }
+  .player-id { padding:2px; }
+  .player.is-current .state-short { font-size:0; }
+  .player.is-current .state-short::after { content:'●'; font-size:12px; }
+  .minor-stats { flex-wrap:wrap; gap:2px; }
+  .prompt { height:45px; }
+}
+

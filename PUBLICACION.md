@@ -1,12 +1,12 @@
 # Publicar CERCONEXO en GitHub Pages
 
-**Estado inicial: preparado localmente; sin repositorio remoto conectado y sin publicación.** Este documento no autoriza publicar. Antes de ejecutar el apartado de primera publicación, el propietario debe aprobar expresamente la versión candidata y su contenido.
+**Estado: Fase 1 publicada con autorización del propietario, commit `380d21f`.** La Fase 2A se prepara solo en `desarrollo` y no está autorizada para publicación. Este documento no autoriza subir nuevas versiones a `main` ni fusionar ramas.
 
 ## Destino previsto
 
 - Cuenta: `ligadejuegosymatematicas`.
 - Repositorio: `https://github.com/ligadejuegosymatematicas/cerconexo`.
-- URL esperada, cuando se active Pages: `https://ligadejuegosymatematicas.github.io/cerconexo/`.
+- URL publicada: `https://ligadejuegosymatematicas.github.io/cerconexo/`.
 - Rama publicada: **main**, carpeta **/docs**.
 - Rama de trabajo: **desarrollo**.
 
@@ -16,7 +16,7 @@ No se modifica el repositorio del sitio principal `ligadejuegosymatematicas.gith
 
 `index.html` de la raíz sigue siendo el archivo fuente de entrada. `python scripts/build_pages.py` copia sin modificar sus bytes los archivos de ejecución a `docs/`. Esa carpeta será la raíz del sitio: `docs/index.html` se sirve como `/cerconexo/`.
 
-La lista pública está en `scripts/pages-files.json`: HTML, los cuatro módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. En total son siete archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
+La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete de Fase 2A contiene nueve archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
 
 La lista explícita de `.gitignore` excluye también del repositorio los documentos internos, `validation/`, capturas, herramientas específicas del entorno y HTML generados. El PNG oficial completo se conserva en el repositorio como fuente de identidad, pero el sitio solo recibe la imagen que utiliza la aplicación. No se ha aplicado ninguna propuesta nueva del logo.
 
@@ -29,7 +29,7 @@ Requisitos de desarrollo: Python 3.9+ y Node 22+ (CI utiliza Node 24).
 ```sh
 python scripts/build_pages.py
 python scripts/build_pages.py --check
-node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs
+node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs tests/feedback.test.mjs
 ```
 
 `--check` no modifica nada: falla si faltan recursos, si hay archivos ajenos al sitio o si `docs/` no coincide con las fuentes. Debe pasar antes de aprobar una versión.
@@ -44,7 +44,7 @@ Abrir `http://127.0.0.1:8000/docs/`. La prueba `pages.test.mjs` monta además el
 
 El guardado permanece bajo `wallgo-league-v2`. Recargar y abrir `index.html` dentro del mismo origen conserva la partida. La publicación usa un origen distinto de un archivo local o localhost: las partidas locales no se transfieren automáticamente a GitHub Pages. Cambiar de teléfono o navegador tampoco transfiere el guardado.
 
-## Antes de la primera publicación
+## Referencia histórica: primera publicación (ya completada)
 
 1. Revisar el estado de la versión candidata, sus pruebas y el manifiesto de archivos. **Solicitar aprobación expresa; no ejecutar push ni activar Pages todavía.**
 2. Confirmar que el propietario es `ligadejuegosymatematicas` y que `cerconexo` es el nombre correcto.
