@@ -1,0 +1,28 @@
+name: Comprobar Cerconexo
+
+on:
+  push:
+    branches: [main, desarrollo]
+  pull_request:
+    branches: [main]
+
+# Solo comprobaciones. La publicación la realiza Pages desde main /docs.
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: verificar
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Comprobar paquete público sin modificarlo
+        run: python3 scripts/build_pages.py --check
+      - name: Comprobar motor, interacción geométrica y ruta de Pages
+        run: node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs
