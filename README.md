@@ -4,11 +4,11 @@ Juego de estrategia territorial local para cuatro personas, en dos equipos, de l
 
 ## Sitio publicado y versión de trabajo
 
-La Fase 1 (`380d21f`) está publicada en:
+La Fase 2A (incorporación `2935a2c`, candidata `61145f7`) está publicada en:
 
 [ligadejuegosymatematicas.github.io/cerconexo/](https://ligadejuegosymatematicas.github.io/cerconexo/)
 
-La Fase 2A se prepara exclusivamente en `desarrollo`: movimiento de 180 ms por paso, confirmación de muro de 280 ms, halo de turno de 320 ms y distribución móvil compacta. Se conservan el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
+La Fase 2B se prepara exclusivamente en `desarrollo`: vibración opcional, paleta funcional refinada y logo transparente derivado del oficial sobre marfil. Conserva las transiciones de Fase 2A, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
 
 ## Abrir en desarrollo
 
@@ -27,7 +27,7 @@ Python 3.9+ y Node 22+ para desarrollo; CI usa Node 24. El navegador del jugador
 ```sh
 python scripts/build_pages.py
 python scripts/build_pages.py --check
-node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs tests/feedback.test.mjs
+node --test tests/*.test.mjs
 ```
 
 El empaquetador copia únicamente los recursos enumerados en scripts/pages-files.json y añade .nojekyll. La comprobación falla si el paquete no coincide con las fuentes o contiene archivos adicionales.
@@ -44,13 +44,15 @@ Ese archivo generado se conserva localmente y no es necesario para Pages.
 
 - index.html y src/: fuentes modulares de la interfaz y del motor.
 - assets/: marca oficial completa y recorte utilizado por la cabecera.
-- docs/: nueve archivos estáticos que constituyen el paquete candidato del sitio.
+- docs/: diez archivos estáticos que constituyen el paquete candidato del sitio.
 - scripts/: manifiesto y preparación reproducible de Pages.
 - tests/: pruebas originales del motor, geometría y comprobación del sitio bajo /cerconexo/.
 - .github/workflows/verificar.yml: comprobaciones automáticas; no publica ni fusiona.
 - PUBLICACION.md: configuración de main /docs y procedimiento con aprobación humana.
 
 No editar docs/ a mano. Después de cambiar fuentes, regenerarlo antes del commit. `src/boardView.mjs` conserva los nodos del tablero y `src/feedback.mjs` presenta los efectos; el motor permanece independiente del DOM.
+
+`src/haptics.mjs` aísla la API de vibración y su preferencia. Las variables de `:root` en `src/styles.css` definen los colores compartidos por el tablero y las animaciones.
 
 ## Publicar versiones aprobadas
 
@@ -72,8 +74,19 @@ tests/pages.browser.cjs comprueba escritorio y móvil, movimiento y construcció
 ```sh
 node tests/pages.browser.cjs
 node tests/phase2a.browser.cjs
+node tests/phase2b.browser.cjs
 ```
 
 La segunda prueba usa animaciones reales y comprueba bloqueo de entradas, recorridos, reinicios y recargas durante transiciones, aislamiento, partida completa, teclado, movimiento reducido y HTML autónomo. Genera capturas y resultados en `validation/phase2a/`, excluidos del repositorio y del sitio. La prueba de `file://` requiere generar antes el HTML autónomo.
 
 Los pasos provisionales se descartan al recargar, como en la Fase 1. El muro confirma la jugada y guarda el estado completo antes del efecto visual. En móvil, Reglas conserva la guía detallada; los jugadores con territorio asegurado se identifican con ✓ y permanecen en el tablero. Las comprobaciones de viewport no sustituyen la evaluación en teléfonos físicos.
+
+## Vibración y marca derivada
+
+En **Reglas y opciones → Vibración**, la opción comienza desactivada y se guarda por separado en `cerconexo-preferences-v1`. Muro: 12 ms; aislamiento: dos pulsos de 12 ms separados por 35 ms, sustituyendo al pulso del muro; inicio manual de partida: 8 ms. No vibra al cargar ni después de cada paso. Se evitan señales duplicadas, se limitan ráfagas, se cancela al ocultar la página y se pausa con movimiento reducido. Sin API o si el navegador la rechaza, el juego continúa normalmente. La presencia de la API no permite confirmar que exista hardware de vibración.
+
+La prueba `phase2b.browser.cjs` verifica colores calculados, capturas y comportamiento con API simulada, ausente, rechazada y con excepciones. La vibración física requiere probar un teléfono compatible.
+
+Los archivos `Cerconexo_logo_v3_original.png` y `Cerconexo_wordmark_original.png` permanecen intactos. Los derivados `*_transparente.png` tienen el mismo tamaño y recorte; solo se extrae el fondo y se desmatizan los bordes para eliminar contaminación negra. No se utilizó generación de imágenes, redibujado ni cambio de paleta de la marca. El original con extensión `.png` contiene datos JPEG, por lo que tiene residuos de compresión y no proporciona una máscara alfa original.
+
+`python scripts/derive_logo.py` reproduce los derivados con Pillow y NumPy, solo como herramientas de preparación; no son dependencias del juego ni de CI. Las pruebas de los derivados usan únicamente Node y comprueban hashes oficiales, dimensiones, colores opacos, recomposición sobre negro y recorte exacto. Capturas y resultados de Fase 2B quedan en `validation/phase2b/`, fuera del repositorio y del sitio.

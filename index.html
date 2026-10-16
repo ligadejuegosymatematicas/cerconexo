@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#071725">
+  <meta name="theme-color" content="#071A2F">
   <meta name="description" content="Cerconexo: estrategia territorial local, cuatro jugadores y dos equipos. Cada muro cambia el mapa.">
   <title>Cerconexo · Liga de Juegos y Matemáticas</title>
   <link rel="stylesheet" href="./src/styles.css">
@@ -12,11 +12,11 @@
 <div class="app">
   <header class="topbar">
     <div class="branding">
-      <h1><img class="official-logo" src="./assets/Cerconexo_wordmark_original.png" alt="CERCONEXO"></h1>
+      <h1><img class="official-logo" src="./assets/Cerconexo_wordmark_transparente.png" alt="CERCONEXO"></h1>
       <div class="brand-copy"><span class="kicker">LIGA DE JUEGOS Y MATEMÁTICAS</span><span class="tagline">Cada muro cambia el mapa.</span></div>
     </div>
     <nav class="header-actions" aria-label="Opciones de partida">
-      <button type="button" id="help" class="icon-btn" aria-label="Reglas de Cerconexo"><span class="button-icon" aria-hidden="true">?</span><span>Reglas</span></button>
+      <button type="button" id="help" class="icon-btn" aria-label="Reglas y opciones de Cerconexo"><span class="button-icon" aria-hidden="true">?</span><span>Reglas</span></button>
       <button type="button" id="new" class="icon-btn new-button" aria-label="Nueva partida"><span class="button-icon" aria-hidden="true">+</span><span>Nueva partida</span></button>
     </nav>
   </header>
@@ -40,11 +40,11 @@
         <h2 class="micro">AHORA JUEGA</h2>
         <div class="turn-identity"><span class="turn-disc" id="turnDisc">A1</span><strong id="turnName">Equipo A · Jugador 1</strong></div>
         <div class="turn-meta"><span id="stepsPill">Sin desplazamiento</span><small id="moveCount">0 muros construidos</small></div>
-        <p class="prompt" aria-live="polite" id="prompt">Construye un muro o toca un punto azul para avanzar.</p>
+        <p class="prompt" aria-live="polite" id="prompt">Construye un muro o toca un punto turquesa para avanzar.</p>
       </section>
       <details class="legend-panel panel" open>
         <summary>Guía del tablero</summary>
-        <div class="legend-content"><div><span class="legend-dot" aria-hidden="true"></span><span>Punto azul <b>Dar un paso</b></span></div><div><span class="legend-gold" aria-hidden="true"></span><span>Borde dorado <b>Construir un muro</b></span></div><div><span class="legend-solid" aria-hidden="true"></span><span>Muro construido</span></div><div><span class="legend-dash" aria-hidden="true"></span><span>Lado abierto</span></div><div><span class="legend-cell" aria-hidden="true"></span><span>En disputa · sin puntos</span></div><div><span class="legend-cell empty" aria-hidden="true"></span><span>Región vacía · sin puntos</span></div></div>
+        <div class="legend-content"><div><span class="legend-dot" aria-hidden="true"></span><span>Punto turquesa <b>Dar un paso</b></span></div><div><span class="legend-gold" aria-hidden="true"></span><span>Borde dorado <b>Construir un muro</b></span></div><div><span class="legend-solid" aria-hidden="true"></span><span>Muro construido</span></div><div><span class="legend-dash" aria-hidden="true"></span><span>Lado abierto</span></div><div><span class="legend-cell" aria-hidden="true"></span><span>En disputa · sin puntos</span></div><div><span class="legend-cell empty" aria-hidden="true"></span><span>Región vacía · sin puntos</span></div></div>
       </details>
     </aside>
   </main>
@@ -54,9 +54,14 @@
   <form method="dialog"><button class="dialog-close" aria-label="Cerrar reglas">×</button></form>
   <p class="micro">LIGA DE JUEGOS Y MATEMÁTICAS</p><h2 id="rulesTitle">Cómo jugar Cerconexo</h2>
   <p>Dos equipos, con dos jugadores cada uno: <b>A1, A2</b> y <b>B1, B2</b>. Cada persona controla exclusivamente su ficha.</p>
+  <section class="haptic-option" aria-label="Opciones de experiencia">
+    <label class="haptic-label" for="vibration"><input id="vibration" type="checkbox" aria-describedby="vibrationStatus">Vibración</label>
+    <p id="vibrationStatus">Pulsos breves, si el dispositivo lo permite.</p>
+    <p>Desactivada por defecto. La preferencia se guarda en este navegador.</p>
+  </section>
   <ol>
     <li><b>Inicio:</b> A1 (2,2), B1 (2,6), B2 (6,2), A2 (6,6). El perímetro está amurallado y no hay muros interiores.</li>
-    <li><b>Pasos:</b> toca un punto azul para dar un paso ortogonal. Puedes dar un segundo paso, incluso girando o regresando al origen. No atravieses muros ni fichas.</li>
+    <li><b>Pasos:</b> toca un punto turquesa para dar un paso ortogonal. Puedes dar un segundo paso, incluso girando o regresando al origen. No atravieses muros ni fichas.</li>
     <li><b>Muro:</b> toca un borde dorado para construir exactamente un muro. Puedes hacerlo sin moverte o después de uno o dos pasos. Debe ser un lado interior libre de la casilla final, incluso entre dos fichas.</li>
     <li><b>Recorrido provisional:</b> «Cambiar recorrido» cancela los pasos seleccionados antes de construir. Una jugada confirmada es definitiva.</li>
     <li><b>Turnos:</b> A1 → B1 → A2 → B2. Los equipos siempre alternan. Cada equipo rota sus fichas activas; si una asegura su territorio, su compañero ocupa todos los turnos del equipo.</li>

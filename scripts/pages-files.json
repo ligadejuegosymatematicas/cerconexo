@@ -5,6 +5,7 @@
   "src/boardTargets.mjs",
   "src/boardView.mjs",
   "src/feedback.mjs",
+  "src/haptics.mjs",
   "src/styles.css",
-  "assets/Cerconexo_wordmark_original.png"
+  "assets/Cerconexo_wordmark_transparente.png"
 ]
