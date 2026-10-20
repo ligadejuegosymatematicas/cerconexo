@@ -5,6 +5,8 @@ import {createHaptics} from './haptics.mjs';
 import {deriveTerritoryEvents} from './territoryEvents.mjs';
 import {createTerritoryFeedback,TERRITORY_MS} from './territoryFeedback.mjs';
 import {createParticipationFeedback} from './participationFeedback.mjs';
+import {finalPresentation} from './resultEvents.mjs';
+import {createResultFeedback} from './resultFeedback.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY='wallgo-league-v2';
@@ -15,8 +17,8 @@ const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$(
 const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
 const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),prompt:$('prompt')});
+const resultFeedback=createResultFeedback({banner:$('turnBanner'),result:$('endScreen'),title:$('winnerTitle'),subtitle:$('winnerDetails'),detail:$('winnerDifference'),announcement:$('resultAnnouncement'),scores:{A:$('scoreA'),B:$('scoreB')}});
 let game=initialState(),draft={path:[8]};
-let endShown=false;
 const piece=(id)=>pieceById(game,id);
 const safeStore=()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify({game}));}catch{}};
 
@@ -31,9 +33,9 @@ function loadGame(){
 }
 function newGame(){
   gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();haptics.stop();
-  game=initialState();endShown=false;
+  resultFeedback.reset();$('prompt').setAttribute('aria-live','polite');
+  game=initialState();
   draft={path:[piece(game.currentActor).pos]};
-  $('endScreen').hidden=true;
   safeStore();render();announceTurn();haptics.pulse('turn');
 }
 function announceTurn(){
@@ -61,6 +63,7 @@ async function build(to){
   const events=deriveTerritoryEvents(game,next),ticket=gate.begin();
   participationFeedback.dismiss();
   game=next;
+  if(game.over)$('prompt').setAttribute('aria-live','off');
   $('turnBanner').querySelector('h2').textContent='RESOLVIENDO';
   // Confirmar y guardar una sola vez, ANTES del efecto: recargar es seguro.
   safeStore();setBusy();
@@ -76,8 +79,9 @@ async function build(to){
   ]);
   if(!gate.finish(ticket))return;
   draft={path:game.over?[]:[piece(game.currentActor).pos]};
-  render();announceTurn();
-  participationFeedback.announce(events.participation);
+  render();
+  if(game.over)resultFeedback.enter();
+  else{announceTurn();participationFeedback.announce(events.participation);}
 }
 async function cancel(){
   if(gate.busy||game.over||draft.path.length<2)return;
@@ -104,6 +108,12 @@ function render(){
 function renderDistribution(score){
   $('mixedCount').textContent=score.mixed;
   $('emptyCount').textContent=score.empty;
+  const final=game.over&&!gate.busy;
+  $('distributionLabel').textContent=final?'A + B + Vacías = 49':'En disputa';
+  $('mixedCount').hidden=final;
+  $('distributionSwatch').hidden=final;
+  $('scoreHeading').textContent=final?'CASILLAS DEFINITIVAS':'CASILLAS ASEGURADAS';
+  $('scoreTotal').textContent=final?'49 distribuidas':'49 en total';
   $('meter').innerHTML=['A','mixed','empty','B'].flatMap(type=>Array.from({length:score[type]},()=>`<span class="territory-unit unit-${type}" aria-hidden="true"></span>`)).join('');
   $('meter').setAttribute('aria-label',`Casillas: equipo A ${score.A}, equipo B ${score.B}, en disputa ${score.mixed}, vacías ${score.empty}`);
 }
@@ -117,15 +127,17 @@ function renderRoster(actor,active){
   }
 }
 function renderPlayers(actor,active,score){
-  $('turnBanner').querySelector('h2').textContent=game.over?'PARTIDA FINALIZADA':'AHORA JUEGA';
+  // La retícula conserva la misma altura bajo el resultado integrado.
+  $('turnBanner').querySelector('h2').textContent='AHORA JUEGA';
   renderRoster(actor,active);
   $('moveCount').textContent=`${game.moves} ${game.moves===1?'muro construido':'muros construidos'}`;
   $('cancel').hidden=game.over || draft.path.length===1;
   if(game.over){
-    $('turnDisc').textContent='✓';$('turnName').textContent='Partida finalizada';
+    $('turnDisc').textContent='✓';$('turnName').textContent='Equipo A · Jugador\u00a01';
     $('turnBanner').classList.remove('team-b');$('stepsPill').textContent='Territorios cerrados';
-    feedback.message('Territorios asegurados · Partida finalizada');
-    if(!endShown){showEnd(score);endShown=true;}
+    $('prompt').setAttribute('aria-live','off');
+    feedback.message('Partida finalizada');
+    resultFeedback.show(finalPresentation(game,score));
   }else{
     const {team}=piece(actor),steps=draft.path.length-1;
     $('turnBanner').classList.toggle('team-b',team==='B');
@@ -134,13 +146,6 @@ function renderPlayers(actor,active,score){
     $('stepsPill').textContent=steps===0?'Elige casilla o borde':`${steps} ${steps===1?'paso':'pasos'}`;
     feedback.message(steps===0?`Turno de ${actor} · Mueve o construye`:steps===1?'1 paso · Puedes continuar o construir':'2 pasos · Construye tu muro');
   }
-}
-function showEnd(score){
-  $('winnerTitle').textContent=game.winner==='Empate'?'¡Empate!':`¡Gana el equipo ${game.winner}!`;
-  $('winnerDetails').textContent=game.winner==='Empate'?'Ambos equipos controlan la misma cantidad de casillas.':'Todas las regiones ocupadas quedaron separadas por equipos.';
-  $('finalA').textContent=`A · ${score.A} casillas`;
-  $('finalB').textContent=`B · ${score.B} casillas`;
-  $('endScreen').hidden=false;
 }
 function activateBoard(target){
   const obj=target.closest?.('[data-to],[data-wall]');
@@ -178,8 +183,6 @@ $('board').addEventListener('keydown',event=>{
 });
 $('cancel').addEventListener('click',cancel);
 $('new').addEventListener('click',()=>{if(game.moves&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return;newGame();});
-$('playAgain').addEventListener('click',newGame);
-$('inspectBoard').addEventListener('click',()=>{$('endScreen').hidden=true;});
 $('help').addEventListener('click',()=>$('helpDialog').showModal());
 function updateHapticOption(){
   $('vibration').checked=haptics.enabled;

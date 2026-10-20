@@ -158,10 +158,10 @@ async function layout(page){
     }
     assert.ok(await page.locator('#endScreen').isVisible());
     assert.equal(await page.evaluate(()=>document.getAnimations().length),0);
-    await page.locator('#inspectBoard').click();assert.equal(await page.locator('[data-wall],[data-to]').count(),0);
+    assert.equal(await page.locator('[data-wall],[data-to]').count(),0);
     await page.screenshot({path:path.join(out,'partida-finalizada.png')});
     await page.reload();await idle(page);assert.deepEqual(await saved(page),game);assert.ok(await page.locator('#endScreen').isVisible());
-    await page.locator('#playAgain').click();await idle(page);assert.equal((await saved(page)).moves,0);
+    await page.locator('#new').click();await idle(page);assert.equal((await saved(page)).moves,0);
     // Preferencia modificada en plena animación: termina, no queda bloqueada.
     await page.emulateMedia({reducedMotion:'no-preference'});await activate(page,'[data-to="9"]',{wait:false});
     await page.emulateMedia({reducedMotion:'reduce'});await idle(page);assert.equal(await page.evaluate(()=>document.getAnimations().length),0);

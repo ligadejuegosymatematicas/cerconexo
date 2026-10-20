@@ -70,7 +70,7 @@ export function createTerritoryFeedback({view,banner,notice,scores,reduced=match
       frame=requestAnimationFrame(tick);
     }
     // El mensaje y ambas conquistas transcurren en paralelo. Una sola pausa breve.
-    await new Promise(resolve=>{
+    if(!(reduced.matches&&events.gameEnded))await new Promise(resolve=>{
       const timer=setTimeout(()=>{release=null;resolve();},TERRITORY_MS.message);
       release=()=>{clearTimeout(timer);resolve();};
     });
