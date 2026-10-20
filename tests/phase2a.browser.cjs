@@ -4,7 +4,7 @@ const path=require('node:path');
 const assert=require('node:assert/strict');
 const {pathToFileURL}=require('node:url');
 const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/phase2a');
+const root=path.resolve(__dirname,'..'),out=path.join(root,process.env.CERCONEXO_VALIDATION_DIR||'validation/phase2a');
 const report={checks:[],screens:[]};
 const idle=page=>page.waitForFunction(()=>document.getElementById('board').getAttribute('aria-busy')==='false');
 const settle=page=>page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{}))));

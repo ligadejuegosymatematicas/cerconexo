@@ -1,7 +1,7 @@
 import {CELL_COUNT,SIZE,adjacent,wallKey,wallSet,regions,activeIds,availableMoves,wallOptions,coords} from './engine.mjs';
 import {moveHitBox,wallHitPolygon} from './boardTargets.mjs';
 
-const TOKEN_FILL={A:'#f79c38',B:'#34bceb'};
+const TOKEN_FILL={A:'var(--a)',B:'var(--b)'};
 export function wallCoord(a,b){
   const x=60+(a%SIZE)*80,y=60+Math.floor(a/SIZE)*80;
   if(b===a+1)return [x+80,y,x+80,y+80];
@@ -17,7 +17,7 @@ function edgeSVG(cls,a,b,extras=''){
 
 export function createBoardView(board){
   // Montar una sola vez. Fichas, casillas y muros mantienen identidad y foco.
-  let base='<defs><pattern id="empty-region" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#bac5ca"/><path d="M0 12L12 0" stroke="#8298a6" stroke-width="2"/></pattern></defs><rect x="37" y="37" width="606" height="606" rx="15" fill="#132e45"/><rect x="56" y="56" width="568" height="568" rx="5" fill="#f1e4cc"/>';
+  let base='<defs><pattern id="empty-region" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#bac5ca"/><path d="M0 12L12 0" stroke="#8298a6" stroke-width="2"/></pattern></defs><rect x="37" y="37" width="606" height="606" rx="15" fill="var(--panel)"/><rect x="56" y="56" width="568" height="568" rx="5" fill="var(--board)"/>';
   for(let a=0;a<CELL_COUNT;a++)base+=`<rect class="board-cell" data-cell="${a}" x="${60+(a%SIZE)*80}" y="${60+Math.floor(a/SIZE)*80}" width="80" height="80"/>`;
   for(let a=0;a<CELL_COUNT;a++)for(const b of adjacent(a))if(b>a)base+=edgeSVG('wall-dash',a,b,`data-edge="${wallKey(a,b)}"`);
   base+='<rect class="wall-perimeter" x="60" y="60" width="560" height="560"/>';
@@ -26,7 +26,7 @@ export function createBoardView(board){
   board.innerHTML=base+'<g id="interactionLayer"></g><g id="piecesLayer"></g><g id="effectsLayer" aria-hidden="true"></g>';
   const layer=board.querySelector('#interactionLayer');
   const pieces=board.querySelector('#piecesLayer');
-  const fills={A:'#f4be83',B:'#a6dcf0',mixed:'#f1e4cc',empty:'url(#empty-region)'};
+  const fills={A:'var(--territory-a)',B:'var(--territory-b)',mixed:'var(--neutral)',empty:'url(#empty-region)'};
   let renderedGame=null;
   function render(game,draft,{busy=false}={}){
     const active=activeIds(game),actor=game.currentActor;

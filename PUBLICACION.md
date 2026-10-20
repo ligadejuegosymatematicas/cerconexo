@@ -1,6 +1,6 @@
 # Publicar CERCONEXO en GitHub Pages
 
-**Estado: Fase 1 publicada con autorización del propietario, commit `380d21f`.** La Fase 2A se prepara solo en `desarrollo` y no está autorizada para publicación. Este documento no autoriza subir nuevas versiones a `main` ni fusionar ramas.
+**Estado: Fase 2A publicada con autorización del propietario, commit de incorporación `2935a2c` (candidata `61145f7`).** La Fase 2B se prepara solo en `desarrollo` y no está autorizada para publicación. Este documento no autoriza subir nuevas versiones a `main` ni fusionar ramas.
 
 ## Destino previsto
 
@@ -16,9 +16,9 @@ No se modifica el repositorio del sitio principal `ligadejuegosymatematicas.gith
 
 `index.html` de la raíz sigue siendo el archivo fuente de entrada. `python scripts/build_pages.py` copia sin modificar sus bytes los archivos de ejecución a `docs/`. Esa carpeta será la raíz del sitio: `docs/index.html` se sirve como `/cerconexo/`.
 
-La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete de Fase 2A contiene nueve archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
+La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete de Fase 2B contiene diez archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
 
-La lista explícita de `.gitignore` excluye también del repositorio los documentos internos, `validation/`, capturas, herramientas específicas del entorno y HTML generados. El PNG oficial completo se conserva en el repositorio como fuente de identidad, pero el sitio solo recibe la imagen que utiliza la aplicación. No se ha aplicado ninguna propuesta nueva del logo.
+La lista explícita de `.gitignore` excluye también del repositorio los documentos internos, `validation/`, capturas, herramientas específicas del entorno y HTML generados. Los originales de la marca se conservan intactos y el paquete de Fase 2B usa solo el wordmark transparente derivado; el derivado completo permanece como recurso fuente del repositorio.
 
 `.gitattributes` conserva los bytes originales, incluidos los finales de línea del motor. No se ha reescrito la interfaz ni el motor para preparar el alojamiento.
 
@@ -29,7 +29,7 @@ Requisitos de desarrollo: Python 3.9+ y Node 22+ (CI utiliza Node 24).
 ```sh
 python scripts/build_pages.py
 python scripts/build_pages.py --check
-node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs tests/feedback.test.mjs
+node --test tests/*.test.mjs
 ```
 
 `--check` no modifica nada: falla si faltan recursos, si hay archivos ajenos al sitio o si `docs/` no coincide con las fuentes. Debe pasar antes de aprobar una versión.

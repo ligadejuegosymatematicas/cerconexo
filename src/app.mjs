@@ -1,6 +1,7 @@
 import {initialState,territory,activeIds,availableMoves,wallOptions,applyTurn,verifyState,pieceById} from './engine.mjs';
 import {createBoardView} from './boardView.mjs';
 import {InteractionGate,createFeedback} from './feedback.mjs';
+import {createHaptics} from './haptics.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY='wallgo-league-v2';
@@ -8,6 +9,7 @@ const TEAM_NAME={A:'Equipo A',B:'Equipo B'};
 const gate=new InteractionGate();
 const boardView=createBoardView($('board'));
 const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$('prompt')});
+const haptics=createHaptics();
 let game=initialState(),draft={path:[8]};
 let endShown=false;
 const piece=(id)=>pieceById(game,id);
@@ -23,11 +25,11 @@ function loadGame(){
   draft={path:game.over?[]:[piece(game.currentActor).pos]};
 }
 function newGame(){
-  gate.reset();feedback.reset();
+  gate.reset();feedback.reset();haptics.stop();
   game=initialState();endShown=false;
   draft={path:[piece(game.currentActor).pos]};
   $('endScreen').hidden=true;
-  safeStore();render();announceTurn();
+  safeStore();render();announceTurn();haptics.pulse('turn');
 }
 function announceTurn(){
   feedback.turnStarted({actor:game.currentActor,team:game.turnTeam});
@@ -55,6 +57,7 @@ async function build(to){
   game=next;
   // Confirmar y guardar una sola vez, ANTES del efecto: recargar es seguro.
   safeStore();setBusy();
+  haptics.committed({secured:[...before].some(id=>!activeIds(game).has(id))});
   await feedback.wall(boardView.revealWall(game.lastMove.wall));
   if(!gate.finish(ticket))return;
   draft={path:game.over?[]:[piece(game.currentActor).pos]};
@@ -153,6 +156,16 @@ $('new').addEventListener('click',()=>{if(game.moves&&!game.over&&!confirm('¿Co
 $('playAgain').addEventListener('click',newGame);
 $('inspectBoard').addEventListener('click',()=>{$('endScreen').hidden=true;});
 $('help').addEventListener('click',()=>$('helpDialog').showModal());
+function updateHapticOption(){
+  $('vibration').checked=haptics.enabled;
+  $('vibration').disabled=!haptics.supported;
+  $('vibrationStatus').textContent=!haptics.supported?'Este navegador no ofrece vibración.':haptics.paused?'En pausa por la preferencia de movimiento reducido.':'Pulsos breves, si el dispositivo lo permite.';
+}
+$('vibration').addEventListener('change',()=>{haptics.setEnabled($('vibration').checked);updateHapticOption();});
+matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',()=>{haptics.stop();updateHapticOption();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)haptics.stop();});
+window.addEventListener('pagehide',()=>haptics.stop());
+updateHapticOption();
 document.addEventListener('keydown',event=>{
   if($('helpDialog').open)return;
   if(event.key==='Escape'&&!game.over)cancel();
