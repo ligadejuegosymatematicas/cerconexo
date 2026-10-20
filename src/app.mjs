@@ -61,7 +61,7 @@ async function build(to){
   const events=deriveTerritoryEvents(game,next),ticket=gate.begin();
   participationFeedback.dismiss();
   game=next;
-  $('turnBanner').querySelector('h2').textContent='JUGADA CONFIRMADA';
+  $('turnBanner').querySelector('h2').textContent='RESOLVIENDO';
   // Confirmar y guardar una sola vez, ANTES del efecto: recargar es seguro.
   safeStore();setBusy();
   haptics.committed({secured:events.participation.secured.length>0});

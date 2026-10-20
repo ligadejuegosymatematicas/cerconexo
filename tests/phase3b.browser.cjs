@@ -73,7 +73,7 @@ async function metric(page){return page.evaluate(()=>{
       let probes=await page.evaluate(()=>({confirmations:window.confirmations,notices:window.participationNotices}));
       assert.deepEqual(probes.confirmations.map(p=>p.id),['A1']);assert.deepEqual(probes.confirmations[0].durations,[350]);
       assert.equal(probes.confirmations[0].duplicateBlocked,true);
-      assert.equal(probes.confirmations[0].heading,'JUGADA CONFIRMADA');
+      assert.equal(probes.confirmations[0].heading,'RESOLVIENDO');
       assert.equal(probes.notices.length,1);assert.equal(probes.notices[0].busy,'false');assert.match(probes.notices[0].text,/CONTINÚA LA DISPUTA.*A2 frente a B1 y B2/);
       assert.match(probes.notices[0].announcement,/A2 jugará todos los turnos del equipo A/);
       const measured=await metric(page);assert.deepEqual(measured.page,[width,height]);assert.deepEqual(measured.clipped,[]);assert.equal(measured.noticeClipped,false);assert.equal(measured.overlap,false);assert.equal(measured.board.width,baseline.board.width);
