@@ -76,3 +76,11 @@
 !/tests/participation.test.mjs
 !/tests/participation-fixtures.mjs
 !/tests/phase3b.browser.cjs
+
+!/src/resultEvents.mjs
+!/src/resultFeedback.mjs
+!/docs/src/resultEvents.mjs
+!/docs/src/resultFeedback.mjs
+!/tests/result.test.mjs
+!/tests/result-fixtures.mjs
+!/tests/phase4.browser.cjs

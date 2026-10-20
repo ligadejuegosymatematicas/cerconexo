@@ -711,49 +711,6 @@ h1 {
   color:var(--text);
   font-size:24px
 }
-.end-screen:not([hidden]) {
-  position:fixed;
-  inset:0;
-  z-index:10;
-  display:grid;
-  place-items:center;
-  background:#020b15cc;
-  padding:16px
-}
-.end-card {
-  width:420px;
-  max-width:100%;
-  max-height:calc(100dvh - 32px);
-  overflow:auto;
-  background:#102A43;
-  border:1px solid #b58b3d;
-  border-radius:20px;
-  padding:28px;
-  text-align:center;
-  box-shadow:0 25px 90px #0009
-}
-.end-card h2 {
-  font-size:28px;
-  color:var(--gold);
-  margin:14px 0
-}
-.end-card p {
-  font-size:13px;
-  line-height:1.6;
-  color:var(--muted)
-}
-.final-scores {
-  display:flex;
-  justify-content:center;
-  gap:18px;
-  margin:22px 0;
-  font-size:17px;
-  font-weight:750
-}
-.end-card button {
-  margin:4px 0
-}
-
 @media(min-width:1600px) {
   .layout {
     grid-template-columns:260px minmax(0,1fr) 280px;
@@ -1244,17 +1201,6 @@ h1 {
 
 }
 
-/* El resultado conserva el ancho disponible también en pantallas pequeñas. */
-.end-screen:not([hidden]) {
-  grid-template-columns:minmax(0,1fr)
-}
-
-.end-card {
-  width:100%;
-  max-width:420px;
-  min-width:0
-}
-
 /* Revisión de Fase 1: jerarquía, lectura y selección directa. */
 .layout { grid-template-columns:256px minmax(0,1fr) 280px; }
 .score-panel,.turn-panel { align-self:start; }
@@ -1548,4 +1494,26 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
   .participation-pair { font-size:14px; }
   .team-roster { display:flex; flex-direction:column; gap:2px; }
   .player { flex-direction:row; align-items:center; justify-content:flex-start; min-height:24px; gap:4px; }
+}
+
+/* Fase 4: resultado en el espacio del turno, sin alterar el tamaño del tablero. */
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.has-result { --turn:var(--gold); }
+.has-result[data-result="A"] { --turn:var(--a); }
+.has-result[data-result="B"] { --turn:var(--b); }
+.has-result > :not(.final-result) { visibility:hidden; }
+.final-result { position:absolute; inset:16px; display:flex; flex-direction:column; justify-content:center; gap:10px; pointer-events:none; }
+.final-result h2 { font-size:21px; line-height:1.25; letter-spacing:.3px; color:var(--turn); text-wrap:balance; }
+.final-result p { font-size:14px; line-height:1.5; color:var(--muted); }
+.final-result #winnerDifference { color:var(--text); border-top:1px solid #d4a64a66; padding-top:8px; }
+.final-emphasis { text-shadow:0 0 14px #d4a64a55; }
+@media(max-width:760px), (max-height:500px) {
+  .final-result { inset:7px 10px; gap:2px; }
+  .final-result h2 { font-size:16px; line-height:20px; letter-spacing:0; }
+  .final-result p { font-size:12px; line-height:16px; }
+  .final-result #winnerDifference { padding-top:2px; }
+}
+@media(max-height:500px) and (min-width:600px) {
+  .final-result h2 { font-size:14px; line-height:17px; }
+  .final-result p { line-height:15px; }
 }

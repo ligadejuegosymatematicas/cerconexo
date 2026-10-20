@@ -1,5 +1,7 @@
 [
   "index.html",
+  "src/resultEvents.mjs",
+  "src/resultFeedback.mjs",
   "src/app.mjs",
   "src/engine.mjs",
   "src/boardTargets.mjs",

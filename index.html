@@ -22,13 +22,13 @@
   </header>
   <main class="layout">
     <aside class="score-panel panel" aria-label="Marcadores y jugadores">
-      <div class="section-heading"><h2 class="micro">CASILLAS ASEGURADAS</h2><span class="subtle">49 en total</span></div>
+      <div class="section-heading"><h2 class="micro" id="scoreHeading">CASILLAS ASEGURADAS</h2><span class="subtle" id="scoreTotal">49 en total</span></div>
       <div class="scores">
         <section class="team-score team-a" aria-label="Marcador equipo A"><div class="team-heading"><span class="team-badge">A</span><h3>Equipo A</h3><strong id="scoreA">0</strong></div><div class="team-roster" id="activeA"></div></section>
         <section class="team-score team-b" aria-label="Marcador equipo B"><div class="team-heading"><span class="team-badge">B</span><h3>Equipo B</h3><strong id="scoreB">0</strong></div><div class="team-roster" id="activeB"></div></section>
       </div>
       <div class="territory-meter" id="meter" role="img" aria-label="Distribución de las 49 casillas"></div>
-      <div class="minor-stats"><span><i class="status-swatch disputed" aria-hidden="true"></i>En disputa <strong id="mixedCount">49</strong></span><span><i class="status-swatch empty" aria-hidden="true"></i>Vacías <strong id="emptyCount">0</strong></span></div>
+      <div class="minor-stats"><span><i id="distributionSwatch" class="status-swatch disputed" aria-hidden="true"></i><span id="distributionLabel">En disputa</span><strong id="mixedCount">49</strong></span><span><i class="status-swatch empty" aria-hidden="true"></i>Vacías <strong id="emptyCount">0</strong></span></div>
     </aside>
     <section class="arena" aria-label="Mesa de juego">
       <div class="board-topline"><span>Tablero</span><span>7 × 7</span></div>
@@ -42,6 +42,9 @@
         <div class="turn-meta"><span id="stepsPill">Sin desplazamiento</span><small id="moveCount">0 muros construidos</small></div>
         <p class="prompt" aria-live="polite" id="prompt">Construye un muro o toca un punto turquesa para avanzar.</p>
         <div id="territoryNotice" class="territory-notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <section id="endScreen" class="final-result" aria-labelledby="winnerTitle" hidden>
+          <h2 id="winnerTitle"></h2><p id="winnerDetails"></p><p id="winnerDifference"></p>
+        </section>
       </section>
       <details class="legend-panel panel" open>
         <summary>Guía del tablero</summary>
@@ -71,6 +74,6 @@
   </ol>
   <form method="dialog"><button class="primary dialog-ok">Entendido</button></form>
 </dialog>
-<div class="end-screen" id="endScreen" hidden><div class="end-card"><div class="micro">PARTIDA FINALIZADA</div><h2 id="winnerTitle">¡Victoria!</h2><p id="winnerDetails"></p><div class="final-scores"><span id="finalA"></span><span id="finalB"></span></div><button type="button" class="secondary dialog-ok" id="inspectBoard">Ver tablero</button> <button type="button" class="primary dialog-ok" id="playAgain">Nueva partida ↗</button></div></div>
+<div id="resultAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script type="module" src="./src/app.mjs"></script>
 </body></html>
