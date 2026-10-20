@@ -24,13 +24,13 @@ async function instrument(context){
         animations:[...board.querySelectorAll('.board-cell')].flatMap(node=>node.getAnimations().map(a=>({cell:Number(node.dataset.cell),territory:node.dataset.territory,delay:a.effect.getTiming().delay,duration:a.effect.getTiming().duration,frames:a.effect.getKeyframes().map(f=>f.fill)}))),
         computed:[...board.querySelectorAll('.board-cell')].map(node=>getComputedStyle(node).fill),saved:JSON.parse(localStorage.getItem('wallgo-league-v2')).game});
       new MutationObserver(()=>{
-        if(notice.hidden||observed)return;observed=true;
+        if(notice.hidden||notice.dataset.kind!=='territory'||observed)return;observed=true;
         const probe={start:performance.now(),text:notice.textContent,samples:[snapshot()]};window.territorialProbes.push(probe);
         // Doble acción mientras el muro ya está guardado y el territorio se presenta.
         board.querySelector('[data-wall]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
         probe.afterDuplicate=JSON.parse(localStorage.getItem('wallgo-league-v2')).game;
         for(const delay of [100,200,350,550,1000,1250])setTimeout(()=>probe.samples.push(snapshot()),delay);
-        const timer=setInterval(()=>{if(notice.hidden){probe.end=performance.now();clearInterval(timer);}},10);
+        const timer=setInterval(()=>{if(notice.hidden||notice.dataset.kind!=='territory'){probe.end=performance.now();clearInterval(timer);}},10);
       }).observe(notice,{attributes:true,childList:true});
       new MutationObserver(()=>{if(!document.getElementById('endScreen').hidden)window.resultTime=performance.now();})
         .observe(document.getElementById('endScreen'),{attributes:true,attributeFilter:['hidden']});
@@ -78,7 +78,7 @@ async function instrument(context){
       equalScore(fixture.after,probe.samples.at(-1).scores);assert.equal(probe.samples[4].animations.length,0);
       assert.ok(probe.end-probe.start>=1100&&probe.end-probe.start<1500);
       assert.equal(await page.locator('#turnDisc').innerText(),fixture.after.currentActor);
-      assert.ok(await page.locator('#territoryNotice').isHidden());
+      assert.notEqual(await page.locator('#territoryNotice').getAttribute('data-kind'),'territory');
       assert.deepEqual(await saved(page),fixture.after);
       await page.screenshot({path:path.join(out,`territorio-${width}x${height}.png`)});
       report.timing.push({viewport:[width,height],noticeMs:probe.end-probe.start,spreadMs:500,scores:probe.samples.map(s=>({ms:Math.round(s.at-probe.start),values:s.scores}))});

@@ -6,6 +6,8 @@
   "src/boardView.mjs",
   "src/feedback.mjs",
   "src/haptics.mjs",
+  "src/participationEvents.mjs",
+  "src/participationFeedback.mjs",
   "src/territoryEvents.mjs",
   "src/territoryFeedback.mjs",
   "src/styles.css",

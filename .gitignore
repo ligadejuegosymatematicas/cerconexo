@@ -68,3 +68,11 @@
 !/tests/territory.test.mjs
 !/tests/phase3a.browser.cjs
 !/tests/png.mjs
+
+!/src/participationEvents.mjs
+!/src/participationFeedback.mjs
+!/docs/src/participationEvents.mjs
+!/docs/src/participationFeedback.mjs
+!/tests/participation.test.mjs
+!/tests/participation-fixtures.mjs
+!/tests/phase3b.browser.cjs

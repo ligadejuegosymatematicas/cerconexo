@@ -46,7 +46,7 @@ export function createBoardView(board){
     for(const p of game.pieces){
       let node=pieces.querySelector(`[data-piece="${p.id}"]`);
       if(!node){
-        pieces.insertAdjacentHTML('beforeend',`<g class="piece-token" data-piece="${p.id}"><circle class="token-aura" r="30"/><circle cy="3" r="25" fill="#111c21" opacity=".32"/><circle class="token-body" r="24" fill="${TOKEN_FILL[p.team]}"/><text class="token-label" y="5" text-anchor="middle">${p.id}</text><text class="marker-check" x="23" y="-15" text-anchor="middle">✓</text></g>`);
+        pieces.insertAdjacentHTML('beforeend',`<g class="piece-token" data-piece="${p.id}" style="--piece-glow:var(--${p.team.toLowerCase()}-glow)"><circle class="secured-aura" r="29" aria-hidden="true"/><circle class="duel-aura" r="31" aria-hidden="true"/><circle class="token-aura" r="30"/><circle cy="3" r="25" fill="#111c21" opacity=".32"/><circle class="token-body" r="24" fill="${TOKEN_FILL[p.team]}"/><text class="token-label" y="5" text-anchor="middle">${p.id}</text><g class="marker-check" aria-hidden="true" transform="translate(22 -19)"><circle r="11"/><text y="5" text-anchor="middle">✓</text></g></g>`);
         node=pieces.lastElementChild;
       }
       const current=p.id===actor&&!game.over,isolated=!active.has(p.id);
@@ -85,6 +85,14 @@ export function createBoardView(board){
     board.setAttribute('aria-busy',String(busy));
     for(const node of layer.children)node.setAttribute('aria-disabled',String(busy));
   }
-  return {render,setBusy,paintTerritory,setTerritoryPresentation:on=>board.classList.toggle('is-presenting-territory',on),cell:id=>cellNodes[id],token:id=>pieces.querySelector(`[data-piece="${id}"]`),
+  function markSecured(ids){
+    for(const id of ids){
+      const node=pieces.querySelector(`[data-piece="${id}"]`);if(!node)continue;
+      node.classList.add('token-isolated');node.setAttribute('aria-label',`${id}, territorio asegurado`);
+      node.querySelector('.token-body').setAttribute('class','token-body token-outer');
+      node.querySelector('.marker-check').style.display='';
+    }
+  }
+  return {render,setBusy,paintTerritory,markSecured,setTerritoryPresentation:on=>board.classList.toggle('is-presenting-territory',on),cell:id=>cellNodes[id],token:id=>pieces.querySelector(`[data-piece="${id}"]`),
     revealWall([from,to]){const line=board.querySelector(`[data-edge="${wallKey(from,to)}"]`);line.setAttribute('class','wall-built');return line;}};
 }

@@ -4,11 +4,11 @@ Juego de estrategia territorial local para cuatro personas, en dos equipos, de l
 
 ## Sitio publicado y versión de trabajo
 
-La Fase 2B (incorporación `e275b25`, candidata `2b907e4`) está publicada en:
+La Fase 3A (incorporación `c9f3e98`, candidata `a69c1f5`) está publicada en:
 
 [ligadejuegosymatematicas.github.io/cerconexo/](https://ligadejuegosymatematicas.github.io/cerconexo/)
 
-La Fase 3A se prepara exclusivamente en `desarrollo`: propagación territorial, avisos de conquista y puntuación animada. Conserva la Fase 2B, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
+La Fase 3B se prepara exclusivamente en `desarrollo`: fichas aseguradas, redistribución comunicada de turnos y evolución del enfrentamiento. Conserva la Fase 3A, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
 
 ## Abrir en desarrollo
 
@@ -44,7 +44,7 @@ Ese archivo generado se conserva localmente y no es necesario para Pages.
 
 - index.html y src/: fuentes modulares de la interfaz y del motor.
 - assets/: marca oficial completa y recorte utilizado por la cabecera.
-- docs/: doce archivos estáticos que constituyen el paquete candidato del sitio.
+- docs/: catorce archivos estáticos que constituyen el paquete candidato del sitio.
 - scripts/: manifiesto y preparación reproducible de Pages.
 - tests/: pruebas originales del motor, geometría y comprobación del sitio bajo /cerconexo/.
 - .github/workflows/verificar.yml: comprobaciones automáticas; no publica ni fusiona.
@@ -76,6 +76,7 @@ node tests/pages.browser.cjs
 node tests/phase2a.browser.cjs
 node tests/phase2b.browser.cjs
 node tests/phase3a.browser.cjs
+node tests/phase3b.browser.cjs
 ```
 
 La segunda prueba usa animaciones reales y comprueba bloqueo de entradas, recorridos, reinicios y recargas durante transiciones, aislamiento, partida completa, teclado, movimiento reducido y HTML autónomo. Genera capturas y resultados en `validation/phase2a/`, excluidos del repositorio y del sitio. La prueba de `file://` requiere generar antes el HTML autónomo.
@@ -92,7 +93,7 @@ Los archivos `Cerconexo_logo_v3_original.png` y `Cerconexo_wordmark_original.png
 
 `python scripts/derive_logo.py` reproduce los derivados con Pillow y NumPy, solo como herramientas de preparación; no son dependencias del juego ni de CI. Las pruebas de los derivados usan únicamente Node y comprueban hashes oficiales, dimensiones, colores opacos, recomposición sobre negro y recorte exacto. Capturas y resultados de Fase 2B quedan en `validation/phase2b/`, fuera del repositorio y del sitio.
 
-## Conquista territorial — Fase 3A local
+## Conquista territorial — Fase 3A
 
 `src/territoryEvents.mjs` compara las componentes anteriores y posteriores devueltas por el motor. Solo genera conquistas para casillas que pasan de región compartida a exclusiva; atribuye el evento al propietario, aunque construya el rival. Las regiones vacías y los territorios ya asegurados no se celebran. Un BFS adicional calcula únicamente distancias visuales por conexiones abiertas, con todas las fichas aliadas de la componente como fuentes simultáneas.
 
@@ -109,3 +110,21 @@ El estado verdadero se guarda inmediatamente al confirmar el muro. Los números 
 Las capturas, GIF de navegador real e informe se conservan en `validation/phase3a/`, excluidos del repositorio y del paquete público. No se han subido cambios, fusionado ramas ni actualizado GitHub Pages. La siguiente fase y la publicación requieren aprobación.
 
 La comparación de capturas tolera únicamente diez píxeles con una diferencia máxima de 20/255 por canal, para el suavizado de bordes del navegador entre contextos. Registra la diferencia observada; la comprobación de archivos mantiene identidad byte a byte. El lector PNG de las pruebas de marca se comparte en `tests/png.mjs`, sin dependencias nuevas.
+
+## Fichas aseguradas y enfrentamiento — Fase 3B local
+
+`src/participationEvents.mjs` deriva fichas recién aseguradas, participantes por equipo, redistribuciones y composición del enfrentamiento. En la integración reutiliza las componentes mixtas ya obtenidas por `territoryEvents.mjs`; no vuelve a recorrer el tablero ni calcula turnos o puntos. Solo el motor establece qué ficha sigue activa y quién juega después. Los eventos no forman parte del guardado.
+
+`src/participationFeedback.mjs` presenta confirmaciones simultáneas de 350 ms desde el final de la propagación (500 ms). Terminan hacia los 850 ms, dentro del aviso territorial existente de 1200 ms: no se añade espera a esa secuencia crítica. Con movimiento reducido se muestran distintivos y estados directamente. Cada ficha conserva posición, color e identificador, con un ✓ circular y sin el halo de participación.
+
+Al liberar el turno real, un solo aviso de 1400 ms reúne el enfrentamiento y la redistribución: «CONTINÚA LA DISPUTA» o «¡ÚLTIMA DISPUTA!», con identificadores derivados del estado. No hay cola de mensajes por ficha. El aviso usa el espacio existente, no intercepta el tablero y puede desaparecer si una nueva construcción da prioridad a otro acontecimiento. Los participantes se presentan como Asegurado, En juego o Turno. La disposición móvil reserva el mismo espacio para todos esos estados sin reducir el tablero.
+
+El resultado final suprime avisos de enfrentamiento, después de la conquista y la confirmación de todas las fichas correspondientes. La vibración conserva exactamente los pulsos de Fase 2B; la comparación de participantes ya disponible sustituye las consultas repetidas anteriores sin añadir señales.
+
+Cada reinicio invalida la generación de las confirmaciones, resuelve esperas canceladas, detiene efectos y retira avisos. Una recarga reconstruye los distintivos a partir del motor, sin reproducir eventos antiguos. El estado oficial se guarda antes de los efectos, como en Fase 3A.
+
+El aviso combina sus datos en una única región de estado accesible. Mientras está visible se evita que el texto ordinario del turno produzca anuncios redundantes; los controles, el identificador del turno y los mensajes visibles siguen funcionando. La evaluación manual con lectores de pantalla continúa pendiente.
+
+Las 33 pruebas anteriores se mantienen, con doce pruebas nuevas de participación: 45 en total. `tests/phase3b.browser.cjs` comprueba las cuatro resoluciones, rotación, confirmaciones, avisos no bloqueantes, concurrencia, teclado, recarga y reinicio durante efectos y HTML autónomo. La prueba territorial distingue ahora el aviso de conquista del aviso posterior de participación mediante el tipo del evento; mantiene los casos, puntuaciones y tiempos de Fase 3A.
+
+La evidencia local queda en `validation/phase3b/`. No se modifica main, no se crea PR, no se suben cambios ni se publica GitHub Pages. La publicación estable sigue en c9f3e98. La Fase 4 requiere autorización independiente.
