@@ -3,7 +3,8 @@ import {createBoardView} from './boardView.mjs';
 import {InteractionGate,createFeedback} from './feedback.mjs';
 import {createHaptics} from './haptics.mjs';
 import {deriveTerritoryEvents} from './territoryEvents.mjs';
-import {createTerritoryFeedback} from './territoryFeedback.mjs';
+import {createTerritoryFeedback,TERRITORY_MS} from './territoryFeedback.mjs';
+import {createParticipationFeedback} from './participationFeedback.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY='wallgo-league-v2';
@@ -13,6 +14,7 @@ const boardView=createBoardView($('board'));
 const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$('prompt')});
 const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
+const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),prompt:$('prompt')});
 let game=initialState(),draft={path:[8]};
 let endShown=false;
 const piece=(id)=>pieceById(game,id);
@@ -28,7 +30,7 @@ function loadGame(){
   draft={path:game.over?[]:[piece(game.currentActor).pos]};
 }
 function newGame(){
-  gate.reset();feedback.reset();territorialFeedback.reset();haptics.stop();
+  gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();haptics.stop();
   game=initialState();endShown=false;
   draft={path:[piece(game.currentActor).pos]};
   $('endScreen').hidden=true;
@@ -56,19 +58,26 @@ async function build(to){
   let next;
   try{next=applyTurn(game,{actor:game.currentActor,path:draft.path,to});}
   catch(error){feedback.notice(error.message);return;}
-  const before=activeIds(game),events=deriveTerritoryEvents(game,next),ticket=gate.begin();
+  const events=deriveTerritoryEvents(game,next),ticket=gate.begin();
+  participationFeedback.dismiss();
   game=next;
+  $('turnBanner').querySelector('h2').textContent='JUGADA CONFIRMADA';
   // Confirmar y guardar una sola vez, ANTES del efecto: recargar es seguro.
   safeStore();setBusy();
-  haptics.committed({secured:[...before].some(id=>!activeIds(game).has(id))});
+  haptics.committed({secured:events.participation.secured.length>0});
   await feedback.wall(boardView.revealWall(game.lastMove.wall));
   if(!gate.current(ticket))return;
   if(events.conquests.length)feedback.message(events.gameEnded?'Resolviendo la partida':'Preparando el siguiente turno');
   renderDistribution(events.after);
-  await territorialFeedback.present(events,game);
+  await Promise.all([
+    territorialFeedback.present(events,game),
+    participationFeedback.confirm(events.participation,{delay:events.conquests.length?TERRITORY_MS.spread:0,
+      onConfirmed:()=>renderRoster(null,new Set([...events.participation.after.A,...events.participation.after.B]))})
+  ]);
   if(!gate.finish(ticket))return;
   draft={path:game.over?[]:[piece(game.currentActor).pos]};
   render();announceTurn();
+  participationFeedback.announce(events.participation);
 }
 async function cancel(){
   if(gate.busy||game.over||draft.path.length<2)return;
@@ -98,14 +107,18 @@ function renderDistribution(score){
   $('meter').innerHTML=['A','mixed','empty','B'].flatMap(type=>Array.from({length:score[type]},()=>`<span class="territory-unit unit-${type}" aria-hidden="true"></span>`)).join('');
   $('meter').setAttribute('aria-label',`Casillas: equipo A ${score.A}, equipo B ${score.B}, en disputa ${score.mixed}, vacías ${score.empty}`);
 }
-function renderPlayers(actor,active,score){
+function renderRoster(actor,active){
   for(const team of ['A','B']){
     $(`active${team}`).innerHTML=['1','2'].map(n=>{
       const id=`${team}${n}`,isolated=!active.has(id),current=id===actor&&!game.over;
-      const status=isolated?'Territorio asegurado':current?'Su turno':'En juego';
-      return `<div title="${id} · ${status}" aria-label="${id}, ${status}" class="player ${isolated?'is-isolated':''} ${current?'is-current':''}" id="player-${id}" ${current?'aria-current="true"':''}><span class="player-id">${id}</span><span class="player-state"><span class="state-full">${isolated?'✓ ':''}${status}</span><span class="state-short" aria-hidden="true">${isolated?'✓':current?'Turno':'·'}</span></span></div>`;
+      const status=isolated?'Asegurado':current?'Turno':'En juego';
+      return `<div title="${id} · ${status}" aria-label="${id}, ${status}" class="player ${isolated?'is-isolated':''} ${current?'is-current':''}" id="player-${id}" ${current?'aria-current="true"':''}><span class="player-id">${id}</span><span class="player-state"><span class="state-full">${status}</span><span class="state-short" aria-hidden="true">${isolated?'✓':current?'Turno':'·'}</span></span></div>`;
     }).join('');
   }
+}
+function renderPlayers(actor,active,score){
+  $('turnBanner').querySelector('h2').textContent=game.over?'PARTIDA FINALIZADA':'AHORA JUEGA';
+  renderRoster(actor,active);
   $('moveCount').textContent=`${game.moves} ${game.moves===1?'muro construido':'muros construidos'}`;
   $('cancel').hidden=game.over || draft.path.length===1;
   if(game.over){

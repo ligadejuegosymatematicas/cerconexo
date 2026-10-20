@@ -8,7 +8,7 @@ export function createTerritoryFeedback({view,banner,notice,scores,reduced=match
     for(const animation of animations)animation.cancel();
     animations.clear();cancelAnimationFrame(frame);frame=null;
   }
-  function clearNotice(){notice.hidden=true;notice.replaceChildren();banner.classList.remove('has-territory-notice');view.setTerritoryPresentation(false);}
+  function clearNotice(){notice.hidden=true;notice.replaceChildren();delete notice.dataset.kind;banner.classList.remove('has-territory-notice');view.setTerritoryPresentation(false);}
   function reset(){generation++;cancelEffects();release?.();release=null;finalScores=null;clearNotice();}
   let finalScores=null;
   function showScores(score){for(const team of ['A','B'])scores[team].textContent=score[team];}
@@ -33,7 +33,7 @@ export function createTerritoryFeedback({view,banner,notice,scores,reduced=match
       if(plural)unit.className='conquest-unit';
       item.append(unit);body.append(item);
     }
-    notice.replaceChildren(title,body);notice.hidden=false;banner.classList.add('has-territory-notice');
+    notice.dataset.kind='territory';notice.replaceChildren(title,body);notice.hidden=false;banner.classList.add('has-territory-notice');
   }
   async function present(events,game){
     const ticket=++generation;finalScores=events.after;

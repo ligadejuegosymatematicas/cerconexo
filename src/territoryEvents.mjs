@@ -1,4 +1,5 @@
 import {territory,adjacent,wallSet,wallKey,pieceById} from './engine.mjs';
+import {activeFromComponents,deriveParticipationEvents} from './participationEvents.mjs';
 
 // Eventos de presentación: las componentes y la puntuación oficial vienen del motor.
 // El único recorrido adicional calcula distancias visuales, nunca puntos.
@@ -29,6 +30,7 @@ export function deriveTerritoryEvents(before,after){
     conquests.push({team:component.type,cells,component:component.cells,players:component.ids,seeds,layers,increment:cells.length});
   }
   return {before:previous.score,after:current.score,conquests,newlyEmpty,gameEnded:after.over,
+    participation:deriveParticipationEvents(before,after,{beforeActive:activeFromComponents(previous.components),afterActive:activeFromComponents(current.components)}),
     gains:{A:conquests.filter(event=>event.team==='A').reduce((n,event)=>n+event.increment,0),
       B:conquests.filter(event=>event.team==='B').reduce((n,event)=>n+event.increment,0)}};
 }
