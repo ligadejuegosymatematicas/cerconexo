@@ -17,7 +17,7 @@ function edgeSVG(cls,a,b,extras=''){
 
 export function createBoardView(board){
   // Montar una sola vez. Fichas, casillas y muros mantienen identidad y foco.
-  let base='<defs><pattern id="empty-region" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#bac5ca"/><path d="M0 12L12 0" stroke="#8298a6" stroke-width="2"/></pattern></defs><rect x="37" y="37" width="606" height="606" rx="15" fill="var(--panel)"/><rect x="56" y="56" width="568" height="568" rx="5" fill="var(--board)"/>';
+  let base='<defs><pattern id="empty-region" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#e7e1d5"/><path d="M0 12L12 0" stroke="#c4bfb4" stroke-width="2"/></pattern></defs><rect x="37" y="37" width="606" height="606" rx="15" fill="var(--panel)"/><rect x="56" y="56" width="568" height="568" rx="5" fill="var(--board)"/>';
   for(let a=0;a<CELL_COUNT;a++)base+=`<rect class="board-cell" data-cell="${a}" x="${60+(a%SIZE)*80}" y="${60+Math.floor(a/SIZE)*80}" width="80" height="80"/>`;
   for(let a=0;a<CELL_COUNT;a++)for(const b of adjacent(a))if(b>a)base+=edgeSVG('wall-dash',a,b,`data-edge="${wallKey(a,b)}"`);
   base+='<rect class="wall-perimeter" x="60" y="60" width="560" height="560"/>';
@@ -27,11 +27,18 @@ export function createBoardView(board){
   const layer=board.querySelector('#interactionLayer');
   const pieces=board.querySelector('#piecesLayer');
   const fills={A:'var(--territory-a)',B:'var(--territory-b)',mixed:'var(--neutral)',empty:'url(#empty-region)'};
+  const cellNodes=Array.from({length:CELL_COUNT},(_,cell)=>board.querySelector(`[data-cell="${cell}"]`));
+  function paintTerritory(game){
+    for(const region of regions(game))for(const cell of region.cells){
+      cellNodes[cell].setAttribute('fill',fills[region.type]);
+      cellNodes[cell].dataset.territory=region.type;
+    }
+  }
   let renderedGame=null;
   function render(game,draft,{busy=false}={}){
     const active=activeIds(game),actor=game.currentActor;
     if(renderedGame!==game){
-      for(const region of regions(game))for(const cell of region.cells)board.querySelector(`[data-cell="${cell}"]`).setAttribute('fill',fills[region.type]);
+      paintTerritory(game);
       const walls=wallSet(game);
       for(const edge of board.querySelectorAll('[data-edge]'))edge.setAttribute('class',walls.has(edge.dataset.edge)?'wall-built':'wall-dash');
       renderedGame=game;
@@ -78,6 +85,6 @@ export function createBoardView(board){
     board.setAttribute('aria-busy',String(busy));
     for(const node of layer.children)node.setAttribute('aria-disabled',String(busy));
   }
-  return {render,setBusy,token:id=>pieces.querySelector(`[data-piece="${id}"]`),
+  return {render,setBusy,paintTerritory,setTerritoryPresentation:on=>board.classList.toggle('is-presenting-territory',on),cell:id=>cellNodes[id],token:id=>pieces.querySelector(`[data-piece="${id}"]`),
     revealWall([from,to]){const line=board.querySelector(`[data-edge="${wallKey(from,to)}"]`);line.setAttribute('class','wall-built');return line;}};
 }

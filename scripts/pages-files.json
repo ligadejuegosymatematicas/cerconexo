@@ -6,6 +6,8 @@
   "src/boardView.mjs",
   "src/feedback.mjs",
   "src/haptics.mjs",
+  "src/territoryEvents.mjs",
+  "src/territoryFeedback.mjs",
   "src/styles.css",
   "assets/Cerconexo_wordmark_transparente.png"
 ]

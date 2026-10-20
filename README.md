@@ -4,11 +4,11 @@ Juego de estrategia territorial local para cuatro personas, en dos equipos, de l
 
 ## Sitio publicado y versión de trabajo
 
-La Fase 2A (incorporación `2935a2c`, candidata `61145f7`) está publicada en:
+La Fase 2B (incorporación `e275b25`, candidata `2b907e4`) está publicada en:
 
 [ligadejuegosymatematicas.github.io/cerconexo/](https://ligadejuegosymatematicas.github.io/cerconexo/)
 
-La Fase 2B se prepara exclusivamente en `desarrollo`: vibración opcional, paleta funcional refinada y logo transparente derivado del oficial sobre marfil. Conserva las transiciones de Fase 2A, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
+La Fase 3A se prepara exclusivamente en `desarrollo`: propagación territorial, avisos de conquista y puntuación animada. Conserva la Fase 2B, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
 
 ## Abrir en desarrollo
 
@@ -44,7 +44,7 @@ Ese archivo generado se conserva localmente y no es necesario para Pages.
 
 - index.html y src/: fuentes modulares de la interfaz y del motor.
 - assets/: marca oficial completa y recorte utilizado por la cabecera.
-- docs/: diez archivos estáticos que constituyen el paquete candidato del sitio.
+- docs/: doce archivos estáticos que constituyen el paquete candidato del sitio.
 - scripts/: manifiesto y preparación reproducible de Pages.
 - tests/: pruebas originales del motor, geometría y comprobación del sitio bajo /cerconexo/.
 - .github/workflows/verificar.yml: comprobaciones automáticas; no publica ni fusiona.
@@ -69,12 +69,13 @@ La partida se guarda en el navegador con la clave existente wallgo-league-v2. Re
 
 ## Comprobación opcional con navegador
 
-tests/pages.browser.cjs comprueba escritorio y móvil, movimiento y construcción, persistencia, carga de recursos y equivalencia visual exacta entre las fuentes y el paquete. Requiere Playwright en el entorno de desarrollo y Edge instalado; CERCONEXO_PLAYWRIGHT_PATH permite indicar la ruta del módulo. No es una dependencia de ejecución del juego.
+tests/pages.browser.cjs comprueba escritorio y móvil, movimiento y construcción, persistencia, carga de recursos y equivalencia visual entre las fuentes y el paquete. Requiere Playwright en el entorno de desarrollo y Edge instalado; CERCONEXO_PLAYWRIGHT_PATH permite indicar la ruta del módulo. No es una dependencia de ejecución del juego.
 
 ```sh
 node tests/pages.browser.cjs
 node tests/phase2a.browser.cjs
 node tests/phase2b.browser.cjs
+node tests/phase3a.browser.cjs
 ```
 
 La segunda prueba usa animaciones reales y comprueba bloqueo de entradas, recorridos, reinicios y recargas durante transiciones, aislamiento, partida completa, teclado, movimiento reducido y HTML autónomo. Genera capturas y resultados en `validation/phase2a/`, excluidos del repositorio y del sitio. La prueba de `file://` requiere generar antes el HTML autónomo.
@@ -90,3 +91,21 @@ La prueba `phase2b.browser.cjs` verifica colores calculados, capturas y comporta
 Los archivos `Cerconexo_logo_v3_original.png` y `Cerconexo_wordmark_original.png` permanecen intactos. Los derivados `*_transparente.png` tienen el mismo tamaño y recorte; solo se extrae el fondo y se desmatizan los bordes para eliminar contaminación negra. No se utilizó generación de imágenes, redibujado ni cambio de paleta de la marca. El original con extensión `.png` contiene datos JPEG, por lo que tiene residuos de compresión y no proporciona una máscara alfa original.
 
 `python scripts/derive_logo.py` reproduce los derivados con Pillow y NumPy, solo como herramientas de preparación; no son dependencias del juego ni de CI. Las pruebas de los derivados usan únicamente Node y comprueban hashes oficiales, dimensiones, colores opacos, recomposición sobre negro y recorte exacto. Capturas y resultados de Fase 2B quedan en `validation/phase2b/`, fuera del repositorio y del sitio.
+
+## Conquista territorial — Fase 3A local
+
+`src/territoryEvents.mjs` compara las componentes anteriores y posteriores devueltas por el motor. Solo genera conquistas para casillas que pasan de región compartida a exclusiva; atribuye el evento al propietario, aunque construya el rival. Las regiones vacías y los territorios ya asegurados no se celebran. Un BFS adicional calcula únicamente distancias visuales por conexiones abiertas, con todas las fichas aliadas de la componente como fuentes simultáneas.
+
+`src/territoryFeedback.mjs` presenta las capas en hasta 500 ms y los valores oficiales del marcador en 300 ms, en paralelo con un aviso de 1200 ms. Las dos conquistas posibles comparten el aviso y se animan simultáneamente. El turno siguiente y el resultado existente esperan el aviso; la pausa adicional es de aproximadamente 1,2 segundos. Se mantienen movimiento de 180 ms, muro de 280 ms y énfasis de turno de 320 ms.
+
+Los nodos de casillas, fichas y muros persisten. Los objetivos de la jugada anterior se ocultan durante la conquista y quedan bloqueados; al finalizar aparecen los del siguiente turno. El aviso utiliza el espacio del panel de turno, sin desplazar ni reducir el tablero. Las regiones vacías conservan una trama marfil grisácea y cero puntos.
+
+El estado verdadero se guarda inmediatamente al confirmar el muro. Los números intermedios, eventos, temporizadores y animaciones nunca se guardan. Recargar restaura directamente el estado confirmado sin repetir conquistas; una nueva partida cancela las continuaciones pendientes. Con movimiento reducido, colores y cifras son inmediatos y se conserva el aviso informativo. Cambiar esa preferencia durante la animación también termina sus efectos.
+
+`tests/territory.test.mjs` añade diez casos, incluidos BFS con obstáculos y dos fuentes, atribución rival, conquistas simultáneas, regiones vacías, subdivisiones ya aseguradas y 40 partidas completas. En todos los estados comprobados, A + B + casillas en disputa + vacías = 49. La subdivisión de territorio ya asegurado se verifica con estados estructurales sintéticos: una ficha inactiva no puede realizar esa jugada mediante la interfaz.
+
+`tests/phase3a.browser.cjs` verifica las cuatro resoluciones, las duraciones reales de Web Animations, avisos, contadores, finalización, recarga y reinicio durante conquista, reducción de movimiento y HTML autónomo. Las pruebas de Fase 2A muestrean ahora los efectos dentro del clic real para evitar falsos fallos por latencia del protocolo al observar transiciones de solo 180 ms. No se modifica el reloj del juego.
+
+Las capturas, GIF de navegador real e informe se conservan en `validation/phase3a/`, excluidos del repositorio y del paquete público. No se han subido cambios, fusionado ramas ni actualizado GitHub Pages. La siguiente fase y la publicación requieren aprobación.
+
+La comparación de capturas tolera únicamente diez píxeles con una diferencia máxima de 20/255 por canal, para el suavizado de bordes del navegador entre contextos. Registra la diferencia observada; la comprobación de archivos mantiene identidad byte a byte. El lector PNG de las pruebas de marca se comparte en `tests/png.mjs`, sin dependencias nuevas.

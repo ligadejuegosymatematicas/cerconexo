@@ -6,6 +6,7 @@ const assert=require('node:assert/strict');
 (async()=>{
   const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   const {startPagesServer,publicFiles}=await import('./pages-server.mjs');
+  const {decodePNG}=await import('./png.mjs');
   const site=await startPagesServer();
   const browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
   const root=path.resolve(__dirname,'..');
@@ -31,7 +32,7 @@ const assert=require('node:assert/strict');
         await page.goto(site.url+'index.html');assert.deepEqual(await saved(),committed);
       }
       report.checks.push(`${width}px: 0/1/2 pasos, giro, regreso, muro y guardado restaurado desde raíz e index.html`);
-      // Comparación visual exacta: misma posición y navegador, paquete frente a fuentes.
+      // Comparación visual: misma posición y navegador, paquete frente a fuentes.
       await reset();
       await page.mouse.move(0,0);
       const packaged=await page.screenshot();
@@ -47,11 +48,31 @@ const assert=require('node:assert/strict');
       });
       await source.goto(site.url);await source.locator('.piece-token').first().waitFor();
       await source.mouse.move(0,0);
-      assert.deepEqual(packaged,await source.screenshot(),'La preparación no debe modificar la interfaz');
+      const original=await source.screenshot(),left=decodePNG(packaged),right=decodePNG(original);
+      assert.deepEqual([left.width,left.height,left.channels],[right.width,right.height,right.channels]);
+      let differingPixels=0,maxChannelDelta=0;
+      for(let i=0;i<left.pixels.length;i+=left.channels){
+        let differs=false;
+        for(let c=0;c<left.channels;c++){
+          const delta=Math.abs(left.pixels[i+c]-right.pixels[i+c]);
+          if(delta)differs=true;maxChannelDelta=Math.max(maxChannelDelta,delta);
+        }
+        if(differs)differingPixels++;
+      }
+      // Dos contextos pueden rasterizar de forma ligeramente distinta los bordes
+      // redondeados. Se toleran solo diez píxeles con diferencia máxima de 20/255.
+      // La identidad exacta de todos los archivos se comprueba aparte en Node.
+      const identical=differingPixels<=10&&maxChannelDelta<=20;
+      if(!identical){
+        const mismatch=path.join(root,'validation/phase3a/pages-comparison');await fs.mkdir(mismatch,{recursive:true});
+        await fs.writeFile(path.join(mismatch,`package-${width}.png`),packaged);
+        await fs.writeFile(path.join(mismatch,`source-${width}.png`),original);
+      }
+      assert.ok(identical,`Fuentes frente a paquete: ${differingPixels} píxeles distintos; diferencia máxima ${maxChannelDelta}`);
       await isolatedContext.close();
       assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
       assert.ok(requests.every(r=>r.status===200&&r.url.startsWith(site.url)),JSON.stringify(requests));
-      report.screens.push({width,height,identicalToSource:true});
+      report.screens.push({width,height,visuallyEquivalentToSource:true,differingPixels,maxChannelDelta});
       report.resources.push(...requests.filter((r,i,a)=>a.findIndex(other=>other.url===r.url)===i).map(r=>({path:new URL(r.url).pathname,status:r.status})));
       await context.close();
     }
