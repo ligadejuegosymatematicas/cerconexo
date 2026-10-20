@@ -1486,6 +1486,34 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .haptic-label { display:flex; align-items:center; gap:10px; min-height:44px; cursor:pointer; font-weight:700; }
 .haptic-label input { width:24px; height:24px; margin:10px; accent-color:var(--move); cursor:pointer; }
 .help-dialog .haptic-option p { margin:4px 0 0; font-size:13px; line-height:1.5; }
+.unit-empty,.status-swatch.empty,.legend-cell.empty { background:repeating-linear-gradient(135deg,#e7e1d5 0 3px,#c4bfb4 3px 5px); }
+/* Fase 3A: el aviso ocupa espacio ya reservado, sin cubrir ni encoger el tablero. */
+.turn-card { position:relative; }
+#board.is-presenting-territory #interactionLayer { visibility:hidden; }
+.territory-notice { position:absolute; left:16px; right:16px; bottom:12px; min-height:74px; display:flex; flex-direction:column; justify-content:center; gap:5px; background:var(--panel); border-radius:6px; pointer-events:none; }
+.territory-notice[hidden] { display:none; }
+.conquest-heading { font-size:12px; line-height:16px; font-weight:700; letter-spacing:.35px; color:var(--text); }
+.conquest-gains { display:flex; flex-wrap:wrap; gap:2px 12px; }
+.conquest-gain { font-size:13px; line-height:24px; white-space:nowrap; }
+.gain-A { color:var(--a-glow); }
+.gain-B { color:var(--b-glow); }
+.conquest-gain strong { font-size:24px; font-variant-numeric:tabular-nums; }
+.conquest-unit { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.has-territory-notice .turn-meta,.has-territory-notice .prompt { visibility:hidden; }
 @media(max-width:760px), (max-height:500px) {
   h1 { margin-left:5px; padding:7px; border-radius:8px; }
+  .territory-notice { left:66px; right:10px; top:7px; bottom:auto; min-height:44px; gap:1px; }
+  .conquest-heading { font-size:12px; line-height:16px; letter-spacing:0; }
+  .conquest-gain { font-size:12px; line-height:24px; }
+  .conquest-gain strong { font-size:22px; }
+  .conquest-gains { flex-wrap:nowrap; gap:10px; }
+  .has-territory-notice .micro,.has-territory-notice .turn-identity strong { visibility:hidden; }
+  .has-territory-notice .prompt { visibility:visible; }
+}
+@media(max-height:500px) and (min-width:600px) {
+  .territory-notice { left:10px; right:10px; top:auto; bottom:8px; min-height:45px; }
+  .conquest-gains { gap:4px; }
+  .conquest-gain strong { font-size:18px; }
+  .has-territory-notice .micro,.has-territory-notice .turn-identity strong { visibility:visible; }
+  .has-territory-notice .prompt { visibility:hidden; }
 }

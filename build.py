@@ -10,7 +10,7 @@ def inline_module(name):
     source = '\n'.join(line for line in source.splitlines() if not line.startswith('import '))
     return source.replace('export const ', 'const ').replace('export function ', 'function ').replace('export class ', 'class ')
 
-modules = '\n'.join(inline_module(name) for name in ['engine', 'boardTargets', 'boardView', 'feedback', 'haptics', 'app'])
+modules = '\n'.join(inline_module(name) for name in ['engine', 'boardTargets', 'boardView', 'feedback', 'haptics', 'territoryEvents', 'territoryFeedback', 'app'])
 html = html.replace('<link rel="stylesheet" href="./src/styles.css">', f'<style>\n{css}\n</style>')
 html = html.replace('<script type="module" src="./src/app.mjs"></script>', f'<script type="module">\n{modules}\n</script>')
 logo = base64.b64encode((root / 'assets/Cerconexo_wordmark_transparente.png').read_bytes()).decode('ascii')

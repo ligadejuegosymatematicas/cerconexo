@@ -42,6 +42,18 @@ async function layout(page){
   const errors=[];
   const create=async(width,height,motion='no-preference')=>{
     const context=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:width<761,reducedMotion:motion});
+    await context.addInitScript(()=>{
+      // Medir dentro del clic real evita perder efectos de 180 ms por latencia del protocolo.
+      document.addEventListener('click',event=>{
+        const action=event.target.closest?.('[data-to],[data-wall]'),board=document.getElementById('board');
+        if(!action||board?.getAttribute('aria-busy')!=='true')return;
+        const before=localStorage.getItem('wallgo-league-v2');
+        const token=board.querySelector('[data-piece="A1"]');
+        const sample={frames:token.getAnimations().map(a=>({duration:a.effect.getTiming().duration,frames:a.effect.getKeyframes().map(f=>f.transform)})),flash:board.querySelectorAll('.wall-confirmation').length};
+        board.querySelector('[data-wall]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+        sample.blocked=before===localStorage.getItem('wallgo-league-v2');window.latestMotionProbe=sample;
+      });
+    });
     const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
     page.on('requestfailed',r=>errors.push(r.url()));
     await page.goto(site.url);await idle(page);await settle(page);return {context,page};
@@ -66,12 +78,12 @@ async function layout(page){
         await page.evaluate(()=>{window.originalToken=document.querySelector('[data-piece="A1"]');});
         for(const to of route){
           await activate(page,`[data-to="${to}"]`,{touch:width<761,wait:false});
-          const frames=await page.locator('[data-piece="A1"]').evaluate(node=>node.getAnimations().map(a=>({duration:a.effect.getTiming().duration,frames:a.effect.getKeyframes().map(f=>f.transform)})));
+          const frames=await page.evaluate(()=>window.latestMotionProbe.frames);
           assert.equal(frames.length,1);assert.equal(frames[0].duration,180);
           const [a,b]=frames[0].frames.map(text=>text.match(/-?\d+(?:\.\d+)?/g).map(Number));
           assert.ok((a[0]===b[0])!==(a[1]===b[1]),'Cada desplazamiento es ortogonal');
           // Un intento incompatible durante la transición no cambia el borrador ni construye.
-          await page.evaluate(()=>document.querySelector('[data-wall]').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+          assert.ok(await page.evaluate(()=>window.latestMotionProbe.blocked));
           assert.equal((await saved(page))?.moves??0,0);
           await idle(page);
           assert.ok(await page.evaluate(()=>window.originalToken===document.querySelector('[data-piece="A1"]')));
@@ -81,9 +93,9 @@ async function layout(page){
         assert.equal(committed.moves,1);assert.equal(committed.pieces[0].pos,route.at(-1)??8);
         assert.equal(committed.currentActor,'B1');
         // Segundo intento de commit no duplica muros ni adelanta otro turno.
-        await page.evaluate(()=>document.querySelector('[data-wall]').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
+        assert.ok(await page.evaluate(()=>window.latestMotionProbe.blocked));
         assert.deepEqual(await saved(page),committed);
-        assert.equal(await page.locator('.wall-confirmation').count(),1);
+        assert.equal(await page.evaluate(()=>window.latestMotionProbe.flash),1);
         await idle(page);await settle(page);
         assert.equal(await page.locator('#turnDisc').innerText(),'B1');
         await page.reload();await idle(page);assert.deepEqual(await saved(page),committed);
@@ -127,7 +139,8 @@ async function layout(page){
     assert.ok(engine.verifyState(isolated));await reset(page,isolated);
     await activate(page,'[data-wall="15"]');
     assert.equal(await page.locator('[data-piece="A1"].token-isolated').count(),1);
-    assert.match(await page.locator('#prompt').innerText(),/A1 aseguró/);
+    assert.equal(await page.locator('#scoreA').innerText(),'1');
+    assert.match(await page.locator('[data-piece="A1"]').getAttribute('aria-label'),/territorio asegurado/);
     await activate(page,'[data-wall]');assert.equal(await page.locator('#turnDisc').innerText(),'A2');
     // Partida determinista completa con reducción de movimiento; comprobar todos los estados contra motor.
     await page.emulateMedia({reducedMotion:'reduce'});let game=engine.initialState();await reset(page,game);
