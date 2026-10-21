@@ -91,3 +91,10 @@
 !/docs/src/matchup.mjs
 !/tests/usability.test.mjs
 !/tests/phase5a.browser.cjs
+
+!/src/explorationData.mjs
+!/src/exploration.mjs
+!/docs/src/explorationData.mjs
+!/docs/src/exploration.mjs
+!/tests/exploration.test.mjs
+!/tests/phase5b.browser.cjs

@@ -25,4 +25,4 @@ jobs:
       - name: Comprobar paquete público sin modificarlo
         run: python3 scripts/build_pages.py --check
       - name: Comprobar motor, interacción geométrica y ruta de Pages
-        run: node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs tests/feedback.test.mjs tests/haptics.test.mjs tests/logo.test.mjs tests/territory.test.mjs tests/participation.test.mjs tests/result.test.mjs tests/usability.test.mjs
+        run: node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs tests/feedback.test.mjs tests/haptics.test.mjs tests/logo.test.mjs tests/territory.test.mjs tests/participation.test.mjs tests/result.test.mjs tests/usability.test.mjs tests/exploration.test.mjs

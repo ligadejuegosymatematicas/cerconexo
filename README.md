@@ -166,3 +166,18 @@ Se reutilizan detección de participación, confirmaciones simultáneas de 350 m
 Las 59 pruebas anteriores permanecen, ajustando las expectativas de háptica al nuevo valor inicial aprobado. Se añaden doce pruebas de Fase 5A (71 en total). Las suites anteriores de navegador mantienen sus escenarios funcionales y adaptan únicamente el acceso a Opciones, los selectores de diálogo y la permanencia del acontecimiento. La nueva suite verifica nueve resoluciones a escala 1, todas las formas de cierre, foco, modalidad, preferencias, composición simétrica, mensajes persistentes sin anuncios repetidos, recarga, reinicio, movimiento reducido, HTML autónomo y un viewport excepcional de 280 px con scroll accesible. Las evidencias, comparación con la versión estable e informe están en validation/phase5a, excluidos del repositorio y del sitio.
 
 No se suben cambios, no se crea PR y no se publica. main y GitHub Pages conservan 89dbe98. No se comienza la Fase 5B ni la auditoría 5C.
+
+
+## La matemática de tu partida — Fase 5B local
+
+Después del resultado, «Explorar las regiones» habilita una consulta del mismo tablero. El panel informativo ofrece Región, Resumen («Cómo quedó dividido el tablero») y Matemática («¿Qué matemática hay detrás?»). No se alteran los marcadores oficiales ni se reconstruye el tablero. «Volver al resultado» o Escape desde una casilla cierra la consulta sin reiniciar.
+
+`src/explorationData.mjs` obtiene una instantánea con `territory(game)` del motor: componentes, fichas y puntuaciones oficiales. Prepara un índice de las 49 casillas y conexiones ortogonales abiertas una sola vez por estado final. El BFS de selección calcula exclusivamente capas visuales desde la casilla elegida; nunca decide conquistas ni puntos.
+
+`src/exploration.mjs` administra selección, foco, contornos y propagación educativa de 320 ms. No recibe funciones de jugada, persistencia ni vibración. Las casillas, muros y fichas reales permanecen intactos. Las 49 superficies de consulta incluyen las fichas y usan un solo punto de tabulación con flechas, Home/End y Enter/Espacio. Seleccionar otra casilla de la misma región no repite efectos ni anuncios. Una nueva región cancela los efectos anteriores; movimiento reducido omite la propagación.
+
+El acceso usa la franja de controles existente y el contenido ocupa el panel del turno/resultado. Las explicaciones extensas tienen desplazamiento interno accesible, sin agrandar paneles ni reducir el tablero. Reglas, Opciones y Guía conservan su modalidad y gestión del foco. La recarga vuelve al resultado verdadero, sin guardar selecciones educativas. Nueva partida cancela y elimina toda la consulta.
+
+Pruebas: `node --test tests/*.test.mjs` (83 casos) y ocho suites de navegador, incluida `node tests/phase5b.browser.cjs`. El manifiesto de Pages y `build.py` incluyen ambos módulos nuevos; no hay dependencias de ejecución adicionales. Informes, capturas y demostraciones están en `validation/phase5b/`, excluidos del repositorio y del sitio público.
+
+Fase desarrollada únicamente en desarrollo. La referencia pública sigue siendo e88cfa677e468a3f6fb893093fb3ace2eb7fe619; no se publica, sube ni fusiona esta entrega. No se inicia Fase 5C.

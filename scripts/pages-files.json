@@ -15,5 +15,7 @@
   "src/styles.css",
   "assets/Cerconexo_wordmark_transparente.png",
   "src/dialogs.mjs",
-  "src/matchup.mjs"
+  "src/matchup.mjs",
+  "src/explorationData.mjs",
+  "src/exploration.mjs"
 ]
