@@ -1,4 +1,5 @@
-/** Wall Go 2 vs 2 — motor puro, sin DOM. Coordenadas internas 0..48. */
+import {PIECE_TURNS,TEAM_TURNS,turnMode,validTurnMode,policyActors,policyActor} from './turnPolicies.mjs';
+/** Cerconexo — motor puro, sin DOM. Coordenadas internas 0..48. */
 export const SIZE = 7;
 export const CELL_COUNT = SIZE * SIZE;
 export const MAX_INTERIOR_WALLS = 84;
@@ -56,16 +57,14 @@ export function activeIds(state){
   return playing;
 }
 export function chooseActor(state,team){
-  const eligible=activeIds(state), ids=TEAM_IDS[team], last=state.lastActed[team];
-  let index=last===null?-1:ids.indexOf(last);
-  for(let attempts=0;attempts<ids.length;attempts++){
-    index=(index+1)%ids.length;
-    if(eligible.has(ids[index]))return ids[index];
-  }
-  return null;
+  return policyActor(state,team,TEAM_IDS[team],activeIds(state));
 }
-export function initialState(){
+export function legalActors(state){return policyActors(state,activeIds(state));}
+export function initialState({turnMode:mode=PIECE_TURNS}={}){
+  if(!validTurnMode(mode))throw new Error('Modalidad desconocida.');
   const state={version:GAME_VERSION,moves:0,walls:[],pieces:PLAYERS.map(p=>({...p,pos:p.start})),turnTeam:'A',lastActed:{A:null,B:null},currentActor:'A1',over:false,winner:null,lastMove:null};
+  // La ausencia del campo sigue representando exactamente el formato clásico v2.
+  if(mode===TEAM_TURNS){state.turnMode=mode;state.currentActor=null;}
   return state;
 }
 export function availableMoves(state,pieceId,position=pieceById(state,pieceId)?.pos){
@@ -80,7 +79,10 @@ export function wallOptions(state,cell){
 }
 export function validateTurn(state,{actor,path,to}){
   if(state.over) throw new Error('La partida ya terminó.');
-  if(actor!==state.currentActor) throw new Error(`Debe jugar ${state.currentActor}.`);
+  if(!validTurnMode(turnMode(state)))throw new Error('Modalidad desconocida.');
+  if(turnMode(state)===TEAM_TURNS){
+    if(!legalActors(state).includes(actor))throw new Error(`Elige una ficha activa del equipo ${state.turnTeam}.`);
+  }else if(actor!==state.currentActor) throw new Error(`Debe jugar ${state.currentActor}.`);
   if(!Array.isArray(path)||path.length<1||path.length>3)throw new Error('Solo se permiten 0, 1 o 2 pasos.');
   const p=pieceById(state,actor);
   if(!p||path[0]!==p.pos) throw new Error('El movimiento debe comenzar en la ficha activa.');
@@ -108,11 +110,12 @@ export function applyTurn(state,turn){
   }else{
     next.turnTeam=piece.team==='A'?'B':'A';
     next.currentActor=chooseActor(next,next.turnTeam);
-    if(!next.currentActor)throw new Error('Inconsistencia: partida activa sin ficha para el equipo siguiente.');
+    if(!legalActors(next).length)throw new Error('Inconsistencia: partida activa sin ficha para el equipo siguiente.');
   }
   return next;
 }
 export function verifyState(state){
+  if(!state||!validTurnMode(turnMode(state)))return false;
   if(state.version!==GAME_VERSION||!Array.isArray(state.walls)||!Array.isArray(state.pieces)||state.pieces.length!==4)return false;
   if(new Set(state.pieces.map(p=>p.id)).size!==4)return false;
   if(new Set(state.pieces.map(p=>p.pos)).size!==4)return false;
@@ -121,6 +124,9 @@ export function verifyState(state){
   for(const w of state.walls){const m=/^(\d+)-(\d+)$/.exec(w);if(!m||!isNeighbor(+m[1],+m[2])||wallKey(+m[1],+m[2])!==w)return false;}
   if(state.walls.length!==state.moves)return false;
   if(state.over!==finished(state))return false;
-  if(!state.over && (!activeIds(state).has(state.currentActor)||pieceById(state,state.currentActor).team!==state.turnTeam))return false;
+  if(!['A','B'].includes(state.turnTeam))return false;
+  if(!state.over && turnMode(state)===TEAM_TURNS){
+    if(!legalActors(state).length||state.currentActor!==chooseActor(state,state.turnTeam))return false;
+  }else if(!state.over && (!activeIds(state).has(state.currentActor)||pieceById(state,state.currentActor).team!==state.turnTeam))return false;
   return true;
 }

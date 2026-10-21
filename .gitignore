@@ -102,3 +102,11 @@
 !/tests/contour-fixtures.mjs
 
 !/tests/experience.test.mjs
+
+!/src/turnPolicies.mjs
+!/src/turnDraft.mjs
+!/docs/src/turnPolicies.mjs
+!/docs/src/turnDraft.mjs
+!/tests/classic-engine-v2.mjs
+!/tests/modes.test.mjs
+!/tests/modes.browser.cjs

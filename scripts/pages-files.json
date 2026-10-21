@@ -17,5 +17,7 @@
   "src/dialogs.mjs",
   "src/matchup.mjs",
   "src/explorationData.mjs",
-  "src/exploration.mjs"
+  "src/exploration.mjs",
+  "src/turnPolicies.mjs",
+  "src/turnDraft.mjs"
 ]

@@ -1,4 +1,6 @@
-import {initialState,territory,activeIds,availableMoves,wallOptions,applyTurn,verifyState,pieceById} from './engine.mjs';
+import {initialState,territory,activeIds,availableMoves,wallOptions,applyTurn,verifyState,pieceById,legalActors} from './engine.mjs';
+import {PIECE_TURNS,TEAM_TURNS,turnMode} from './turnPolicies.mjs';
+import {beginDraft,selectDraft} from './turnDraft.mjs';
 import {createBoardView} from './boardView.mjs';
 import {InteractionGate,createFeedback} from './feedback.mjs';
 import {createHaptics} from './haptics.mjs';
@@ -22,7 +24,7 @@ const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
 const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('recentEvent'),prompt:$('prompt'),announcement:$('participationAnnouncement')});
 const resultFeedback=createResultFeedback({banner:$('turnBanner'),result:$('endScreen'),title:$('winnerTitle'),subtitle:$('winnerDetails'),detail:$('winnerDifference'),announcement:$('resultAnnouncement'),scores:{A:$('scoreA'),B:$('scoreB')}});
-let game=initialState(),draft={path:[8]};
+let game=initialState(),draft=beginDraft(game);
 const piece=(id)=>pieceById(game,id);
 const safeStore=()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify({game}));}catch{}};
 
@@ -33,37 +35,37 @@ function loadGame(){
       game=restored.game;
     }
   }catch{}
-  draft={path:game.over?[]:[piece(game.currentActor).pos]};
+  draft=beginDraft(game);
 }
-function newGame(){
+function newGame(mode=PIECE_TURNS){
   exploration.reset();
   gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();haptics.stop();
   resultFeedback.reset();$('prompt').setAttribute('aria-live','polite');
-  game=initialState();
-  draft={path:[piece(game.currentActor).pos]};
+  game=initialState({turnMode:mode});
+  draft=beginDraft(game);
   safeStore();render();announceTurn();haptics.pulse('turn');
 }
 function announceTurn(){
-  feedback.turnStarted({actor:game.currentActor,team:game.turnTeam});
+  feedback.turnStarted({actor:draft.actor,team:game.turnTeam});
 }
 function setBusy(){
   boardView.setBusy(gate.busy);
   $('cancel').disabled=gate.busy;
 }
 async function step(to){
-  if(gate.busy||game.over||draft.path.length>=3)return;
+  if(gate.busy||game.over||!draft.actor||draft.path.length>=3)return;
   const from=draft.path.at(-1);
-  if(!availableMoves(game,game.currentActor,from).includes(to))return;
-  const ticket=gate.begin(),actor=game.currentActor;
+  if(!availableMoves(game,draft.actor,from).includes(to))return;
+  const ticket=gate.begin(),actor=draft.actor;
   draft.path.push(to);render();
   await feedback.move(boardView.token(actor),from,to);
   if(!gate.finish(ticket))return;
   setBusy();
 }
 async function build(to){
-  if(gate.busy||game.over||!wallOptions(game,draft.path.at(-1)).includes(to))return;
+  if(gate.busy||game.over||!draft.actor||!wallOptions(game,draft.path.at(-1)).includes(to))return;
   let next;
-  try{next=applyTurn(game,{actor:game.currentActor,path:draft.path,to});}
+  try{next=applyTurn(game,{actor:draft.actor,path:draft.path,to});}
   catch(error){feedback.notice(error.message);return;}
   const events=deriveTerritoryEvents(game,next),ticket=gate.begin();
   if(next.over)participationFeedback.dismiss();
@@ -83,24 +85,31 @@ async function build(to){
       onConfirmed:()=>renderRoster(null,new Set([...events.participation.after.A,...events.participation.after.B]))})
   ]);
   if(!gate.finish(ticket))return;
-  draft={path:game.over?[]:[piece(game.currentActor).pos]};
+  draft=beginDraft(game);
   render();
   if(game.over)resultFeedback.enter();
-  else{announceTurn();participationFeedback.announce(events.participation);}
+  else{announceTurn();participationFeedback.announce(events.participation,{mode:turnMode(game)});}
 }
 async function cancel(){
   if(gate.busy||game.over||draft.path.length<2)return;
-  const ticket=gate.begin(),actor=game.currentActor;
+  const ticket=gate.begin(),actor=draft.actor;
   setBusy();
   for(let i=draft.path.length-1;i>0;i--){
     await feedback.move(boardView.token(actor),draft.path[i],draft.path[i-1]);
     if(!gate.current(ticket))return;
   }
   if(!gate.finish(ticket))return;
-  draft={path:[piece(game.currentActor).pos]};render();
+  draft={actor,path:[piece(actor).pos]};render();
+}
+function selectActor(id){
+  if(gate.busy||game.over||turnMode(game)!==TEAM_TURNS||draft.actor===id)return;
+  const previous=draft;
+  try{draft=selectDraft(game,draft,id);}catch{return;}
+  render();announceTurn();
+  if(previous.path.length>1)feedback.notice(`Recorrido provisional cancelado · Ahora eliges ${id}`);
 }
 function render(){
-  const actor=game.currentActor;
+  const actor=draft.actor;
   const {score}=territory(game),active=activeIds(game);
   boardView.render(game,draft,{busy:gate.busy});
   setBusy();
@@ -138,7 +147,7 @@ function renderPlayers(actor,active,score){
   $('turnBanner').querySelector('h2').textContent='AHORA JUEGA';
   renderRoster(actor,active);
   $('moveCount').textContent=`${game.moves} ${game.moves===1?'muro construido':'muros construidos'}`;
-  $('cancel').hidden=game.over || draft.path.length===1;
+  $('cancel').hidden=game.over || draft.path.length<2;
   const matchup=matchupPresentation(game,active);
   $('matchup').style.visibility=matchup?'visible':'hidden';
   $('matchup').setAttribute('aria-hidden',String(!matchup));
@@ -150,20 +159,22 @@ function renderPlayers(actor,active,score){
     feedback.message('Partida finalizada');
     resultFeedback.show(finalPresentation(game,score));
   }else{
-    const {team}=piece(actor),steps=draft.path.length-1;
+    const team=game.turnTeam,steps=Math.max(0,draft.path.length-1),byTeam=turnMode(game)===TEAM_TURNS;
     if(steps)$('turnBanner').querySelector('h2').textContent=steps===1?'1 PASO':'2 PASOS · CONSTRUYE';
     $('prompt').setAttribute('aria-live','polite');
     $('turnBanner').classList.toggle('team-b',team==='B');
-    $('turnDisc').textContent=actor;
-    $('turnName').textContent=`${TEAM_NAME[team]} · Jugador\u00a0${actor[1]}`;
+    $('turnDisc').textContent=actor??team;
+    $('turnName').textContent=byTeam?actor?`${TEAM_NAME[team]} · Ficha ${actor}`:`${TEAM_NAME[team]} · Elige ficha`:`${TEAM_NAME[team]} · Jugador\u00a0${actor[1]}`;
+    if(byTeam&&steps===0)$('turnBanner').querySelector('h2').textContent=actor?`FICHA ${actor}`:'AHORA JUEGA';
     $('stepsPill').textContent=steps===0?'Elige casilla o borde':`${steps} ${steps===1?'paso':'pasos'}`;
-    feedback.message(steps===0?`Turno de ${actor} · Mueve o construye`:steps===1?'1 paso · Puedes continuar o construir':'2 pasos · Construye tu muro');
+    feedback.message(!actor?`Elige ${legalActors(game).join(' o ')} · Toca una ficha`:steps===0?`Turno de ${actor} · Mueve o construye`:steps===1?'1 paso · Puedes continuar o construir':'2 pasos · Construye tu muro');
   }
 }
 function activateBoard(target){
-  const obj=target.closest?.('[data-to],[data-wall]');
+  const obj=target.closest?.('[data-to],[data-wall],[data-actor]');
   if(!obj||gate.busy||document.querySelector('dialog[open]'))return;
-  if(obj.hasAttribute('data-wall'))build(Number(obj.dataset.wall));
+  if(obj.hasAttribute('data-actor'))selectActor(obj.dataset.actor);
+  else if(obj.hasAttribute('data-wall'))build(Number(obj.dataset.wall));
   else if(obj.hasAttribute('data-to'))step(Number(obj.dataset.to));
 }
 let pointerOrigin=null;
@@ -183,8 +194,8 @@ $('board').addEventListener('click',event=>{
   // Algunos navegadores móviles redirigen un toque cercano hacia el botón más
   // próximo. Solo aceptar la superficie realmente tocada, incluidas esquinas.
   if(event.detail>0){
-    const action=event.target.closest?.('[data-to],[data-wall]');
-    const hit=action?.querySelector('.move-hit,.wall-hit');
+    const action=event.target.closest?.('[data-to],[data-wall],[data-actor]');
+    const hit=action?.querySelector('.move-hit,.wall-hit,.actor-hit');
     if(!hit)return;
     const point=new DOMPoint(origin?.x??event.clientX,origin?.y??event.clientY);
     if(!hit.isPointInFill(point.matrixTransform(hit.getScreenCTM().inverse())))return;
@@ -195,7 +206,15 @@ $('board').addEventListener('keydown',event=>{
   if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;if(!event.repeat)activateBoard(event.target);}
 });
 $('cancel').addEventListener('click',cancel);
-$('new').addEventListener('click',()=>{if(game.moves&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return;newGame();});
+bindDialog($('newDialog'),$('new'),{onOpen:()=>{
+  if(game.moves&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return false;
+  document.querySelector(`input[name="turnMode"][value="${turnMode(game)}"]`).checked=true;
+}});
+$('startLocal').addEventListener('click',()=>{
+  if(!$('newDialog').open)return;
+  const mode=document.querySelector('input[name="turnMode"]:checked').value;
+  $('newDialog').close();newGame(mode);
+});
 bindDialog($('helpDialog'),$('help'));
 bindDialog($('optionsDialog'),$('options'));
 bindDialog($('guideDialog'),$('guide'),{fallback:$('help'),onOpen:()=>{document.querySelector('.legend-panel').open=true;}});

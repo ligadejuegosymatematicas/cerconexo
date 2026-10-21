@@ -103,7 +103,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       assert.deepEqual((await metrics(page)).page,[width,height]);assert.deepEqual((await metrics(page)).board,baseline.board);
       await page.screenshot({path:path.join(out,`resultado-${width}x${height}.png`)});
       await checkFrames('resultado');
-      await page.locator('#new').focus();await page.keyboard.press('Enter');await idle(page);assert.deepEqual(await saved(page),engine.initialState());assert.equal(await page.locator('#matchupLabel').innerText(),'2 vs. 2');assert.ok(await page.locator('#recentEvent').isHidden());
+      await page.locator('#new').focus();await page.keyboard.press('Enter');await page.locator('#startLocal').click();await idle(page);assert.deepEqual(await saved(page),engine.initialState());assert.equal(await page.locator('#matchupLabel').innerText(),'2 vs. 2');assert.ok(await page.locator('#recentEvent').isHidden());
       await checkFrames('reinicio');
       report.screens.push({viewport:[width,height],board:baseline.board,scale:baseline.scale,framesChecked:checkedFrames});await context.close();
     }
@@ -121,7 +121,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       await page.screenshot({path:path.join(out,`aviso-${actor}-${width}x${height}.png`)});
       await page.reload();await idle(page);assert.ok(await page.locator('#recentEvent').isHidden());assert.equal(await page.evaluate(()=>window.usability.attention.length),0);
       await load(page,before);page.once('dialog',d=>d.accept());
-      await page.evaluate(()=>{const n=document.getElementById('recentEvent'),observer=new MutationObserver(()=>{if(n.hidden)return;observer.disconnect();window.resetDuringAttention=n.getAnimations().length;document.getElementById('new').click();});observer.observe(n,{attributes:true,childList:true,subtree:true});});
+      await page.evaluate(()=>{const n=document.getElementById('recentEvent'),observer=new MutationObserver(()=>{if(n.hidden)return;observer.disconnect();window.resetDuringAttention=n.getAnimations().length;document.getElementById('new').click();document.getElementById('startLocal').click();});observer.observe(n,{attributes:true,childList:true,subtree:true});});
       await choose(page,to);await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>window.resetDuringAttention),1);assert.deepEqual(await saved(page),engine.initialState());assert.ok(await page.locator('#recentEvent').isHidden());await context.close();
     }
     report.checks.push('Avisos de A1/A2/B1/B2: encabezado y redistribución separados; atención 280 ms sin bloquear ni duplicar; mensaje persistente, reinicio y ausencia de recortes en vertical/horizontal');
