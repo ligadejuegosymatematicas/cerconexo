@@ -33,7 +33,7 @@
     <section class="arena" aria-label="Mesa de juego">
       <div class="board-topline"><span id="boardLabel">Tablero</span><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><span>7 × 7</span></div>
       <div class="board-wrap"><svg id="board" viewBox="28 20 624 624" role="group" aria-label="Tablero Cerconexo de siete por siete casillas"></svg></div>
-      <div class="game-controls" aria-label="Recorrido provisional"><button type="button" id="cancel" class="secondary reset-path" hidden>↶ Cambiar recorrido</button></div>
+      <div class="game-controls" aria-label="Controles del tablero"><button type="button" id="cancel" class="secondary reset-path" hidden>↶ Cambiar recorrido</button><button type="button" id="explore" class="guide-button explore-button" hidden>Explorar las regiones</button></div>
     </section>
     <aside class="turn-panel" aria-label="Turno e indicaciones">
       <section class="turn-card panel" id="turnBanner" aria-label="Turno actual">
@@ -45,6 +45,28 @@
         <div id="territoryNotice" class="territory-notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
         <section id="endScreen" class="final-result" aria-labelledby="winnerTitle" hidden>
           <h2 id="winnerTitle"></h2><p id="winnerDetails"></p><p id="winnerDifference"></p>
+        </section>
+        <section id="explorationPanel" class="exploration-panel" aria-label="La matemática de tu partida" hidden>
+          <nav class="exploration-tabs" aria-label="Información de exploración">
+            <button type="button" data-exploration-tab="region" aria-pressed="true">Región</button>
+            <button type="button" data-exploration-tab="summary" aria-pressed="false" aria-label="Cómo quedó dividido el tablero">Resumen</button>
+            <button type="button" data-exploration-tab="math" aria-pressed="false" aria-label="¿Qué matemática hay detrás?">Matemática</button>
+          </nav>
+          <div class="exploration-page" data-exploration-page="region" tabindex="0" aria-label="Información de la región seleccionada">
+            <h2 data-region-title></h2><div class="region-facts"><p data-region-size></p><p data-region-pieces></p></div><p class="exploration-explanation" data-region-explanation></p>
+          </div>
+          <div class="exploration-page" data-exploration-page="summary" tabindex="0" aria-label="Resumen matemático" hidden>
+            <h2>Cómo quedó dividido el tablero</h2><p data-region-summary></p><p data-region-scores></p>
+            <p>Los marcadores conservan la puntuación oficial. Una región se cuenta una sola vez aunque contenga dos fichas compañeras.</p>
+          </div>
+          <div class="exploration-page" data-exploration-page="math" tabindex="0" aria-label="Explicación matemática" hidden>
+            <h2>¿Qué matemática hay detrás?</h2>
+            <p>Los muros pueden separar regiones y cambiar el territorio de los equipos.</p>
+            <p><b>Conexidad.</b> Existe un camino entre dos casillas si podemos desplazarnos mediante conexiones ortogonales abiertas.</p>
+            <p><b>Componente conexa.</b> Es una región máxima de casillas conectadas entre sí.</p>
+            <p><b>Grafos.</b> Las casillas son vértices y las conexiones abiertas entre casillas vecinas son aristas. Los muros impiden utilizar esas conexiones.</p>
+            <p>Construir un muro no siempre divide una región. A veces todavía existe otro camino que mantiene conectadas sus casillas.</p>
+          </div>
         </section>
       </section>
       <details class="legend-panel panel" open>
@@ -93,5 +115,6 @@
 </dialog>
 <div id="participationAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="resultAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="explorationAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script type="module" src="./src/app.mjs"></script>
 </body></html>

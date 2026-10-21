@@ -9,12 +9,14 @@ import {finalPresentation} from './resultEvents.mjs';
 import {createResultFeedback} from './resultFeedback.mjs';
 import {bindDialog} from './dialogs.mjs';
 import {matchupPresentation} from './matchup.mjs';
+import {createExploration} from './exploration.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY='wallgo-league-v2';
 const TEAM_NAME={A:'Equipo A',B:'Equipo B'};
 const gate=new InteractionGate();
 const boardView=createBoardView($('board'));
+const exploration=createExploration({board:$('board'),banner:$('turnBanner'),button:$('explore'),panel:$('explorationPanel'),announcement:$('explorationAnnouncement')});
 const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$('prompt')});
 const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
@@ -34,6 +36,7 @@ function loadGame(){
   draft={path:game.over?[]:[piece(game.currentActor).pos]};
 }
 function newGame(){
+  exploration.reset();
   gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();haptics.stop();
   resultFeedback.reset();$('prompt').setAttribute('aria-live','polite');
   game=initialState();
@@ -106,6 +109,7 @@ function render(){
   for(const team of ['A','B'])$(`score${team}`).setAttribute('aria-label',`${score[team]} casillas aseguradas`);
   renderDistribution(score);
   renderPlayers(actor,active,score);
+  exploration.update(game,game.over&&!gate.busy);
 }
 function renderDistribution(score){
   $('mixedCount').textContent=score.mixed;
