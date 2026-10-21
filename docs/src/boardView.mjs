@@ -1,4 +1,5 @@
-import {CELL_COUNT,SIZE,adjacent,wallKey,wallSet,regions,activeIds,availableMoves,wallOptions,coords} from './engine.mjs';
+import {CELL_COUNT,SIZE,adjacent,wallKey,wallSet,regions,activeIds,availableMoves,wallOptions,coords,legalActors} from './engine.mjs';
+import {TEAM_TURNS,turnMode} from './turnPolicies.mjs';
 import {moveHitBox,wallHitPolygon} from './boardTargets.mjs';
 
 const TOKEN_FILL={A:'var(--a)',B:'var(--b)'};
@@ -36,7 +37,8 @@ export function createBoardView(board){
   }
   let renderedGame=null;
   function render(game,draft,{busy=false}={}){
-    const active=activeIds(game),actor=game.currentActor;
+    const active=activeIds(game),actor=draft.actor??game.currentActor;
+    const choices=turnMode(game)===TEAM_TURNS?legalActors(game):[];
     if(renderedGame!==game){
       paintTerritory(game);
       const walls=wallSet(game);
@@ -46,13 +48,14 @@ export function createBoardView(board){
     for(const p of game.pieces){
       let node=pieces.querySelector(`[data-piece="${p.id}"]`);
       if(!node){
-        pieces.insertAdjacentHTML('beforeend',`<g class="piece-token" data-piece="${p.id}" style="--piece-glow:var(--${p.team.toLowerCase()}-glow)"><circle class="secured-aura" r="29" aria-hidden="true"/><circle class="duel-aura" r="31" aria-hidden="true"/><circle class="token-aura" r="30"/><circle cy="3" r="25" fill="#111c21" opacity=".32"/><circle class="token-body" r="24" fill="${TOKEN_FILL[p.team]}"/><text class="token-label" y="5" text-anchor="middle">${p.id}</text><g class="marker-check" aria-hidden="true" transform="translate(22 -19)"><circle r="11"/><text y="5" text-anchor="middle">✓</text></g></g>`);
+        pieces.insertAdjacentHTML('beforeend',`<g class="piece-token" data-piece="${p.id}" style="--piece-glow:var(--${p.team.toLowerCase()}-glow)"><circle class="candidate-aura" r="30" aria-hidden="true"/><circle class="secured-aura" r="29" aria-hidden="true"/><circle class="duel-aura" r="31" aria-hidden="true"/><circle class="token-aura" r="30"/><circle cy="3" r="25" fill="#111c21" opacity=".32"/><circle class="token-body" r="24" fill="${TOKEN_FILL[p.team]}"/><text class="token-label" y="5" text-anchor="middle">${p.id}</text><g class="marker-check" aria-hidden="true" transform="translate(22 -19)"><circle r="11"/><text y="5" text-anchor="middle">✓</text></g></g>`);
         node=pieces.lastElementChild;
       }
       const current=p.id===actor&&!game.over,isolated=!active.has(p.id);
       const at=current&&draft.path.length?draft.path.at(-1):p.pos;
       node.setAttribute('transform',`translate(${100+(at%SIZE)*80} ${100+Math.floor(at/SIZE)*80})`);
       node.classList.toggle('token-isolated',isolated);
+      node.classList.toggle('token-candidate',choices.includes(p.id)&&!current);
       node.setAttribute('aria-label',`${p.id}${isolated?', territorio asegurado':current?', su turno':''}`);
       node.querySelector('.token-body').setAttribute('class',`token-body ${current?'token-active':'token-outer'}`);
       node.querySelector('.marker-check').style.display=isolated?'':'none';
@@ -61,7 +64,13 @@ export function createBoardView(board){
     const focused=document.activeElement;
     const focusKey=layer.contains(focused)?focused?.dataset:null;
     let targets='';
-    if(!game.over){
+    for(const id of choices){
+      const p=game.pieces.find(p=>p.id===id),at=id===actor?draft.path.at(-1):p.pos;
+      const x=60+(at%SIZE)*80,y=60+Math.floor(at/SIZE)*80,from=draft.path.at(-1);
+      const hit=id===actor?{x:x+22,y:y+22,width:36,height:36}:from===undefined?{x:x+6,y:y+6,width:68,height:68}:moveHitBox(x,y,60+(from%SIZE)*80,60+Math.floor(from/SIZE)*80);
+      targets+=`<g role="button" tabindex="0" class="actor-pick" data-actor="${id}" aria-pressed="${id===actor}" aria-label="Elegir ficha ${id} del equipo ${p.team}"><rect class="actor-hit" x="${hit.x}" y="${hit.y}" width="${hit.width}" height="${hit.height}"/></g>`;
+    }
+    if(!game.over&&actor){
       const from=draft.path.at(-1);
       if(draft.path.length<3)for(const a of availableMoves(game,actor,from)){
         const x=100+(a%SIZE)*80,y=100+Math.floor(a/SIZE)*80;
@@ -76,7 +85,7 @@ export function createBoardView(board){
     }
     layer.innerHTML=targets;
     if(focusKey){
-      const selector=focusKey.wall!==undefined?`[data-wall="${focusKey.wall}"]`:`[data-to="${focusKey.to}"]`;
+      const selector=focusKey.actor!==undefined?`[data-actor="${focusKey.actor}"]`:focusKey.wall!==undefined?`[data-wall="${focusKey.wall}"]`:`[data-to="${focusKey.to}"]`;
       (layer.querySelector(selector)||layer.querySelector('[role="button"]'))?.focus({preventScroll:true});
     }
     setBusy(busy);
@@ -89,6 +98,7 @@ export function createBoardView(board){
     for(const id of ids){
       const node=pieces.querySelector(`[data-piece="${id}"]`);if(!node)continue;
       node.classList.add('token-isolated');node.setAttribute('aria-label',`${id}, territorio asegurado`);
+      node.classList.remove('token-candidate');
       node.querySelector('.token-body').setAttribute('class','token-body token-outer');
       node.querySelector('.marker-check').style.display='';
     }

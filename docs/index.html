@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071A2F">
-  <meta name="description" content="Cerconexo: estrategia territorial local, cuatro jugadores y dos equipos. Cada muro cambia el mapa.">
+  <meta name="description" content="Cerconexo: estrategia territorial local, cuatro fichas y dos equipos en un dispositivo compartido.">
   <title>Cerconexo · Liga de Juegos y Matemáticas</title>
   <link rel="stylesheet" href="./src/styles.css">
 </head>
@@ -87,6 +87,16 @@
 <dialog id="guideDialog" class="help-dialog guide-dialog" aria-labelledby="guideTitle">
   <form method="dialog"><button class="dialog-close" aria-label="Cerrar guía" autofocus>×</button></form>
   <h2 id="guideTitle">Guía del tablero</h2>
+</dialog>
+<dialog id="newDialog" class="help-dialog new-dialog" aria-labelledby="newTitle" aria-describedby="localDescription">
+  <form method="dialog"><button class="dialog-close" aria-label="Cerrar nueva partida" autofocus>×</button></form>
+  <h2 id="newTitle">Nueva partida local</h2>
+  <p id="localDescription">Dos equipos, cuatro fichas y un dispositivo compartido.</p>
+  <fieldset class="mode-options"><legend>Sistema de turnos</legend>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="piece" checked><span><strong>Turnos por ficha · Clásico</strong><small>Las fichas juegan en orden: A1, B1, A2, B2.</small></span></label>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="team"><span><strong>Turnos por equipo</strong><small>Cada equipo elige una de sus fichas activas en cada turno.</small></span></label>
+  </fieldset>
+  <button type="button" class="secondary dialog-ok" id="startLocal">Comenzar partida</button>
 </dialog>
 <div id="participationAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="resultAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>

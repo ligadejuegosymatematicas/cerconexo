@@ -111,7 +111,7 @@ async function tap(p,selector,touch){const r=await p.locator(selector).boundingB
       await tap(p,'[data-explore-cell="8"]',touch);const beforeReloadFrames=await p.evaluate(()=>explorationAudit.frames);await p.reload();await idle(p);
       assert.ok(await p.locator('[data-component-general]').isVisible());assert.equal(await stored(p),original);assert.equal(await p.locator('[data-explore-cell]').count(),49);
       // Reinicio durante la propagación: no sobreviven efectos pendientes.
-      await p.locator('[data-explore-cell="8"]').dispatchEvent('click');await p.locator('#new').click();await idle(p);await p.waitForTimeout(400);
+      await p.locator('[data-explore-cell="8"]').dispatchEvent('click');await p.locator('#new').click();await p.locator('#startLocal').click();await idle(p);await p.waitForTimeout(400);
       assert.ok(await p.locator('#componentInfo').isHidden());assert.equal(await p.locator('[data-region-cell],[data-explore-cell],[data-region-boundary],#exploration-clip').count(),0);
       assert.deepEqual(JSON.parse(await stored(p)).game,engine.initialState());
       const frames=[...beforeReloadFrames,...await p.evaluate(()=>explorationAudit.frames)];

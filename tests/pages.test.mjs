@@ -21,7 +21,7 @@ test('Pages contiene solo la lista pública y conserva idénticos HTML, motor, i
     if(name==='.nojekyll')assert.equal(data.length,0);
     else assert.deepEqual(data,await readFile(new URL(name,rootURL)),name);
   }
-  const engine=await readFile(new URL('src/engine.mjs',rootURL));
+  const engine=await readFile(new URL('tests/classic-engine-v2.mjs',rootURL));
   assert.equal(createHash('sha256').update(engine).digest('hex'),'48dc06147f1bd0643d9a75ff828566f9f1517f4b24792ff352ca9c2cf1cb6b4b');
 });
 

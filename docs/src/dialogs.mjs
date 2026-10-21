@@ -8,7 +8,8 @@ export function bindDialog(dialog,opener,{fallback=opener,onOpen=()=>{}}={}){
   };
   opener.setAttribute('aria-controls',dialog.id);opener.setAttribute('aria-haspopup','dialog');opener.setAttribute('aria-expanded','false');
   opener.addEventListener('click',()=>{
-    onOpen();dialog.showModal();dialog.scrollTop=0;opener.setAttribute('aria-expanded','true');
+    if(onOpen()===false)return;
+    dialog.showModal();dialog.scrollTop=0;opener.setAttribute('aria-expanded','true');
     dialog.querySelector('.dialog-close')?.focus({preventScroll:true});
   });
   dialog.addEventListener('pointerdown',event=>{startedOutside=outside(event);});

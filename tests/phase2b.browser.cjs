@@ -62,7 +62,7 @@ async function enable(page,value){
     await page.screenshot({path:path.join(out,'opcion-vibracion.png')});await page.locator('#optionsDialog .dialog-close').click();
     await choose(page,'[data-wall]');assert.deepEqual(await positive(page),[12]);
     assert.equal((await saved(page)).moves,3);
-    page.once('dialog',dialog=>dialog.accept());await page.locator('#new').click();await idle(page);await settle(page);
+    page.once('dialog',dialog=>dialog.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);await settle(page);
     assert.deepEqual(await positive(page),[12,8]);assert.equal((await saved(page)).moves,0);
     // Estado de aislamiento real: una señal sustituye al muro y al cambio de turno.
     const isolated=engine.initialState();isolated.walls=[1,7,9].map(to=>engine.wallKey(8,to));isolated.moves=3;

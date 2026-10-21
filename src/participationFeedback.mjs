@@ -31,8 +31,8 @@ export function createParticipationFeedback({view,banner,notice,prompt,announcem
     view.markSecured(event.secured.map(p=>p.id));onConfirmed();
     await Promise.all(event.secured.map(p=>pulse(view.token(p.id)?.querySelector('.secured-aura'))));
   }
-  function announce(event){
-    const data=recentParticipationPresentation(event);if(!data)return;
+  function announce(event,options){
+    const data=recentParticipationPresentation(event,options);if(!data)return;
     if(lastMessage===data.announcement&&!notice.hidden)return;
     stopAttention();lastMessage=data.announcement;
     const heading=notice.ownerDocument.createElement('strong'),detail=notice.ownerDocument.createElement('span');

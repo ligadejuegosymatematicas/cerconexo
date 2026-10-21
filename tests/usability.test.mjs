@@ -10,8 +10,8 @@ import {deriveParticipationEvents} from '../src/participationEvents.mjs';
 import {participationFixture,directDuelFixture} from './participation-fixtures.mjs';
 import {resultFixture} from './result-fixtures.mjs';
 
-test('5A: el motor permanece idéntico byte por byte a la versión estable',async()=>{
-  const data=await readFile(new URL('../src/engine.mjs',import.meta.url));
+test('5A/M1: el oráculo clásico conserva los bytes de la versión estable',async()=>{
+  const data=await readFile(new URL('./classic-engine-v2.mjs',import.meta.url));
   assert.equal(createHash('sha256').update(data).digest('hex'),'48dc06147f1bd0643d9a75ff828566f9f1517f4b24792ff352ca9c2cf1cb6b4b');
 });
 for(const value of [false,true])test(`5A: decisión de vibración ${value} conservada sin migración destructiva`,()=>{

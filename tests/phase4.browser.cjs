@@ -112,7 +112,7 @@ async function probe(context){await context.addInitScript(()=>document.addEventL
       await load(page,victory.before);await choose(page,victory.to);
       if(stage==='confirmation')await page.waitForFunction(()=>[...document.querySelectorAll('.secured-aura')].some(n=>n.getAnimations().length));
       if(stage==='result')await page.waitForFunction(()=>document.getElementById('endScreen').getAnimations().length);
-      await page.locator('#new').click();await idle(page);await page.waitForTimeout(1700);
+      await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);await page.waitForTimeout(1700);
       assert.deepEqual(await saved(page),engine.initialState());assert.ok(await page.locator('#endScreen').isHidden());
       assert.equal(await page.locator('.token-isolated,.wall-built').count(),0);assert.equal(await page.locator('#scoreA').innerText(),'0');assert.equal(await page.locator('#turnDisc').innerText(),'A1');
       assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('cerconexo-preferences-v1')).vibration),true);
@@ -120,7 +120,7 @@ async function probe(context){await context.addInitScript(()=>document.addEventL
     // Preferencia dinámica durante la entrada; nueva partida accesible por teclado.
     await load(page,victory.before);await choose(page,victory.to);await idle(page);await page.emulateMedia({reducedMotion:'reduce'});
     await page.waitForFunction(()=>document.getAnimations().length===0);
-    assert.equal(await page.evaluate(()=>document.getAnimations().length),0);await page.locator('#new').focus();await page.keyboard.press('Enter');await idle(page);assert.deepEqual(await saved(page),engine.initialState());
+    assert.equal(await page.evaluate(()=>document.getAnimations().length),0);await page.locator('#new').focus();await page.keyboard.press('Enter');await page.locator('#startLocal').click();await idle(page);assert.deepEqual(await saved(page),engine.initialState());
     await context.close();report.checks.push('Guardado previo a los efectos; recarga durante muro/conquista/confirmación/resultado; reinicio seguro, preferencias, una sola vibración por jugada y teclado');
     const reduced=await create(390,844,'reduce');
     for(const fixture of [victory,draw]){

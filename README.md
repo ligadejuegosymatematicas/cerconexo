@@ -196,3 +196,33 @@ Los acontecimientos de participación separan encabezado de confirmación y expl
 Se conservan las 92 pruebas previas, adaptando únicamente las expectativas de navegación/textos sustituidos, y se añaden diez casos en `tests/experience.test.mjs` (102 en total). Las ocho suites de navegador incluyen la consulta directa, deselección, avisos de las cuatro fichas, movimiento reducido, reinicio y mediciones por fotograma. El motor, la persistencia y las animaciones matemáticas anteriores permanecen intactos.
 
 Entrega local únicamente en desarrollo. No se sube ni publica; main y GitHub Pages deben conservar 2ece078f5b2563c35016ade18327e75daa4b2f55 hasta nueva autorización. No se comienza Fase 5C.
+
+
+## M1 — Modalidades locales (candidata local)
+
+Referencia estable: `d1264a190f122a29778048b7166efb1b8ec4b6f6`. Esta entrega se desarrolla exclusivamente en `desarrollo`; no autoriza publicación, PR ni fusión. No incorpora CPU, online ni Arena.
+
+Nueva partida abre un selector local con dos sistemas. Turnos por ficha conserva A1 → B1 → A2 → B2 y la redistribución clásica. Turnos por equipo alterna A/B y permite elegir cualquier ficha activa del equipo, incluso repetirla en su siguiente turno. No se configura el número de personas. Se propone la modalidad de la partida actual para repetirla; sin partida previa se propone Clásico. La elección queda fijada al comenzar.
+
+En el tablero, las candidatas tienen aro discontinuo y la seleccionada conserva el aro sólido habitual. Tocar otra candidata cancela el recorrido provisional anterior; no confirma una jugada ni escribe almacenamiento. Una única ficha activa se selecciona automáticamente. Solo construir un muro confirma el turno, guarda el estado y pasa al equipo rival. El botón existente Cambiar recorrido y los controles de teclado se conservan.
+
+### Responsabilidades
+
+- `src/turnPolicies.mjs`: política de asignación de fichas. No calcula territorios ni puntuación.
+- `src/engine.mjs`: autoridad única para validar ficha, recorrido y muro; aplica la jugada y calcula componentes, participación, puntos y resultado.
+- `src/turnDraft.mjs`: selección y recorrido provisionales, separados del estado oficial.
+- `src/app.mjs` y `src/boardView.mjs`: controles locales y presentación, sin decidir legalidad por su cuenta.
+
+Un controlador futuro puede consultar `legalActors`, `availableMoves` y `wallOptions`, y confirmar mediante `applyTurn`. M1 no contiene controladores CPU ni una segunda implementación territorial.
+
+### Compatibilidad
+
+Se conserva la clave `wallgo-league-v2`, la envoltura `{game}` y la versión 2. La ausencia de `game.turnMode` equivale a Clásico, sin reescribir la partida al cargarla. Las partidas nuevas por equipo añaden `turnMode: "team"`; `currentActor` es nulo cuando hay dos opciones o contiene la única ficha disponible. La selección provisional no se guarda y se descarta al recargar. Las preferencias de vibración no se modifican. Resultado y exploración usan el mismo estado definitivo de ambas modalidades.
+
+### Comprobación
+
+`node --test tests/*.test.mjs`: 113 pruebas, incluidas las 102 anteriores. Las comprobaciones antiguas de SHA del motor se aplican al oráculo congelado `tests/classic-engine-v2.mjs`; la equivalencia funcional se verifica en `tests/modes.test.mjs`, comparando estados completos y todas las jugadas legales de 24 partidas clásicas deterministas. Se prueban además 24 partidas completas por equipo y casos dirigidos de aislamiento, puntuación, victoria y empate.
+
+Ejecutar las ocho suites históricas y `node tests/modes.browser.cjs`. Los escenarios de reinicio históricos completan el nuevo selector; mantienen las aserciones originales de las fases anteriores. El empaquetado local se regenera con `python scripts/build_pages.py` y `python build.py`. `python scripts/build_pages.py --check` verifica los 22 archivos publicables sin publicar nada.
+
+Evidencias e informe en `validation/m1/`; entrega autónoma y ZIP en `entregas/M1/`. Se detiene el desarrollo al finalizar M1, pendiente de aprobación.

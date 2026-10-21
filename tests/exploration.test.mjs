@@ -121,10 +121,10 @@ test('5B: modelo independiente del objeto mutable y consultas sin escritura',()=
   model.regions[0].ids.push('ejemplo');model.score.A=-1;
   assert.equal(JSON.stringify(after),saved);assert.equal(territory(after).score.A,28);
 });
-test('5B: motor y animaciones anteriores permanecen byte por byte estables',async()=>{
-  const engine=await readFile(new URL('../src/engine.mjs',import.meta.url));
+test('5B/M1: referencia clásica y animaciones compartidas permanecen estables',async()=>{
+  const engine=await readFile(new URL('./classic-engine-v2.mjs',import.meta.url));
   assert.equal(createHash('sha256').update(engine).digest('hex'),'48dc06147f1bd0643d9a75ff828566f9f1517f4b24792ff352ca9c2cf1cb6b4b');
-  const stable={"feedback": "7426e3e3fce72137c9271fa4f659d3d23c34657554d75974d14fc6f12f5f2d14", "haptics": "6a42f4ebd8d5f54e22f001a1829fde39dfbe0bb5f3841f260c419463e553719a", "territoryEvents": "d4d34eac9555fc21dd2aae3b44969a8d6558da6412fa8c57aa84135671e5f379", "territoryFeedback": "e560ad4307015e88a0ac636cf30c1e7e62157e62bf60cf478641168a63043dbd", "participationEvents": "a485395bced6158113dfd2e234cbe984888ecd2e171dd024e24a30c60b8712bb", "resultEvents": "359920bf2886f05451d4542bd45cc21a28fd834029e1bdf71472f5256491f51c", "resultFeedback": "7db9ee2004b3f178f510de3db35f3f14fc0166edd7f5a701e1b117247a4112d7", "boardTargets": "68cb0d3ec87a81ea624d08d6e719388638336dea6a5fe99979a63146d2dafb87", "boardView": "affe2e975dc097ffeef1db2ae6933a1e4d008d6c9e9f9c197a6b249078d14c62"};
+  const stable={"feedback": "7426e3e3fce72137c9271fa4f659d3d23c34657554d75974d14fc6f12f5f2d14", "haptics": "6a42f4ebd8d5f54e22f001a1829fde39dfbe0bb5f3841f260c419463e553719a", "territoryEvents": "d4d34eac9555fc21dd2aae3b44969a8d6558da6412fa8c57aa84135671e5f379", "territoryFeedback": "e560ad4307015e88a0ac636cf30c1e7e62157e62bf60cf478641168a63043dbd", "participationEvents": "a485395bced6158113dfd2e234cbe984888ecd2e171dd024e24a30c60b8712bb", "resultEvents": "359920bf2886f05451d4542bd45cc21a28fd834029e1bdf71472f5256491f51c", "resultFeedback": "7db9ee2004b3f178f510de3db35f3f14fc0166edd7f5a701e1b117247a4112d7", "boardTargets": "68cb0d3ec87a81ea624d08d6e719388638336dea6a5fe99979a63146d2dafb87"};
   for(const [name,hash] of Object.entries(stable)){
     const bytes=await readFile(new URL('../src/'+name+'.mjs',import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'),hash,name+' idéntico a e88cfa6');

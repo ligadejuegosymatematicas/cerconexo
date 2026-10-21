@@ -1676,3 +1676,18 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 
 #recentEvent[data-team="both"] .recent-heading { font-size:13px; letter-spacing:-.1px; }
 #recentEvent[data-team="both"] .recent-detail { font-size:12px; line-height:16px; }
+
+/* M1: candidatas discontinuas; la elegida conserva el aro sólido existente. */
+.candidate-aura { display:none; fill:none; stroke:var(--piece-glow); stroke-width:3; stroke-dasharray:5 4; }
+.token-candidate .candidate-aura { display:block; }
+.actor-pick { cursor:pointer; }
+.actor-hit { fill:transparent; }
+.actor-pick:focus-visible { outline:none; }
+.actor-pick:focus-visible .actor-hit { stroke:var(--text); stroke-width:3; stroke-dasharray:5 3; }
+.mode-options { border:0; padding:0; margin:16px 0; display:grid; gap:10px; }
+.mode-options legend { font-size:13px; color:var(--muted); margin-bottom:8px; }
+.mode-choice { display:flex; align-items:center; gap:12px; border:1px solid var(--edge); border-radius:10px; padding:12px; min-height:64px; cursor:pointer; }
+.mode-choice:has(input:checked) { border-color:var(--gold); background:var(--panel); }
+.mode-choice input { width:20px; height:20px; flex-shrink:0; accent-color:var(--gold); }
+.mode-choice strong { font-size:15px; display:block; }
+.mode-choice small { font-size:13px; line-height:18px; display:block; color:var(--muted); margin-top:4px; }

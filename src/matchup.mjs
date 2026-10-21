@@ -1,4 +1,5 @@
 import {activeIds} from './engine.mjs';
+import {PIECE_TURNS,TEAM_TURNS} from './turnPolicies.mjs';
 
 // Estado continuo derivado del motor; los avisos no determinan la participación.
 export function matchupPresentation(game,active=activeIds(game)){
@@ -19,11 +20,16 @@ export function recentParticipationMessage(event){
 }
 
 // Jerarquía del aviso, derivada del mismo acontecimiento (sin reglas de turnos).
-export function recentParticipationPresentation(event){
-  const announcement=recentParticipationMessage(event);if(!announcement)return null;
+export function recentParticipationPresentation(event,{mode=PIECE_TURNS}={}){
+  let announcement=recentParticipationMessage(event);if(!announcement)return null;
+  const detail=mode===TEAM_TURNS?(event.redistributions.length>1?
+    `Únicas fichas disponibles: ${event.redistributions.map(r=>`${r.player} (equipo ${r.team})`).join(' y ')}.`:
+    event.redistributions.map(r=>`${r.player} será la única ficha disponible del equipo ${r.team}.`).join(' ')):
+    event.redistributions.map(r=>`${r.player} jugará todos los turnos del equipo ${r.team}.`).join(' ');
+  if(mode===TEAM_TURNS)announcement=`${event.secured.map(p=>p.id).join(' y ')} ${event.secured.length===1?'aseguró':'aseguraron'} su territorio. ${detail}`.trim();
   return {
     heading:`✓ ${event.secured.map(p=>p.id).join(' y ')} ${event.secured.length===1?'aseguró su territorio':'aseguraron territorio'}`.toLocaleUpperCase('es'),
-    detail:event.redistributions.map(r=>`${r.player} jugará todos los turnos del equipo ${r.team}.`).join(' '),
+    detail,
     team:new Set(event.secured.map(p=>p.team)).size===1?event.secured[0].team:'both',announcement
   };
 }
