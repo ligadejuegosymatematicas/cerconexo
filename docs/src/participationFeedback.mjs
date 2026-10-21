@@ -1,18 +1,14 @@
-import {participationMessage} from './participationEvents.mjs';
+import {recentParticipationMessage} from './matchup.mjs';
 
-export const PARTICIPATION_MS=Object.freeze({confirmation:350,notice:1400});
-export function createParticipationFeedback({view,banner,notice,prompt,reduced=matchMedia('(prefers-reduced-motion: reduce)')}){
-  let generation=0,noticeTimer=null,promptBefore='',detail='';
+export const PARTICIPATION_MS=Object.freeze({confirmation:350});
+export function createParticipationFeedback({view,banner,notice,prompt,announcement,reduced=matchMedia('(prefers-reduced-motion: reduce)')}){
+  let generation=0;
   const animations=new Set(),waits=new Set();
   function stopAnimations(){for(const a of animations)a.cancel();animations.clear();}
   function dismiss(){
-    clearTimeout(noticeTimer);noticeTimer=null;
-    if(notice.dataset.kind==='participation'){
-      notice.hidden=true;notice.replaceChildren();delete notice.dataset.kind;notice.removeAttribute('aria-label');
-    }
-    banner.classList.remove('has-participation-notice');
-    if(detail&&prompt.textContent===detail)prompt.textContent=promptBefore;
-    prompt.setAttribute('aria-live','polite');detail='';
+    notice.hidden=true;notice.textContent='';announcement.textContent='';
+    banner.classList.remove('has-recent-event');
+    prompt.setAttribute('aria-live','polite');
   }
   function reset(){generation++;dismiss();stopAnimations();for(const release of [...waits])release();}
   function wait(ms){return new Promise(resolve=>{
@@ -34,16 +30,12 @@ export function createParticipationFeedback({view,banner,notice,prompt,reduced=m
     await Promise.all(event.secured.map(p=>pulse(view.token(p.id)?.querySelector('.secured-aura'))));
   }
   function announce(event){
-    const message=participationMessage(event);if(!message)return;
-    dismiss();notice.dataset.kind='participation';notice.setAttribute('aria-label',message.announcement);
-    const title=document.createElement('span');title.className='conquest-heading';title.textContent=message.title;
-    const body=document.createElement('strong');body.className='participation-pair';body.textContent=message.body;
-    const summary=document.createElement('span');summary.className='participation-summary';summary.textContent=message.detail;
-    notice.replaceChildren(title,body,summary);notice.hidden=false;banner.classList.add('has-participation-notice');
-    // Una sola región viva anuncia toda la información. El contexto ordinario puede
-    // actualizarse al mover sin repetir este aviso ni impedir la interacción.
-    promptBefore=prompt.textContent;detail=message.detail;prompt.setAttribute('aria-live','off');prompt.textContent=detail;
-    noticeTimer=setTimeout(dismiss,PARTICIPATION_MS.notice);
+    const message=recentParticipationMessage(event);if(!message)return;
+    if(notice.textContent===message&&!notice.hidden)return;
+    notice.textContent=message;notice.hidden=false;banner.classList.add('has-recent-event');
+    // Estado visible persistente y anuncio vivo separado: mover o cambiar de turno
+    // no repite la explicación. Solo otro acontecimiento, el final o reinicio la sustituye.
+    prompt.setAttribute('aria-live','off');announcement.textContent=message;
     if(event.matchup==='last')for(const id of [...event.after.A,...event.after.B])void pulse(view.token(id)?.querySelector('.duel-aura'));
   }
   return {confirm,announce,dismiss,reset};

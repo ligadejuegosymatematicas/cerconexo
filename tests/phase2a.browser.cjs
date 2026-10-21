@@ -71,7 +71,7 @@ async function layout(page){
       await page.screenshot({path:path.join(out,`${width}x${height}.png`)});
       report.screens.push(metrics);
       await page.locator('#help').click();assert.ok(await page.locator('#helpDialog').evaluate(el=>el.open));
-      await page.locator('.dialog-close').click();
+      await page.locator('#helpDialog .dialog-close').click();
       // Nodos persistentes: dos pasos, incluso giro y regreso, se animan por separado.
       for(const route of [[],[9],[15,16],[9,8]]){
         await reset(page);

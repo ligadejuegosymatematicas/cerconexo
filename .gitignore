@@ -84,3 +84,10 @@
 !/tests/result.test.mjs
 !/tests/result-fixtures.mjs
 !/tests/phase4.browser.cjs
+
+!/src/dialogs.mjs
+!/src/matchup.mjs
+!/docs/src/dialogs.mjs
+!/docs/src/matchup.mjs
+!/tests/usability.test.mjs
+!/tests/phase5a.browser.cjs

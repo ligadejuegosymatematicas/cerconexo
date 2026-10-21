@@ -17,10 +17,10 @@ async function choose(page,to,{keyboard=false,wait=true}={}){
 async function roster(page){return page.evaluate(()=>[...document.querySelectorAll('.piece-token')].map(node=>({id:node.dataset.piece,transform:node.getAttribute('transform'),secured:node.classList.contains('token-isolated'),badge:getComputedStyle(node.querySelector('.marker-check')).display!=='none',body:getComputedStyle(node.querySelector('.token-body')).fill,label:node.querySelector('.token-label').textContent,active:node.querySelector('.token-body').classList.contains('token-active')})));}
 async function metric(page){return page.evaluate(()=>{
   const box=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
-  const notice=document.getElementById('territoryNotice'),n=box(notice),b=box(document.getElementById('board'));
+  const notice=document.getElementById('recentEvent'),n=box(notice),b=box(document.getElementById('board'));
   return {page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],viewport:[innerWidth,innerHeight],board:b,
     noticeHidden:notice.hidden,notice:n,clipped:[...document.querySelectorAll('.team-roster,.player,.prompt')].filter(el=>el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+1).map(el=>el.className),
-    noticeClipped:notice.hidden?false:[...notice.querySelectorAll('span,strong')].some(el=>{const r=box(el);return r.right>n.right+1||r.bottom>n.bottom+1;}),
+    noticeClipped:notice.hidden?false:notice.scrollHeight>notice.clientHeight+1||notice.scrollWidth>notice.clientWidth+1||[...notice.querySelectorAll('span,strong')].some(el=>{const r=box(el);return r.right>n.right+1||r.bottom>n.bottom+1;}),
     overlap:!notice.hidden&&Math.min(n.right,b.right)>Math.max(n.x,b.x)&&Math.min(n.bottom,b.bottom)>Math.max(n.y,b.y)};
 });}
 (async()=>{
@@ -44,13 +44,13 @@ async function metric(page){return page.evaluate(()=>{
           window.confirmations.at(-1).duplicateBlocked=before===localStorage.getItem('wallgo-league-v2');
         }
       }).observe(document.getElementById('piecesLayer'),{attributes:true,subtree:true});
-      const notice=document.getElementById('territoryNotice');let active=false;
+      const notice=document.getElementById('recentEvent');let active=false;
       new MutationObserver(()=>{
-        if(notice.dataset.kind==='participation'&&!notice.hidden){
+        if(!notice.hidden){
           if(active)return;active=true;
-          const entry={text:notice.textContent,announcement:notice.getAttribute('aria-label'),start:performance.now(),busy:document.getElementById('board').getAttribute('aria-busy'),duel:[...document.querySelectorAll('.duel-aura')].filter(n=>n.getAnimations().length).map(n=>n.parentNode.dataset.piece)};
+          const entry={text:document.getElementById('matchupLabel').textContent+' '+document.getElementById('matchupPlayers').textContent+' '+notice.textContent,announcement:document.getElementById('participationAnnouncement').textContent,start:performance.now(),busy:document.getElementById('board').getAttribute('aria-busy'),duel:[...document.querySelectorAll('.duel-aura')].filter(n=>n.getAnimations().length).map(n=>n.parentNode.dataset.piece)};
           window.participationNotices.push(entry);
-          const timer=setInterval(()=>{if(notice.hidden||notice.dataset.kind!=='participation'){entry.end=performance.now();clearInterval(timer);active=false;}},10);
+          const timer=setInterval(()=>{if(notice.hidden){entry.end=performance.now();clearInterval(timer);active=false;}},10);
         }else active=false;
       }).observe(notice,{attributes:true,childList:true,subtree:true});
     }));
@@ -74,7 +74,7 @@ async function metric(page){return page.evaluate(()=>{
       assert.deepEqual(probes.confirmations.map(p=>p.id),['A1']);assert.deepEqual(probes.confirmations[0].durations,[350]);
       assert.equal(probes.confirmations[0].duplicateBlocked,true);
       assert.equal(probes.confirmations[0].heading,'RESOLVIENDO');
-      assert.equal(probes.notices.length,1);assert.equal(probes.notices[0].busy,'false');assert.match(probes.notices[0].text,/CONTINÚA LA DISPUTA.*A2 frente a B1 y B2/);
+      assert.equal(probes.notices.length,1);assert.equal(probes.notices[0].busy,'false');assert.match(probes.notices[0].text,/1 vs\. 2.*A2 vs\. B1 y B2/);
       assert.match(probes.notices[0].announcement,/A2 jugará todos los turnos del equipo A/);
       const measured=await metric(page);assert.deepEqual(measured.page,[width,height]);assert.deepEqual(measured.clipped,[]);assert.equal(measured.noticeClipped,false);assert.equal(measured.overlap,false);assert.equal(measured.board.width,baseline.board.width);
       await page.screenshot({path:path.join(out,`uno-vs-dos-${width}x${height}.png`)});
@@ -86,16 +86,16 @@ async function metric(page){return page.evaluate(()=>{
       const last=fixtures.participationFixture({team:'B',alreadyA:true});await load(page,last.before);await choose(page,last.to);
       probes=await page.evaluate(()=>({confirmations:window.confirmations,notices:window.participationNotices}));
       assert.deepEqual(probes.confirmations.map(p=>p.id),['B1']);assert.equal(probes.notices.length,1);
-      assert.match(probes.notices[0].text,/¡ÚLTIMA DISPUTA!.*A2 vs\. B2/);assert.deepEqual(probes.notices[0].duel.sort(),['A2','B2']);
+      assert.match(probes.notices[0].text,/1 vs\. 1 · Última disputa.*A2 vs\. B2/);assert.deepEqual(probes.notices[0].duel.sort(),['A2','B2']);
       assert.equal((await roster(page)).filter(p=>p.badge).length,2);
       await page.screenshot({path:path.join(out,`ultima-disputa-${width}x${height}.png`)});
-      await page.waitForFunction(()=>window.participationNotices[0]?.end);
-      const finished=await page.evaluate(()=>window.participationNotices[0]);assert.ok(finished.end-finished.start>=1300&&finished.end-finished.start<1700);
+      await page.waitForTimeout(1600);
+      const finished=await page.evaluate(()=>window.participationNotices[0]);assert.equal(finished.end,undefined);assert.ok(await page.locator('#recentEvent').isVisible());
       await page.screenshot({path:path.join(out,`uno-vs-uno-${width}x${height}.png`)});
-      report.screens.push({viewport:[width,height],boardWidth:baseline.board.width,noticeMs:finished.end-finished.start});report.events.push(probes);
+      report.screens.push({viewport:[width,height],boardWidth:baseline.board.width,notice:'persistente'});report.events.push(probes);
       await context.close();
     }
-    report.checks.push('Cuatro resoluciones: fichas persistentes con color e ID, distintivo circular, estados legibles, tablero sin reducción ni scroll; avisos 1400 ms sin bloqueo y halos solo de fichas activas');
+    report.checks.push('Cuatro resoluciones: fichas persistentes con color e ID, distintivo circular, estados legibles, tablero sin reducción ni scroll; avisos persistentes sin bloqueo y halos solo de fichas activas');
     const landscape=await create(740,360),duel=fixtures.participationFixture({team:'B',alreadyA:true});
     await load(landscape.page,duel.before);await choose(landscape.page,duel.to);
     const rotated=await metric(landscape.page);assert.deepEqual(rotated.page,[740,360]);assert.deepEqual(rotated.clipped,[]);assert.equal(rotated.noticeClipped,false);assert.equal(rotated.overlap,false);
@@ -104,7 +104,7 @@ async function metric(page){return page.evaluate(()=>{
     const {page,context}=await create();
     // Simetría B y acceso por teclado.
     const b=fixtures.participationFixture({team:'B'});await load(page,b.before);await choose(page,b.to,{keyboard:true});
-    assert.match(await page.locator('#territoryNotice').innerText(),/A1 y A2 frente a B2/);assert.equal((await roster(page)).filter(p=>p.badge).length,1);
+    assert.match(await page.locator('#matchupPlayers').innerText(),/A1 y A2 vs\. B2/);assert.equal((await roster(page)).filter(p=>p.badge).length,1);
     // Dos confirmaciones simultáneas, sin una secuencia por ficha.
     const direct=fixtures.directDuelFixture();await load(page,direct.before);await choose(page,direct.to);
     let probes=await page.evaluate(()=>({confirmations:window.confirmations,notices:window.participationNotices}));
@@ -125,20 +125,20 @@ async function metric(page){return page.evaluate(()=>{
     // Reiniciar cancela los efectos y los avisos de la partida previa.
     await load(page,a.before);await choose(page,a.to,{wait:false});await page.waitForFunction(()=>document.querySelector('.secured-aura').getAnimations().length>0);
     page.once('dialog',d=>d.accept());await page.locator('#new').click();await idle(page);await page.waitForTimeout(1600);
-    assert.equal((await saved(page)).moves,0);assert.ok((await roster(page)).every(p=>!p.badge));assert.ok(await page.locator('#territoryNotice').isHidden());
+    assert.equal((await saved(page)).moves,0);assert.ok((await roster(page)).every(p=>!p.badge));assert.ok(await page.locator('#recentEvent').isHidden());
     // Preferencia dinámica y preferencia al iniciar: confirmación directa sin perder mensajes.
     await load(page,a.before);await choose(page,a.to,{wait:false});await page.waitForFunction(()=>document.querySelector('.secured-aura').getAnimations().length>0);
     await page.emulateMedia({reducedMotion:'reduce'});await idle(page);assert.equal(await page.evaluate(()=>document.getAnimations().length),0);
     await load(page,a.before);await choose(page,a.to);
     assert.ok((await roster(page)).find(p=>p.id==='A1').badge);assert.equal(await page.evaluate(()=>document.getAnimations().length),0);
-    assert.equal(await page.evaluate(()=>window.participationNotices.length),1);assert.match(await page.locator('#territoryNotice').getAttribute('aria-label'),/A1 aseguró su territorio/);
+    assert.equal(await page.evaluate(()=>window.participationNotices.length),1);assert.match(await page.locator('#participationAnnouncement').innerText(),/A1 aseguró su territorio/);
     await context.close();
     report.checks.push('Simetría, teclado, transición directa a 1 vs. 1, confirmaciones simultáneas, fin de partida prioritario, sin conquista, recarga durante/después, reinicio y movimiento reducido');
     // El HTML autónomo restaura los mismos distintivos y no repite avisos.
     const offline=await browser.newContext({viewport:{width:360,height:740},hasTouch:true,reducedMotion:'reduce'}),single=await offline.newPage();
     single.on('pageerror',e=>errors.push(e.message));await single.goto(pathToFileURL(path.join(root,'Cerconexo_Premium_Listo_Para_Jugar.html')).href);await idle(single);
     await load(single,a.before);await choose(single,a.to);await single.reload();await idle(single);
-    assert.deepEqual(await saved(single),a.after);assert.equal((await roster(single)).filter(p=>p.badge).length,1);assert.ok(await single.locator('#territoryNotice').isHidden());await offline.close();
+    assert.deepEqual(await saved(single),a.after);assert.equal((await roster(single)).filter(p=>p.badge).length,1);assert.ok(await single.locator('#recentEvent').isHidden());await offline.close();
     report.checks.push('HTML autónomo file://: confirmación, turnos, guardado, distintivo persistente y recarga sin celebraciones');
     assert.deepEqual(errors,[]);report.errors=errors;await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
   }finally{await browser.close();await site.close();}

@@ -11,8 +11,8 @@ async function choose(page,selector){
   await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);await idle(page);
 }
 async function enable(page,value){
-  await page.locator('#help').click();await page.locator('#vibration').setChecked(value);
-  await page.locator('.dialog-close').click();
+  await page.locator('#options').click();await page.locator('#vibration').setChecked(value);
+  await page.locator('#optionsDialog .dialog-close').click();
 }
 (async()=>{
   await fs.mkdir(out,{recursive:true});
@@ -53,12 +53,13 @@ async function enable(page,value){
     }
     report.checks.push('Paleta computada exacta, logo transparente legible, cuatro resoluciones sin scroll y ningún pulso al cargar');
     const {page,context}=await create();
-    await choose(page,'[data-wall]');assert.deepEqual(await positive(page),[]);
+    await choose(page,'[data-wall]');assert.deepEqual(await positive(page),[12]);
+    await page.reload();await idle(page);await settle(page);
     await enable(page,true);assert.deepEqual(await positive(page),[]);
     await choose(page,'[data-wall]');assert.deepEqual(await positive(page),[12]);
     await page.reload();await idle(page);await settle(page);assert.deepEqual(await positive(page),[]);
-    await page.locator('#help').click();assert.equal(await page.locator('#vibration').isChecked(),true);
-    await page.screenshot({path:path.join(out,'opcion-vibracion.png')});await page.locator('.dialog-close').click();
+    await page.locator('#options').click();assert.equal(await page.locator('#vibration').isChecked(),true);
+    await page.screenshot({path:path.join(out,'opcion-vibracion.png')});await page.locator('#optionsDialog .dialog-close').click();
     await choose(page,'[data-wall]');assert.deepEqual(await positive(page),[12]);
     assert.equal((await saved(page)).moves,3);
     page.once('dialog',dialog=>dialog.accept());await page.locator('#new').click();await idle(page);await settle(page);
@@ -82,17 +83,17 @@ async function enable(page,value){
     await page.screenshot({path:path.join(out,'territorios-ambos-equipos.png')});
     await page.emulateMedia({reducedMotion:'reduce'});const before=(await positive(page)).length;
     await choose(page,'[data-wall]');assert.equal((await positive(page)).length,before);
-    await page.locator('#help').click();assert.match(await page.locator('#vibrationStatus').innerText(),/En pausa/);assert.equal(await page.locator('#vibration').isChecked(),true);await page.locator('.dialog-close').click();
+    await page.locator('#options').click();assert.match(await page.locator('#vibrationStatus').innerText(),/En pausa/);assert.equal(await page.locator('#vibration').isChecked(),true);await page.locator('#optionsDialog .dialog-close').click();
     await page.emulateMedia({reducedMotion:'no-preference'});await enable(page,false);
     const disabled=(await positive(page)).length;await choose(page,'[data-wall]');assert.equal((await positive(page)).length,disabled);
     await context.close();
-    report.checks.push('Opt-in, persistencia independiente, muro único, aislamiento sin pulsos duplicados, desactivación y pausa por movimiento reducido');
+    report.checks.push('Valor inicial activo, persistencia independiente, muro único, aislamiento sin pulsos duplicados, desactivación y pausa por movimiento reducido');
     for(const mode of ['absent','denied','throws']){
-      const {context,page}=await create({mode});await page.locator('#help').click();
+      const {context,page}=await create({mode});await page.locator('#options').click();
       if(mode==='absent'){
         assert.equal(await page.locator('#vibration').isDisabled(),true);assert.match(await page.locator('#vibrationStatus').innerText(),/no ofrece/);
       }else await page.locator('#vibration').check();
-      await page.locator('.dialog-close').click();
+      await page.locator('#optionsDialog .dialog-close').click();
       await choose(page,'[data-to="9"]');await choose(page,'[data-wall]');assert.equal((await saved(page)).moves,1);
       await context.close();
     }
@@ -103,7 +104,7 @@ async function enable(page,value){
     assert.ok(await single.locator('.official-logo').evaluate(img=>img.src.startsWith('data:image/png;base64,')&&img.complete));
     await enable(single,true);await choose(single,'[data-wall]');assert.deepEqual(await positive(single),[12]);
     const state=await saved(single);await single.reload();await idle(single);assert.deepEqual(await saved(single),state);
-    await single.locator('#help').click();assert.equal(await single.locator('#vibration').isChecked(),true);
+    await single.locator('#options').click();assert.equal(await single.locator('#vibration').isChecked(),true);
     await standalone.context.close();report.checks.push('HTML autónomo: logo incrustado, vibración opcional, preferencia y partida conservadas al recargar');
     assert.deepEqual(errors,[]);await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
   }finally{await browser.close();await site.close();}

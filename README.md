@@ -4,11 +4,11 @@ Juego de estrategia territorial local para cuatro personas, en dos equipos, de l
 
 ## Sitio publicado y versión de trabajo
 
-La Fase 3B (incorporación `762f327`, candidata `265ea0b`) está publicada en:
+La Fase 4 (incorporación `89dbe98`, candidata `954ec63`) está publicada en:
 
 [ligadejuegosymatematicas.github.io/cerconexo/](https://ligadejuegosymatematicas.github.io/cerconexo/)
 
-La Fase 4 se prepara exclusivamente en `desarrollo`: victoria, empate y tablero final visible. Conserva la Fase 3A, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
+La Fase 5A se prepara exclusivamente en `desarrollo`: interfaz compacta, instrucciones breves, opciones separadas y estado persistente del enfrentamiento. Conserva la Fase 3A, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
 
 ## Abrir en desarrollo
 
@@ -44,7 +44,7 @@ Ese archivo generado se conserva localmente y no es necesario para Pages.
 
 - index.html y src/: fuentes modulares de la interfaz y del motor.
 - assets/: marca oficial completa y recorte utilizado por la cabecera.
-- docs/: dieciséis archivos estáticos que constituyen el paquete candidato del sitio.
+- docs/: dieciocho archivos estáticos que constituyen el paquete candidato del sitio.
 - scripts/: manifiesto y preparación reproducible de Pages.
 - tests/: pruebas originales del motor, geometría y comprobación del sitio bajo /cerconexo/.
 - .github/workflows/verificar.yml: comprobaciones automáticas; no publica ni fusiona.
@@ -78,6 +78,7 @@ node tests/phase2b.browser.cjs
 node tests/phase3a.browser.cjs
 node tests/phase3b.browser.cjs
 node tests/phase4.browser.cjs
+node tests/phase5a.browser.cjs
 ```
 
 La segunda prueba usa animaciones reales y comprueba bloqueo de entradas, recorridos, reinicios y recargas durante transiciones, aislamiento, partida completa, teclado, movimiento reducido y HTML autónomo. Genera capturas y resultados en `validation/phase2a/`, excluidos del repositorio y del sitio. La prueba de `file://` requiere generar antes el HTML autónomo.
@@ -86,7 +87,7 @@ Los pasos provisionales se descartan al recargar, como en la Fase 1. El muro con
 
 ## Vibración y marca derivada
 
-En **Reglas y opciones → Vibración**, la opción comienza desactivada y se guarda por separado en `cerconexo-preferences-v1`. Muro: 12 ms; aislamiento: dos pulsos de 12 ms separados por 35 ms, sustituyendo al pulso del muro; inicio manual de partida: 8 ms. No vibra al cargar ni después de cada paso. Se evitan señales duplicadas, se limitan ráfagas, se cancela al ocultar la página y se pausa con movimiento reducido. Sin API o si el navegador la rechaza, el juego continúa normalmente. La presencia de la API no permite confirmar que exista hardware de vibración.
+En **Opciones → Vibración**, la opción comienza activada si no existe una decisión previa. Las preferencias guardadas true/false se respetan y se conservan por separado en `cerconexo-preferences-v1`. Muro: 12 ms; aislamiento: dos pulsos de 12 ms separados por 35 ms, sustituyendo al pulso del muro; inicio manual de partida: 8 ms. No vibra al cargar ni después de cada paso. Se evitan señales duplicadas, se limitan ráfagas, se cancela al ocultar la página y se pausa con movimiento reducido. Sin API o si el navegador la rechaza, el juego continúa normalmente. La presencia de la API no permite confirmar que exista hardware de vibración.
 
 La prueba `phase2b.browser.cjs` verifica colores calculados, capturas y comportamiento con API simulada, ausente, rechazada y con excepciones. La vibración física requiere probar un teléfono compatible.
 
@@ -146,3 +147,22 @@ Una región viva independiente anuncia una sola vez el resultado y las tres cant
 Las pruebas de Fase 4 cubren resultados oficiales A/B/empate, vacías/cero vacías, diferencia singular/plural, final desde 2 vs. 2 y desde 1 vs. 1, invariantes, persistencia y 50 partidas completas adicionales. La suite real de navegador muestrea cada frame de las transiciones, comprueba capturas en cinco resoluciones, recargas/reinicios durante los efectos, teclado, movimiento reducido, preferencias, partida completa y HTML autónomo. La prueba anterior 2A conserva sus casos y utiliza el único botón Nueva partida, ya que el tablero ahora se ve permanentemente.
 
 Las evidencias y el informe están en `validation/phase4/`, fuera del sitio y del repositorio. Esta entrega es local; main y GitHub Pages permanecen en 762f327. No se inicia la Fase 5. Se requiere aprobación independiente para publicar.
+
+
+## Interfaz y experiencia de uso — Fase 5A local
+
+La cabecera conserva exclusivamente el logotipo oficial, Reglas, Opciones y Nueva partida. Se retiran el texto institucional, el eslogan y el pie permanente; el guardado automático se mantiene sin mensajes nuevos. La altura de la aplicación utiliza visualViewport en todos los tamaños. Se elimina la altura mínima de 640 px que provocaba scroll en ventanas de PC de menor altura útil. La cabecera y los márgenes se compactan y el SVG se adapta al espacio cuadrado realmente disponible, sin zoom CSS ni ocultar el desbordamiento de la página. En alturas excepcionalmente pequeñas se permite desplazamiento accesible.
+
+Reglas presenta la introducción y los cuatro pasos aprobados: Muévete, Construye, Asegura territorio y Gana. El desplegable Ver reglas completas conserva posiciones, turnos, recorrido de 0/1/2 pasos con giro y regreso, muros obligatorios, fichas aseguradas, regiones vacías, puntuación y empate. No contiene opciones ni la guía. Los diálogos nativos de Reglas, Opciones y Guía comparten `src/dialogs.mjs`: X, Escape, gesto exterior iniciado y terminado fuera, foco inicial, ciclo de Tab y restauración de foco. El tablero queda inerte y el manejador de acciones rechaza también entradas durante un modal.
+
+Opciones contiene únicamente Vibración. El nuevo valor inicial true solo se usa si no hay una decisión booleana guardada. El constructor no escribe preferencias ni emite pulsos, de modo que no convierte el valor predeterminado en una decisión del usuario. Se mantienen false y true guardados, la clave y el formato existentes, el límite de pulsos y las pausas por movimiento reducido o visibilidad. Sin API, el control queda deshabilitado y se indica que el navegador no ofrece vibración.
+
+La guía lateral permanece en escritorio amplio con altura suficiente. En móvil, tablet o escritorio de altura reducida, su único contenido se traslada a un diálogo independiente que se abre desde Guía del tablero, en la franja existente sobre el SVG. No se añade una fila a la mesa ni se reduce el tablero al abrirla.
+
+`src/matchup.mjs` prepara el enfrentamiento usando los identificadores activos obtenidos por el motor. El panel del turno reserva espacio fijo para la composición y para el contexto: 2 vs. 2, 1 vs. 2, 2 vs. 1 o 1 vs. 1 · Última disputa, con los identificadores reales. El último acontecimiento permanece durante el siguiente turno y los turnos ordinarios posteriores, hasta otro aseguramiento, el resultado o el reinicio. No hay historial ni temporizador de desaparición. El texto se sustituye en el espacio reservado y no bloquea acciones. Los pasos seleccionados se indican también en la cabecera del turno. La recarga reconstruye el enfrentamiento desde el estado oficial y no repite un acontecimiento antiguo.
+
+Se reutilizan detección de participación, confirmaciones simultáneas de 350 ms y halo de última disputa. No cambian movimiento, muro, BFS, marcadores ni entrada del resultado. Un anuncio accesible independiente comunica cada acontecimiento una sola vez; el estado permanente no es una región viva. El resultado final elimina el acontecimiento y oculta el enfrentamiento sin cambiar la retícula.
+
+Las 59 pruebas anteriores permanecen, ajustando las expectativas de háptica al nuevo valor inicial aprobado. Se añaden doce pruebas de Fase 5A (71 en total). Las suites anteriores de navegador mantienen sus escenarios funcionales y adaptan únicamente el acceso a Opciones, los selectores de diálogo y la permanencia del acontecimiento. La nueva suite verifica nueve resoluciones a escala 1, todas las formas de cierre, foco, modalidad, preferencias, composición simétrica, mensajes persistentes sin anuncios repetidos, recarga, reinicio, movimiento reducido, HTML autónomo y un viewport excepcional de 280 px con scroll accesible. Las evidencias, comparación con la versión estable e informe están en validation/phase5a, excluidos del repositorio y del sitio.
+
+No se suben cambios, no se crea PR y no se publica. main y GitHub Pages conservan 89dbe98. No se comienza la Fase 5B ni la auditoría 5C.
