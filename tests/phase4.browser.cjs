@@ -64,7 +64,8 @@ async function probe(context){await context.addInitScript(()=>document.addEventL
         assert.deepEqual(await saved(page),fixture.after);
         assert.equal(await page.locator('#winnerTitle').innerText(),fixture.after.winner==='Empate'?'¡EMPATE!':`¡VICTORIA DEL EQUIPO ${fixture.after.winner}!`);
         assert.equal(await page.locator('#scoreA').innerText(),String(A));assert.equal(await page.locator('#scoreB').innerText(),String(B));assert.equal(await page.locator('#emptyCount').innerText(),String(49-A-B));
-        assert.match(await page.locator('#distributionLabel').innerText(),/A \+ B \+ Vacías = 49/);
+        assert.equal(await page.locator('#distributionLabel').innerText(),'49 casillas');
+        assert.equal(A+B+Number(await page.locator('#emptyCount').innerText()),49);assert.equal(await page.locator('.territory-unit').count(),49);
         assert.equal(await page.locator('.board-cell').count(),49);assert.equal(await page.locator('.wall-built').count(),fixture.after.walls.length);
         assert.equal(await page.locator('.token-isolated').count(),4);assert.equal(await page.locator('[data-to],[data-wall]').count(),0);
         assert.equal(await page.locator('#inspectBoard,#playAgain').count(),0);

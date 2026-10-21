@@ -1544,9 +1544,6 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .quick-rules li { position:relative; counter-increment:steps; padding:0 0 0 42px; }
 .quick-rules li::before { content:counter(steps); position:absolute; left:0; top:0; width:30px; height:30px; border:1px solid var(--frame); border-radius:50%; display:grid; place-items:center; color:var(--gold); font-weight:750; }
 .quick-rules h3 { font-size:13px; line-height:20px; letter-spacing:.5px; color:var(--text); margin-bottom:3px; }
-.full-rules { border-top:1px solid var(--edge); margin:10px 0; }
-.full-rules summary { min-height:44px; align-content:center; cursor:pointer; font-size:14px; color:var(--gold); }
-.full-rules ol { margin-top:14px; }
 .help-dialog button,.help-dialog input,.help-dialog summary { scroll-margin-block:64px 8px; }
 .options-dialog,.guide-dialog { width:460px; }
 .haptic-option { margin:0; padding:8px 0; border:0; }
@@ -1619,40 +1616,63 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
   .app { min-height:420px; }
 }
 
-/* Fase 5B: consulta final en las zonas existentes, sin alterar la retícula. */
-.explore-button { pointer-events:auto; min-height:44px; color:var(--gold); }
-.arena:has(#explore:not([hidden])) .board-topline>span { visibility:hidden; }
-.exploration-panel { position:absolute; inset:12px; display:flex; flex-direction:column; gap:4px; min-height:0; }
-.has-result.is-exploring>.final-result { visibility:hidden; }
-.has-result.is-exploring>.exploration-panel { visibility:visible; }
-.exploration-tabs { display:flex; gap:4px; flex-shrink:0; }
-.exploration-tabs button { flex:1; min-width:0; min-height:44px; padding:4px; border:1px solid var(--edge); border-radius:7px; background:var(--panel); color:var(--muted); font-size:12px; }
-.exploration-tabs button[aria-pressed="true"] { color:var(--gold); border-color:var(--frame); }
-.exploration-page { min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; padding:0 4px 4px 0; }
-.exploration-page h2 { font-size:13px; line-height:17px; color:var(--gold); margin:0 0 3px; letter-spacing:0; }
-.exploration-page p { font-size:13px; line-height:18px; margin:0 0 4px; }
-.exploration-page [data-region-size] { font-weight:750; font-size:15px; }
-.exploration-explanation { color:var(--muted); margin-top:8px!important; }
-.exploration-panel[data-owner="A"] [data-region-title] { color:var(--a-glow); }
-.exploration-panel[data-owner="B"] [data-region-title] { color:var(--b-glow); }
-.exploration-page:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+
+/* Consulta directa: resultado permanente y datos dentro del marcador territorial. */
+.component-info { position:relative; margin-top:12px; padding-top:8px; border-top:1px solid var(--edge); height:128px; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; }
+.component-info h2 { margin:0; font-size:12px; line-height:16px; font-weight:800; color:var(--text); letter-spacing:0; }
+.component-info p { margin:0; font-size:13px; line-height:18px; }
+.component-info [data-component-general] p { margin-top:6px; color:var(--muted); }
+.region-core { padding-right:40px; }
+.region-facts { font-weight:700; }
+.component-explanation { margin-top:4px!important; color:var(--muted); }
+#clearSelection { position:absolute; top:4px; right:0; width:44px; height:44px; border:0; background:transparent; color:var(--text); font-size:24px; line-height:24px; padding:0; display:flex; justify-content:center; align-items:flex-start; }
+.has-final-board .team-roster { display:flex; flex-direction:row; flex-wrap:nowrap; gap:6px; }
+.has-final-board .player { flex-direction:row; min-height:24px; gap:3px; }
+.has-final-board .state-full { display:none; }
+.has-final-board .state-short { display:inline; }
+.exploration-highlight { --selection:#8B5CF6; pointer-events:none; }
+.region-boundary { fill:none; stroke:var(--selection); stroke-width:20; stroke-linejoin:round; pointer-events:none; }
+.region-shade { fill:var(--selection); fill-opacity:.12; stroke:none; pointer-events:none; }
+.region-halo { fill:none; stroke:var(--selection); stroke-width:24; stroke-opacity:.28; filter:blur(3px); pointer-events:none; }
+.region-outline { fill:#fff; stroke:none; opacity:0; pointer-events:none; }
 .exploration-targets { cursor:crosshair; }
 .exploration-targets rect:focus { outline:none; }
 .exploration-targets rect:focus-visible { stroke:#102A43; stroke-width:5; stroke-dasharray:8 5; }
-.exploration-highlight { pointer-events:none; }
-.region-boundary { fill:none; stroke:#8b681f; stroke-width:20; stroke-linejoin:round; stroke-opacity:.85; pointer-events:none; }
-.region-outline { fill:#fff; stroke:none; opacity:0; pointer-events:none; }
+/* El aviso vive en el espacio reservado; los efectos no alteran su altura. */
+#recentEvent { --event-color:var(--gold); }
+#recentEvent[data-team="A"] { --event-color:var(--a-glow); }
+#recentEvent[data-team="B"] { --event-color:var(--b-glow); }
+.recent-heading { display:block; color:var(--event-color); font-size:14px; line-height:18px; font-weight:850; }
+.recent-detail { display:block; color:var(--text); font-size:13px; line-height:18px; }
 @media(max-width:760px), (max-height:500px) {
-  .exploration-panel { inset:5px 9px; gap:2px; }
-  .exploration-page h2 { font-size:12px; line-height:16px; margin-bottom:1px; }
-  .exploration-page p { font-size:12px; line-height:16px; margin-bottom:2px; }
-  .exploration-page [data-region-size] { font-size:14px; }
-  .explore-button { font-size:12px; padding:4px 8px; }
+  .has-recent-event .turn-disc { width:36px; height:36px; font-size:21px; }
+  .has-recent-event.turn-card .micro { line-height:12px; }
+  .has-recent-event .turn-identity strong { line-height:18px; }
+  .has-recent-event .matchup-state { height:18px; min-height:18px; }
+  .has-recent-event .context-slot { height:48px; }
+  #recentEvent { padding-top:0; height:48px; }
+  .recent-heading { font-size:13px; line-height:16px; }
+  .recent-detail { font-size:12px; line-height:16px; }
+  .has-final-board .score-panel { min-height:139.5px; grid-template-rows:40px 19px 60px; row-gap:2px; align-content:start; }
+  .has-final-board .team-heading { height:40px; min-height:0; padding:0 6px; align-items:center; }
+  .has-final-board .team-heading h3 { align-self:start; font-size:12px; line-height:16px; }
+  .has-final-board .team-heading>strong { font-size:28px; line-height:32px; }
+  .has-final-board .team-badge { display:none; }
+  .has-final-board .team-roster { grid-row:1; align-self:end; justify-self:start; width:calc(100% - 38px); padding:0 0 2px 6px; position:relative; z-index:1; }
+  .has-final-board .player { min-height:16px; gap:2px; }
+  .has-final-board .player-id { font-size:12px; line-height:14px; padding:0; }
+  .has-final-board .player-state { font-size:12px; line-height:14px; }
+  .has-final-board .territory-meter { grid-row:2; grid-column:1; height:8px; margin:0; align-self:center; }
+  .has-final-board .minor-stats { grid-row:2; grid-column:2; gap:4px; align-self:center; font-size:12px; line-height:19px; }
+  .has-final-board .minor-stats strong { font-size:12px; }
+  .has-final-board .minor-stats>span { gap:3px; }
+  .component-info { grid-row:3; grid-column:1/-1; height:60px; margin:0; padding-top:2px; }
+  .component-info h2,.component-info p { font-size:12px; line-height:14px; }
+  .component-info [data-component-general] p { margin-top:3px; }
+  .region-core { padding-right:40px; }
+  .component-explanation { margin-top:1px!important; }
+  #clearSelection { top:1px; font-size:22px; line-height:18px; }
 }
 
-.region-facts { display:flex; flex-wrap:wrap; align-items:baseline; gap:0 8px; }
-@media(max-width:760px), (max-height:500px) {
-  .exploration-panel { inset:3px 9px; }
-  .region-facts p { margin:0; }
-  .exploration-page .exploration-explanation { margin-top:3px!important; }
-}
+#recentEvent[data-team="both"] .recent-heading { font-size:13px; letter-spacing:-.1px; }
+#recentEvent[data-team="both"] .recent-detail { font-size:12px; line-height:16px; }

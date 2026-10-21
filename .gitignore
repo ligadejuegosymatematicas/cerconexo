@@ -100,3 +100,5 @@
 !/tests/phase5b.browser.cjs
 
 !/tests/contour-fixtures.mjs
+
+!/tests/experience.test.mjs
