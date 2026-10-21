@@ -16,9 +16,9 @@ async function metrics(page){return page.evaluate(()=>{
     logo:{loaded:document.querySelector('.official-logo').complete,width:document.querySelector('.official-logo').naturalWidth,box:box(document.querySelector('.official-logo'))}};
 });}
 async function instrument(context){await context.addInitScript(()=>document.addEventListener('DOMContentLoaded',()=>{
-  window.usability={frames:[],announcements:[],territory:0};
+  window.usability={frames:[],announcements:[],territory:0,attention:[]};
   const announcement=document.getElementById('participationAnnouncement');
-  new MutationObserver(()=>{if(announcement.textContent)window.usability.announcements.push(announcement.textContent);}).observe(announcement,{childList:true,subtree:true,characterData:true});
+  new MutationObserver(()=>{if(announcement.textContent){window.usability.announcements.push(announcement.textContent);const n=document.getElementById('recentEvent');window.usability.attention.push({busy:document.getElementById('board').getAttribute('aria-busy'),durations:[...n.getAnimations(),...n.querySelector('.recent-heading').getAnimations()].map(a=>a.effect.getTiming().duration)});}}).observe(announcement,{childList:true,subtree:true,characterData:true});
   new MutationObserver(()=>{if(!document.getElementById('territoryNotice').hidden)window.usability.territory++;}).observe(document.getElementById('territoryNotice'),{attributes:true,attributeFilter:['hidden']});
   const frame=()=>{
     const r=document.getElementById('board').getBoundingClientRect();
@@ -71,10 +71,10 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       await checkDialog(page,'#help','#helpDialog');
       await page.locator('#help').click();assert.equal(await page.locator('.quick-rules li').count(),4);assert.equal(await page.locator('#helpDialog #vibration,#helpDialog .legend-panel').count(),0);
       await page.screenshot({path:path.join(out,`reglas-${width}x${height}.png`)});
-      await page.locator('.full-rules summary').click();assert.ok(await page.locator('.full-rules').evaluate(n=>n.open));await page.locator('.full-rules li').last().scrollIntoViewIfNeeded();
+      assert.equal(await page.locator('.full-rules').count(),0,'Reglas completas retiradas según el ajuste aprobado');
       const closeBox=await page.locator('#helpDialog .dialog-close').boundingBox(),titleBox=await page.locator('#rulesTitle').boundingBox();
       assert.ok(closeBox.y>=0&&closeBox.y+closeBox.height<=height);assert.ok(titleBox.y>=0&&titleBox.y+titleBox.height<=height);
-      assert.deepEqual((await metrics(page)).page,[width,height]);await page.screenshot({path:path.join(out,`reglas-completas-${width}x${height}.png`)});await page.keyboard.press('Escape');
+      assert.deepEqual((await metrics(page)).page,[width,height]);await page.screenshot({path:path.join(out,`reglas-breves-${width}x${height}.png`)});await page.keyboard.press('Escape');
       await checkDialog(page,'#options','#optionsDialog');
       await page.locator('#options').click();assert.ok(await page.locator('#vibration').isChecked());await page.screenshot({path:path.join(out,`opciones-${width}x${height}.png`)});await page.keyboard.press('Escape');
       if(await page.locator('#guide').isVisible()){
@@ -84,7 +84,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       await checkFrames('diálogos');
       const fixture=fixtures.participationFixture();await load(page,fixture.before);await choose(page,fixture.to);
       assert.deepEqual(await saved(page),fixture.after);assert.equal(await page.locator('#matchupLabel').innerText(),'1 vs. 2');assert.equal(await page.locator('#matchupPlayers').innerText(),'A2 vs. B1 y B2');
-      const recent=await page.locator('#recentEvent').innerText();assert.match(recent,/A1 aseguró su territorio\. A2 jugará todos los turnos del equipo A/);
+      const recent=await page.locator('#recentEvent').innerText();assert.match(recent,/A1 ASEGURÓ SU TERRITORIO/);assert.match(recent,/A2 jugará todos los turnos del equipo A/);
       await page.waitForTimeout(1600);assert.equal(await page.locator('#recentEvent').innerText(),recent);assert.ok(await page.locator('#recentEvent').isVisible());
       assert.equal(await page.evaluate(()=>window.usability.announcements.length),1);
       const actor=fixture.after.currentActor,to=engine.wallOptions(fixture.after,engine.pieceById(fixture.after,actor).pos)[0];
@@ -93,7 +93,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       await checkFrames('conquista y continuación 1 vs. 2');
       const direct=fixtures.directDuelFixture();await load(page,direct.before);await choose(page,direct.to);
       assert.equal(await page.locator('#matchupLabel').innerText(),'1 vs. 1 · Última disputa');assert.equal(await page.locator('#matchupPlayers').innerText(),'A2 vs. B2');assert.equal(await page.locator('.token-isolated').count(),2);
-      assert.match(await page.locator('#recentEvent').innerText(),/A1 y B1 aseguraron/);
+      assert.match(await page.locator('#recentEvent').innerText(),/A1 Y B1 ASEGURARON TERRITORIO/);
       const measured=await metrics(page);assert.deepEqual(measured.page,[width,height]);assert.deepEqual(measured.clipped,[]);assert.deepEqual(measured.board,baseline.board);
       await page.screenshot({path:path.join(out,`uno-vs-uno-${width}x${height}.png`)});
       await checkFrames('1 vs. 1');
@@ -108,6 +108,23 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       report.screens.push({viewport:[width,height],board:baseline.board,scale:baseline.scale,framesChecked:checkedFrames});await context.close();
     }
     report.checks.push('Nueve resoluciones a escala 1, incluidas alturas útiles 700/650/600/560: diálogos sin reorganizar tablero, controles 44px, guía independiente, mensajes persistentes, recarga, final y reinicio; transiciones muestreadas por frame');
+    const {finishFixture}=await import('./territory-fixtures.mjs');
+    for(const [width,height] of [[360,740],[740,360]])for(const team of ['A','B'])for(const number of [1,2]){
+      const {page,context}=await create(width,height),{before}=fixtures.participationFixture({team});
+      if(number===2){const one=before.pieces.find(p=>p.id===team+'1'),two=before.pieces.find(p=>p.id===team+'2');[one.pos,two.pos]=[two.pos,one.pos];before.lastActed[team]=team+'1';finishFixture(before);}
+      const actor=team+number,pos=engine.pieceById(before,actor).pos,to=team==='A'?15:19,after=engine.applyTurn(before,{actor,path:[pos],to});
+      await load(page,before);await choose(page,to);assert.deepEqual(await saved(page),after);
+      assert.equal(await page.locator('.recent-heading').textContent(),`✓ ${actor} ASEGURÓ SU TERRITORIO`);
+      assert.equal(await page.locator('.recent-detail').textContent(),`${team}${number===1?2:1} jugará todos los turnos del equipo ${team}.`);
+      const probe=await page.evaluate(()=>window.usability.attention);assert.equal(probe.length,1);assert.equal(probe[0].busy,'false');assert.deepEqual(probe[0].durations,[280,280]);
+      await page.waitForTimeout(350);assert.ok(await page.locator('#recentEvent').isVisible());assert.deepEqual((await metrics(page)).clipped,[]);
+      await page.screenshot({path:path.join(out,`aviso-${actor}-${width}x${height}.png`)});
+      await page.reload();await idle(page);assert.ok(await page.locator('#recentEvent').isHidden());assert.equal(await page.evaluate(()=>window.usability.attention.length),0);
+      await load(page,before);page.once('dialog',d=>d.accept());
+      await page.evaluate(()=>{const n=document.getElementById('recentEvent'),observer=new MutationObserver(()=>{if(n.hidden)return;observer.disconnect();window.resetDuringAttention=n.getAnimations().length;document.getElementById('new').click();});observer.observe(n,{attributes:true,childList:true,subtree:true});});
+      await choose(page,to);await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>window.resetDuringAttention),1);assert.deepEqual(await saved(page),engine.initialState());assert.ok(await page.locator('#recentEvent').isHidden());await context.close();
+    }
+    report.checks.push('Avisos de A1/A2/B1/B2: encabezado y redistribución separados; atención 280 ms sin bloquear ni duplicar; mensaje persistente, reinicio y ausencia de recortes en vertical/horizontal');
     for(const preference of [undefined,false,true]){
       const {page,context}=await create(390,844,{preference});await page.locator('#options').click();assert.equal(await page.locator('#vibration').isChecked(),preference??true);
       await page.locator('#vibration').setChecked(false);await page.keyboard.press('Escape');await page.reload();await idle(page);await page.locator('#options').click();assert.equal(await page.locator('#vibration').isChecked(),false);await page.keyboard.press('Escape');

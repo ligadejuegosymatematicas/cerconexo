@@ -17,3 +17,13 @@ export function recentParticipationMessage(event){
     event.redistributions.map((r,i)=>`${r.player} ${i?'los':'jugará los'} turnos de ${r.team}`).join(' y ')+'.';
   return `${secured}${event.redistributions.length?' '+redistribution:''}`;
 }
+
+// Jerarquía del aviso, derivada del mismo acontecimiento (sin reglas de turnos).
+export function recentParticipationPresentation(event){
+  const announcement=recentParticipationMessage(event);if(!announcement)return null;
+  return {
+    heading:`✓ ${event.secured.map(p=>p.id).join(' y ')} ${event.secured.length===1?'aseguró su territorio':'aseguraron territorio'}`.toLocaleUpperCase('es'),
+    detail:event.redistributions.map(r=>`${r.player} jugará todos los turnos del equipo ${r.team}.`).join(' '),
+    team:new Set(event.secured.map(p=>p.team)).size===1?event.secured[0].team:'both',announcement
+  };
+}

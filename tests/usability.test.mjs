@@ -57,13 +57,14 @@ test('5A: recarga y muros sin aseguramiento no fabrican acontecimientos; final s
   const {before,after}=participationFixture();assert.equal(recentParticipationMessage(deriveParticipationEvents(after,after)),null);
   const final=resultFixture().after;assert.equal(matchupPresentation(final),null);assert.equal(recentParticipationMessage(deriveParticipationEvents(before,final)),null);
 });
-test('5A: controles, cuatro pasos y reglas completas mantienen el contenido aprobado',async()=>{
+test('5A: controles y los cuatro pasos breves mantienen el contenido aprobado',async()=>{
   const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
   assert.doesNotMatch(html,/brand-copy|bottom-note|Cada muro cambia el mapa\.<\/span>|<p class="micro">LIGA/);
-  for(const title of ['MUÉVETE','CONSTRUYE','ASEGURA TERRITORIO','GANA','Ver reglas completas'])assert.ok(html.includes(title));
+  for(const title of ['MUÉVETE','CONSTRUYE','ASEGURA TERRITORIO','GANA'])assert.ok(html.includes(title));
   const help=html.slice(html.indexOf('<dialog id="helpDialog"'),html.indexOf('<dialog id="optionsDialog"'));
   assert.doesNotMatch(help,/id="vibration"|legend-panel|LIGA DE JUEGOS/);
-  for(const text of ['A1 → B1 → A2 → B2','0, 1 o 2','girar','regresar al origen','exactamente un muro','entre dos fichas','Cambiar recorrido','compañero','regiones vacías','empate'])assert.ok(help.includes(text),text);
+  assert.doesNotMatch(help,/Ver reglas completas|full-rules/);
+  for(const text of ['0, 1 o 2','sin atravesar muros','Después, debes colocar un muro','región con fichas de tu equipo','sin fichas rivales','gana el equipo','empate'])assert.ok(help.includes(text),text);
 });
 test('5A: cerrar restaura el control que abrió el diálogo aunque el toque no lo enfoque',()=>{
   const previous=globalThis.document;

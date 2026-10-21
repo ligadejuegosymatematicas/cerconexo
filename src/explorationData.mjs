@@ -31,10 +31,14 @@ export function explorationLayers(snapshot,cell){
 
 export function regionDescription(region){
   const size=region.cells.length,empty=region.type==='empty';
-  return {title:empty?'REGIÓN VACÍA':`REGIÓN DEL EQUIPO ${region.type}`,
-    size:`${size} ${size===1?'casilla conectada':'casillas conectadas'}`,
-    pieces:empty?'Sin fichas · No otorga puntos':`${region.ids.length===1?'Ficha presente':'Fichas presentes'}: ${region.ids.join(' y ')}`,
-    explanation:'Estas casillas están conectadas porque podemos desplazarnos entre ellas sin cruzar muros.'};
+  return {title:empty?'COMPONENTE CONEXA · VACÍA':`COMPONENTE CONEXA · EQUIPO ${region.type}`,
+    size:`${size} ${size===1?'casilla':'casillas'}`,
+    pieces:empty?'Sin puntos':`${region.ids.length===1?'Ficha':'Fichas'} ${region.ids.join(' y ')}`,
+    explanation:empty?'Estas casillas están conectadas, pero no pertenecen a ningún equipo.':'Estas casillas forman una componente conexa: puedes pasar de una a otra sin cruzar muros.'};
+}
+
+export function componentSummary(snapshot){
+  return `${snapshot.total} ${snapshot.total===1?'componente':'componentes'}: A ${snapshot.counts.A} · B ${snapshot.counts.B} · Vacías ${snapshot.counts.empty}`;
 }
 
 // Geometría de la unión de casillas recibida; no descubre ni reclasifica regiones.

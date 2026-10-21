@@ -29,11 +29,19 @@
       </div>
       <div class="territory-meter" id="meter" role="img" aria-label="Distribución de las 49 casillas"></div>
       <div class="minor-stats"><span><i id="distributionSwatch" class="status-swatch disputed" aria-hidden="true"></i><span id="distributionLabel">En disputa</span><strong id="mixedCount">49</strong></span><span><i class="status-swatch empty" aria-hidden="true"></i>Vacías <strong id="emptyCount">0</strong></span></div>
+      <section id="componentInfo" class="component-info" aria-label="Componentes conexas de la partida" hidden>
+        <div data-component-general><h2 data-region-summary></h2><p>Toca una casilla para explorar su componente conexa.</p></div>
+        <div data-component-selection hidden>
+          <button type="button" id="clearSelection" aria-label="Quitar selección" title="Quitar selección">×</button>
+          <div class="region-core"><h2 data-region-title></h2><p class="region-facts"><span data-region-size></span><span aria-hidden="true"> · </span><span data-region-pieces></span></p></div>
+          <p class="component-explanation" data-region-explanation></p>
+        </div>
+      </section>
     </aside>
     <section class="arena" aria-label="Mesa de juego">
       <div class="board-topline"><span id="boardLabel">Tablero</span><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><span>7 × 7</span></div>
       <div class="board-wrap"><svg id="board" viewBox="28 20 624 624" role="group" aria-label="Tablero Cerconexo de siete por siete casillas"></svg></div>
-      <div class="game-controls" aria-label="Controles del tablero"><button type="button" id="cancel" class="secondary reset-path" hidden>↶ Cambiar recorrido</button><button type="button" id="explore" class="guide-button explore-button" hidden>Explorar las regiones</button></div>
+      <div class="game-controls" aria-label="Controles del tablero"><button type="button" id="cancel" class="secondary reset-path" hidden>↶ Cambiar recorrido</button></div>
     </section>
     <aside class="turn-panel" aria-label="Turno e indicaciones">
       <section class="turn-card panel" id="turnBanner" aria-label="Turno actual">
@@ -46,28 +54,7 @@
         <section id="endScreen" class="final-result" aria-labelledby="winnerTitle" hidden>
           <h2 id="winnerTitle"></h2><p id="winnerDetails"></p><p id="winnerDifference"></p>
         </section>
-        <section id="explorationPanel" class="exploration-panel" aria-label="La matemática de tu partida" hidden>
-          <nav class="exploration-tabs" aria-label="Información de exploración">
-            <button type="button" data-exploration-tab="region" aria-pressed="true">Región</button>
-            <button type="button" data-exploration-tab="summary" aria-pressed="false" aria-label="Cómo quedó dividido el tablero">Resumen</button>
-            <button type="button" data-exploration-tab="math" aria-pressed="false" aria-label="¿Qué matemática hay detrás?">Matemática</button>
-          </nav>
-          <div class="exploration-page" data-exploration-page="region" tabindex="0" aria-label="Información de la región seleccionada">
-            <h2 data-region-title></h2><div class="region-facts"><p data-region-size></p><p data-region-pieces></p></div><p class="exploration-explanation" data-region-explanation></p>
-          </div>
-          <div class="exploration-page" data-exploration-page="summary" tabindex="0" aria-label="Resumen matemático" hidden>
-            <h2>Cómo quedó dividido el tablero</h2><p data-region-summary></p><p data-region-scores></p>
-            <p>Los marcadores conservan la puntuación oficial. Una región se cuenta una sola vez aunque contenga dos fichas compañeras.</p>
-          </div>
-          <div class="exploration-page" data-exploration-page="math" tabindex="0" aria-label="Explicación matemática" hidden>
-            <h2>¿Qué matemática hay detrás?</h2>
-            <p>Los muros pueden separar regiones y cambiar el territorio de los equipos.</p>
-            <p><b>Conexidad.</b> Existe un camino entre dos casillas si podemos desplazarnos mediante conexiones ortogonales abiertas.</p>
-            <p><b>Componente conexa.</b> Es una región máxima de casillas conectadas entre sí.</p>
-            <p><b>Grafos.</b> Las casillas son vértices y las conexiones abiertas entre casillas vecinas son aristas. Los muros impiden utilizar esas conexiones.</p>
-            <p>Construir un muro no siempre divide una región. A veces todavía existe otro camino que mantiene conectadas sus casillas.</p>
-          </div>
-        </section>
+
       </section>
       <details class="legend-panel panel" open>
         <summary>Guía del tablero</summary>
@@ -83,21 +70,9 @@
   <ol class="quick-rules">
     <li><h3>MUÉVETE</h3><p>En tu turno puedes avanzar 0, 1 o 2 casillas, en horizontal o vertical, sin atravesar muros ni otras fichas.</p></li>
     <li><h3>CONSTRUYE</h3><p>Después, debes colocar un muro en uno de los lados libres de la casilla donde terminaste.</p></li>
-    <li><h3>ASEGURA TERRITORIO</h3><p>Cuando una región queda sin fichas rivales, pasa a pertenecer a tu equipo.</p></li>
-    <li><h3>GANA</h3><p>Cuando ya no quedan regiones con fichas de ambos equipos, gana el equipo que aseguró más casillas.</p></li>
+    <li><h3>ASEGURA TERRITORIO</h3><p>Cuando una región con fichas de tu equipo queda sin fichas rivales, pasa a pertenecer a tu equipo.</p></li>
+    <li><h3>GANA</h3><p>Cuando ya no quedan regiones con fichas de ambos equipos, gana el equipo que aseguró más casillas. En caso de igualdad, hay empate.</p></li>
   </ol>
-  <details class="full-rules"><summary>Ver reglas completas</summary>
-  <p>Dos equipos, con dos jugadores cada uno: <b>A1, A2</b> y <b>B1, B2</b>. Cada persona controla su ficha.</p>
-  <ol>
-    <li><b>Inicio:</b> A1 (2,2), B1 (2,6), B2 (6,2), A2 (6,6). El perímetro está amurallado y no hay muros interiores.</li>
-    <li><b>Pasos:</b> puedes dar 0, 1 o 2 pasos ortogonales consecutivos tocando puntos turquesa. Puedes girar o regresar al origen en el segundo paso. No atravieses muros ni fichas.</li>
-    <li><b>Muro:</b> toca un borde dorado para construir exactamente un muro. Puedes hacerlo sin moverte o después de uno o dos pasos. Debe ser un lado interior libre de la casilla final, incluso entre dos fichas.</li>
-    <li><b>Recorrido provisional:</b> «Cambiar recorrido» cancela los pasos seleccionados antes de construir. Una jugada confirmada es definitiva.</li>
-    <li><b>Turnos:</b> A1 → B1 → A2 → B2. Los equipos siempre alternan. Cada equipo rota sus fichas activas; si una asegura su territorio, su compañero ocupa todos los turnos del equipo.</li>
-    <li><b>Territorio asegurado:</b> una ficha deja de jugar cuando su región conectada no contiene rivales. Permanece visible en el tablero.</li>
-    <li><b>Final y puntos:</b> la partida termina cuando no quedan regiones con fichas de ambos equipos. Cada casilla de una región exclusiva suma 1 a su equipo, sin duplicar regiones compartidas por aliados. Las regiones vacías no puntúan. Gana quien tiene más casillas; en igualdad, hay empate.</li>
-  </ol>
-  </details>
   <form method="dialog"><button class="secondary dialog-ok">Entendido</button></form>
 </dialog>
 <dialog id="optionsDialog" class="help-dialog options-dialog" aria-labelledby="optionsTitle">

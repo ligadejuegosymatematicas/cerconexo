@@ -1,46 +1,47 @@
 import {SIZE,CELL_COUNT,coords} from './engine.mjs';
-import {finalRegions,explorationLayers,regionDescription,componentBoundary} from './explorationData.mjs';
+import {finalRegions,explorationLayers,regionDescription,componentBoundary,componentSummary} from './explorationData.mjs';
 
 export const EXPLORATION_MS=320;
 
-// Solo DOM y efectos cancelables; este módulo no recibe ninguna función de jugada o guardado.
-export function createExploration({board,banner,button,panel,announcement,
+// Consulta directa del estado final: sin funciones de jugada, guardado o háptica.
+export function createExploration({board,panel,clearButton,announcement,
   reduced=matchMedia('(prefers-reduced-motion: reduce)')}){
   const ns='http://www.w3.org/2000/svg',animations=new Set();
   const make=(name,attrs)=>{const n=document.createElementNS(ns,name);for(const [key,value] of Object.entries(attrs))n.setAttribute(key,value);return n;};
   const highlight=make('g',{'aria-hidden':'true',class:'exploration-highlight'});
   board.insertBefore(highlight,board.querySelector('.wall-dash'));
-  const targets=make('g',{'aria-label':'Casillas para explorar regiones',class:'exploration-targets'});
-  board.append(targets);
-  let gameRef=null,snapshot=null,enabled=false,selected=null,focusCell=0;
+  const targets=make('g',{'aria-label':'Casillas del tablero final',class:'exploration-targets'});board.append(targets);
+  const general=panel.querySelector('[data-component-general]'),detail=panel.querySelector('[data-component-selection]');
   const title=panel.querySelector('[data-region-title]'),size=panel.querySelector('[data-region-size]'),pieces=panel.querySelector('[data-region-pieces]');
-  const explanation=panel.querySelector('[data-region-explanation]');
-  const buttons=[...panel.querySelectorAll('[data-exploration-tab]')];
+  let gameRef=null,snapshot=null,enabled=false,selected=null,focusCell=0,backgroundStart=false;
   function stop(){for(const animation of animations)animation.cancel();animations.clear();}
-  function page(name){
-    for(const b of buttons)b.setAttribute('aria-pressed',String(b.dataset.explorationTab===name));
-    for(const n of panel.querySelectorAll('[data-exploration-page]')){n.hidden=n.dataset.explorationPage!==name;n.scrollTop=0;}
-  }
-  for(const b of buttons)b.addEventListener('click',()=>page(b.dataset.explorationTab));
+  function pressed(){for(const node of targets.children)node.setAttribute('aria-pressed',String(snapshot?.byCell[Number(node.dataset.exploreCell)]===selected));}
   function focusAt(cell){
     focusCell=cell;
     for(const node of targets.children)node.setAttribute('tabindex',Number(node.dataset.exploreCell)===cell?'0':'-1');
     targets.querySelector(`[data-explore-cell="${cell}"]`)?.focus({preventScroll:true});
   }
+  function deselect({focus=false,announce=true}={}){
+    const hadSelection=!!selected;stop();selected=null;highlight.replaceChildren();pressed();
+    board.classList.remove('has-component-selection');general.hidden=false;detail.hidden=true;delete panel.dataset.owner;
+    announcement.textContent=hadSelection&&announce?'Selección quitada.':'';
+    if(focus&&enabled)focusAt(focusCell);
+  }
   function select(cell){
     if(!enabled||!snapshot?.byCell[cell])return;
-    const region=snapshot.byCell[cell];
-    page('region');
-    if(selected===region)return;
-    stop();selected=region;highlight.replaceChildren();
+    const region=snapshot.byCell[cell];if(selected===region){deselect();return;}
+    stop();selected=region;highlight.replaceChildren();pressed();
     const data=regionDescription(region);
-    title.textContent=data.title;size.textContent=data.size;pieces.textContent=data.pieces;explanation.textContent='Estas casillas se comunican por caminos que no cruzan muros.';
-    panel.dataset.owner=region.type;
-    announcement.textContent=`${data.title}. ${data.size}. ${data.pieces}.`;
+    title.textContent=data.title;size.textContent=data.size;pieces.textContent=data.pieces;
+    panel.querySelector('[data-region-explanation]').textContent=data.explanation;
+    panel.dataset.owner=region.type;general.hidden=true;detail.hidden=false;board.classList.add('has-component-selection');
+    announcement.textContent=`${data.title}. ${data.size}. ${data.pieces}. ${data.explanation}`;
     const boundary=componentBoundary(region.cells),clip=make('clipPath',{id:'exploration-clip',clipPathUnits:'userSpaceOnUse'});
     clip.append(make('path',{d:boundary.path,'clip-rule':'evenodd'}));highlight.append(clip);
     // Trazo sobre la frontera exacta, recortado hacia el interior de la región.
     // El grupo está debajo de muros/perímetro/fichas: nunca los tapa.
+    highlight.append(make('path',{d:boundary.path,class:'region-shade','fill-rule':'evenodd'}));
+    highlight.append(make('path',{d:boundary.path,class:'region-halo'}));
     highlight.append(make('path',{d:boundary.path,class:'region-boundary','data-region-boundary':'','clip-path':'url(#exploration-clip)'}));
     const nodes=new Map();
     for(const id of region.cells){
@@ -57,36 +58,13 @@ export function createExploration({board,banner,button,panel,announcement,
         {duration:120,delay:layers.length<2?0:index*spread/(layers.length-1),easing:'ease-out'});
       animations.add(animation);void animation.finished.catch(()=>{}).finally(()=>animations.delete(animation));
     }));
-  }
-  function exit({focus=false}={}){
-    stop();enabled=false;selected=null;highlight.replaceChildren();targets.replaceChildren();
-    board.classList.remove('is-exploring');banner.classList.remove('is-exploring');
-    panel.hidden=true;announcement.textContent='';button.textContent='Explorar las regiones';button.setAttribute('aria-expanded','false');
-    if(gameRef?.over)banner.setAttribute('aria-label','Resultado de la partida');
-    board.setAttribute('aria-label','Tablero Cerconexo de siete por siete casillas');
-    if(focus)button.focus({preventScroll:true});
-  }
-  function enter(){
-    if(!snapshot)return;
-    enabled=true;selected=null;page('region');
-    title.textContent='EXPLORACIÓN · SOLO CONSULTA';size.textContent='Selecciona cualquier casilla';pieces.textContent='Las cuatro fichas y los muros se conservan.';
-    explanation.textContent='Dos casillas están conectadas si existe un camino entre ellas que no cruza muros. Las casillas de una misma región pueden comunicarse entre sí.';
-    delete panel.dataset.owner;panel.hidden=false;banner.classList.add('is-exploring');board.classList.add('is-exploring');
-    banner.setAttribute('aria-label','La matemática de tu partida · Solo consulta');
-    board.setAttribute('aria-label','Exploración de regiones. Flechas para recorrer casillas; Enter o Espacio para seleccionar.');
-    button.textContent='Volver al resultado';button.setAttribute('aria-expanded','true');
-    const summary=panel.querySelector('[data-region-summary]');
-    const regionCount=n=>`${n} ${n===1?'región':'regiones'}`;
-    summary.textContent=`${regionCount(snapshot.total)} en total. Equipo A: ${regionCount(snapshot.counts.A)}. Equipo B: ${regionCount(snapshot.counts.B)}. Vacías: ${regionCount(snapshot.counts.empty)}.`;
-    panel.querySelector('[data-region-scores]').textContent=`Casillas: A ${snapshot.score.A} + B ${snapshot.score.B} + vacías ${snapshot.score.empty} = ${CELL_COUNT}.`;
+  }  function mount(){
     for(let cell=0;cell<CELL_COUNT;cell++){
       const {row,col}=coords(cell);
-      targets.append(make('rect',{x:60+(cell%SIZE)*80,y:60+Math.floor(cell/SIZE)*80,width:80,height:80,fill:'transparent',role:'button',tabindex:cell===focusCell?'0':'-1','data-explore-cell':cell,'aria-label':`Fila ${row}, columna ${col}. ${regionDescription(snapshot.byCell[cell]).title.toLowerCase()}. Seleccionar región.`}));
+      targets.append(make('rect',{x:60+(cell%SIZE)*80,y:60+Math.floor(cell/SIZE)*80,width:80,height:80,fill:'transparent',role:'button',tabindex:cell===focusCell?'0':'-1','data-explore-cell':cell,'aria-pressed':'false','aria-label':`Fila ${row}, columna ${col}. ${regionDescription(snapshot.byCell[cell]).title.toLowerCase()}. Seleccionar o quitar selección.`}));
     }
-    focusAt(focusCell);
   }
-  button.setAttribute('aria-controls',panel.id);button.setAttribute('aria-expanded','false');
-  button.addEventListener('click',()=>enabled?exit({focus:true}):enter());
+  clearButton.addEventListener('click',()=>deselect({focus:true}));
   targets.addEventListener('click',event=>{
     if(document.querySelector('dialog[open]'))return;
     const cell=event.target.dataset.exploreCell;if(cell===undefined)return;
@@ -99,17 +77,41 @@ export function createExploration({board,banner,button,panel,announcement,
     const destination={ArrowLeft:row*SIZE+Math.max(0,col-1),ArrowRight:row*SIZE+Math.min(SIZE-1,col+1),ArrowUp:Math.max(0,row-1)*SIZE+col,ArrowDown:Math.min(SIZE-1,row+1)*SIZE+col,Home:row*SIZE,End:row*SIZE+SIZE-1}[event.key];
     if(destination!==undefined){event.preventDefault();focusAt(destination);}
     if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();if(!event.repeat)select(cell);}
-    if(event.key==='Escape'){event.preventDefault();exit({focus:true});}
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&enabled&&selected&&!document.querySelector('dialog[open]')){
+      event.preventDefault();deselect({focus:panel.contains(document.activeElement)});
+    }
+  });
+  const freeBackground=event=>{
+    const target=event.target;
+    if(target===document.body||target.matches?.('.app,.layout,.arena,.board-wrap,.board-topline,.turn-panel'))return true;
+    // El margen dibujado dentro del SVG también es fondo libre, nunca una casilla.
+    if(!board.contains(target)||target.closest?.('[data-explore-cell]'))return false;
+    const matrix=board.getScreenCTM();if(!matrix)return false;
+    const point=new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());
+    return point.x<60||point.x>620||point.y<60||point.y>620;
+  };
+  document.addEventListener('pointerdown',event=>{backgroundStart=freeBackground(event);});
+  document.addEventListener('pointercancel',()=>{backgroundStart=false;});
+  document.addEventListener('click',event=>{
+    if(enabled&&selected&&!document.querySelector('dialog[open]')&&freeBackground(event)&&(event.detail===0||backgroundStart))deselect();
+    backgroundStart=false;
   });
   reduced.addEventListener('change',()=>{if(reduced.matches)stop();});
   return {
     update(game,ready){
-      if(gameRef!==game){exit();gameRef=game;snapshot=ready?finalRegions(game):null;focusCell=0;}
-      else if(ready&&!snapshot)snapshot=finalRegions(game);
-      if(!ready&&enabled)exit();
-      button.hidden=!ready||!snapshot;
+      if(gameRef!==game){deselect({announce:false});targets.replaceChildren();gameRef=game;snapshot=null;focusCell=0;}
+      enabled=!!ready;panel.hidden=!ready;
+      if(!ready){deselect({announce:false});targets.replaceChildren();return;}
+      if(!snapshot){
+        snapshot=finalRegions(game);if(!snapshot){panel.hidden=true;enabled=false;return;}
+        panel.querySelector('[data-region-summary]').textContent=componentSummary(snapshot);
+        mount();
+      }
+      board.setAttribute('aria-label','Tablero final. Flechas para recorrer casillas; Enter o Espacio para seleccionar o quitar una componente conexa.');
     },
-    reset(){exit();gameRef=null;snapshot=null;focusCell=0;button.hidden=true;},
+    reset(){deselect({announce:false});enabled=false;gameRef=null;snapshot=null;focusCell=0;targets.replaceChildren();panel.hidden=true;board.setAttribute('aria-label','Tablero Cerconexo de siete por siete casillas');},
     get active(){return enabled;}
   };
 }

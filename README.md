@@ -181,3 +181,18 @@ El acceso usa la franja de controles existente y el contenido ocupa el panel del
 Pruebas: `node --test tests/*.test.mjs` (83 casos) y ocho suites de navegador, incluida `node tests/phase5b.browser.cjs`. El manifiesto de Pages y `build.py` incluyen ambos módulos nuevos; no hay dependencias de ejecución adicionales. Informes, capturas y demostraciones están en `validation/phase5b/`, excluidos del repositorio y del sitio público.
 
 Fase desarrollada únicamente en desarrollo. La referencia pública sigue siendo e88cfa677e468a3f6fb893093fb3ace2eb7fe619; no se publica, sube ni fusiona esta entrega. No se inicia Fase 5C.
+
+
+## Ajuste final de experiencia — desarrollo local
+
+El resultado permanece visible y, tras completar la última jugada y sus animaciones, las 49 casillas permiten consultar directamente las componentes conexas. Se retiran el botón de entrada/salida, las pestañas y la teoría separada. El mismo panel de puntuaciones conserva ambos marcadores, las fichas con ✓, la distribución y las casillas vacías; muestra el resumen real o la componente seleccionada, con una breve explicación contextual. Las reglas incluyen solo introducción y cuatro pasos, con empate y la precisión de que una región debe contener fichas del equipo.
+
+La selección educativa usa violeta #8B5CF6, sombreado al 12 % y halo suave. La frontera y la BFS de 320 ms reutilizan los algoritmos aprobados. Se puede quitar la selección tocando cualquier casilla de la misma componente, pulsando la X, Escape o fondo libre. Reglas, Opciones, Nueva partida y Guía conservan sus interacciones sin quitar accidentalmente la selección. El teclado mantiene una sola casilla en la secuencia de tabulación.
+
+En móvil, el marcador final conserva su altura: las cuatro fichas aseguradas se presentan con identificador y ✓, y la información contextual ocupa el espacio recuperado. El tamaño y la posición del tablero se contrastan con la estable 2ece078. No se ocultan contenidos para evitar scroll; las ventanas excepcionalmente pequeñas conservan desplazamiento accesible.
+
+Los acontecimientos de participación separan encabezado de confirmación y explicación de redistribución. Un énfasis de borde y encabezado de 280 ms no bloquea el juego; el mensaje permanece durante el siguiente turno. Recarga no repite avisos y reinicio cancela efectos pendientes. El estado de enfrentamiento sigue derivándose del motor.
+
+Se conservan las 92 pruebas previas, adaptando únicamente las expectativas de navegación/textos sustituidos, y se añaden diez casos en `tests/experience.test.mjs` (102 en total). Las ocho suites de navegador incluyen la consulta directa, deselección, avisos de las cuatro fichas, movimiento reducido, reinicio y mediciones por fotograma. El motor, la persistencia y las animaciones matemáticas anteriores permanecen intactos.
+
+Entrega local únicamente en desarrollo. No se sube ni publica; main y GitHub Pages deben conservar 2ece078f5b2563c35016ade18327e75daa4b2f55 hasta nueva autorización. No se comienza Fase 5C.

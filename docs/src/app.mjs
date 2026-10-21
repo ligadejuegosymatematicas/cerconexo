@@ -16,7 +16,7 @@ const SAVE_KEY='wallgo-league-v2';
 const TEAM_NAME={A:'Equipo A',B:'Equipo B'};
 const gate=new InteractionGate();
 const boardView=createBoardView($('board'));
-const exploration=createExploration({board:$('board'),banner:$('turnBanner'),button:$('explore'),panel:$('explorationPanel'),announcement:$('explorationAnnouncement')});
+const exploration=createExploration({board:$('board'),panel:$('componentInfo'),clearButton:$('clearSelection'),announcement:$('explorationAnnouncement')});
 const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$('prompt')});
 const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
@@ -115,7 +115,8 @@ function renderDistribution(score){
   $('mixedCount').textContent=score.mixed;
   $('emptyCount').textContent=score.empty;
   const final=game.over&&!gate.busy;
-  $('distributionLabel').textContent=final?'A + B + Vacías = 49':'En disputa';
+  document.querySelector('.app').classList.toggle('has-final-board',final);
+  $('distributionLabel').textContent=final?'49 casillas':'En disputa';
   $('mixedCount').hidden=final;
   $('distributionSwatch').hidden=final;
   $('scoreHeading').textContent=final?'CASILLAS DEFINITIVAS':'CASILLAS ASEGURADAS';
