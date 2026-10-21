@@ -1,6 +1,6 @@
 # Publicar CERCONEXO en GitHub Pages
 
-**Estado: Fase 3B publicada con autorización del propietario, commit de incorporación `762f327` (candidata `265ea0b`).** La Fase 4 se prepara solo en `desarrollo` y no está autorizada para publicación. Este documento no autoriza subir nuevas versiones a `main` ni fusionar ramas.
+**Estado: Fase 4 publicada con autorización del propietario, commit de incorporación `89dbe98` (candidata `954ec63`).** La Fase 5A se prepara solo en `desarrollo` y no está autorizada para publicación. Este documento no autoriza subir nuevas versiones a `main` ni fusionar ramas.
 
 ## Destino previsto
 
@@ -16,7 +16,7 @@ No se modifica el repositorio del sitio principal `ligadejuegosymatematicas.gith
 
 `index.html` de la raíz sigue siendo el archivo fuente de entrada. `python scripts/build_pages.py` copia sin modificar sus bytes los archivos de ejecución a `docs/`. Esa carpeta será la raíz del sitio: `docs/index.html` se sirve como `/cerconexo/`.
 
-La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete candidato de Fase 4 contiene dieciséis archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
+La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete candidato de Fase 5A contiene dieciocho archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
 
 La lista explícita de `.gitignore` excluye también del repositorio los documentos internos, `validation/`, capturas, herramientas específicas del entorno y HTML generados. Los originales de la marca se conservan intactos y el paquete de Fase 2B usa solo el wordmark transparente derivado; el derivado completo permanece como recurso fuente del repositorio.
 

@@ -9,9 +9,9 @@ function fixture(options={}){
   const h=createHaptics({nav:{vibrate:pattern=>{calls.push(pattern);return true;}},storage,reduced,now:()=>clock,...options});
   return {h,calls,data,storage,reduced,tick:()=>{clock+=200;}};
 }
-test('Vibración desactivada por defecto; una preferencia independiente persiste sin tocar el guardado',()=>{
+test('Vibración activada por defecto sin escribir una decisión; preferencia independiente del guardado',()=>{
   const f=fixture();f.data.set('wallgo-league-v2','partida');
-  assert.equal(f.h.enabled,false);assert.equal(f.h.pulse('wall'),false);assert.deepEqual(f.calls,[]);
+  assert.equal(f.h.enabled,true);assert.deepEqual(f.calls,[]);assert.equal(f.data.has(HAPTIC_KEY),false);
   f.h.setEnabled(true);assert.deepEqual(f.calls,[]);
   const restored=createHaptics({nav:{vibrate:()=>true},storage:f.storage});
   assert.equal(restored.enabled,true);assert.equal(f.data.get('wallgo-league-v2'),'partida');
@@ -44,7 +44,7 @@ test('Visibilidad y movimiento reducido suprimen la vibración sin borrar la pre
 test('Datos corruptos y almacenamiento bloqueado mantienen una opción utilizable en memoria',()=>{
   for(const storage of [{getItem:()=>'{mal JSON',setItem:()=>{throw Error('Sin almacenamiento');}},
     {getItem:()=>{throw Error('Bloqueado');},setItem:()=>{throw Error('Bloqueado');}}]){
-    const f=fixture({storage});assert.equal(f.h.enabled,false);
+    const f=fixture({storage});assert.equal(f.h.enabled,true);
     assert.doesNotThrow(()=>f.h.setEnabled(true));assert.ok(f.h.committed());
   }
 });

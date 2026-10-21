@@ -13,5 +13,7 @@
   "src/territoryEvents.mjs",
   "src/territoryFeedback.mjs",
   "src/styles.css",
-  "assets/Cerconexo_wordmark_transparente.png"
+  "assets/Cerconexo_wordmark_transparente.png",
+  "src/dialogs.mjs",
+  "src/matchup.mjs"
 ]

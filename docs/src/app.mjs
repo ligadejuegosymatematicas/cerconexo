@@ -7,6 +7,8 @@ import {createTerritoryFeedback,TERRITORY_MS} from './territoryFeedback.mjs';
 import {createParticipationFeedback} from './participationFeedback.mjs';
 import {finalPresentation} from './resultEvents.mjs';
 import {createResultFeedback} from './resultFeedback.mjs';
+import {bindDialog} from './dialogs.mjs';
+import {matchupPresentation} from './matchup.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY='wallgo-league-v2';
@@ -16,7 +18,7 @@ const boardView=createBoardView($('board'));
 const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$('prompt')});
 const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
-const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),prompt:$('prompt')});
+const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('recentEvent'),prompt:$('prompt'),announcement:$('participationAnnouncement')});
 const resultFeedback=createResultFeedback({banner:$('turnBanner'),result:$('endScreen'),title:$('winnerTitle'),subtitle:$('winnerDetails'),detail:$('winnerDifference'),announcement:$('resultAnnouncement'),scores:{A:$('scoreA'),B:$('scoreB')}});
 let game=initialState(),draft={path:[8]};
 const piece=(id)=>pieceById(game,id);
@@ -61,7 +63,7 @@ async function build(to){
   try{next=applyTurn(game,{actor:game.currentActor,path:draft.path,to});}
   catch(error){feedback.notice(error.message);return;}
   const events=deriveTerritoryEvents(game,next),ticket=gate.begin();
-  participationFeedback.dismiss();
+  if(next.over)participationFeedback.dismiss();
   game=next;
   if(game.over)$('prompt').setAttribute('aria-live','off');
   $('turnBanner').querySelector('h2').textContent='RESOLVIENDO';
@@ -132,6 +134,10 @@ function renderPlayers(actor,active,score){
   renderRoster(actor,active);
   $('moveCount').textContent=`${game.moves} ${game.moves===1?'muro construido':'muros construidos'}`;
   $('cancel').hidden=game.over || draft.path.length===1;
+  const matchup=matchupPresentation(game,active);
+  $('matchup').style.visibility=matchup?'visible':'hidden';
+  $('matchup').setAttribute('aria-hidden',String(!matchup));
+  if(matchup){$('matchupLabel').textContent=matchup.label;$('matchupPlayers').textContent=matchup.players;}
   if(game.over){
     $('turnDisc').textContent='✓';$('turnName').textContent='Equipo A · Jugador\u00a01';
     $('turnBanner').classList.remove('team-b');$('stepsPill').textContent='Territorios cerrados';
@@ -140,6 +146,8 @@ function renderPlayers(actor,active,score){
     resultFeedback.show(finalPresentation(game,score));
   }else{
     const {team}=piece(actor),steps=draft.path.length-1;
+    if(steps)$('turnBanner').querySelector('h2').textContent=steps===1?'1 PASO':'2 PASOS · CONSTRUYE';
+    $('prompt').setAttribute('aria-live','polite');
     $('turnBanner').classList.toggle('team-b',team==='B');
     $('turnDisc').textContent=actor;
     $('turnName').textContent=`${TEAM_NAME[team]} · Jugador\u00a0${actor[1]}`;
@@ -149,7 +157,7 @@ function renderPlayers(actor,active,score){
 }
 function activateBoard(target){
   const obj=target.closest?.('[data-to],[data-wall]');
-  if(!obj||gate.busy)return;
+  if(!obj||gate.busy||document.querySelector('dialog[open]'))return;
   if(obj.hasAttribute('data-wall'))build(Number(obj.dataset.wall));
   else if(obj.hasAttribute('data-to'))step(Number(obj.dataset.to));
 }
@@ -183,7 +191,9 @@ $('board').addEventListener('keydown',event=>{
 });
 $('cancel').addEventListener('click',cancel);
 $('new').addEventListener('click',()=>{if(game.moves&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return;newGame();});
-$('help').addEventListener('click',()=>$('helpDialog').showModal());
+bindDialog($('helpDialog'),$('help'));
+bindDialog($('optionsDialog'),$('options'));
+bindDialog($('guideDialog'),$('guide'),{fallback:$('help'),onOpen:()=>{document.querySelector('.legend-panel').open=true;}});
 function updateHapticOption(){
   $('vibration').checked=haptics.enabled;
   $('vibration').disabled=!haptics.supported;
@@ -195,18 +205,18 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)haptics.sto
 window.addEventListener('pagehide',()=>haptics.stop());
 updateHapticOption();
 document.addEventListener('keydown',event=>{
-  if($('helpDialog').open)return;
+  if(document.querySelector('dialog[open]'))return;
   if(event.key==='Escape'&&!game.over)cancel();
 });
-// Una sola leyenda: junto al turno en escritorio amplio, dentro de Reglas en tablet/móvil.
-const compactLayout=matchMedia('(max-width:1199px)');
+// Una sola guía; en ventanas compactas se consulta sin cambiar la retícula del juego.
+const compactLayout=matchMedia('(max-width:1199px), (max-height:650px)');
 const legendPanel=document.querySelector('.legend-panel');
 function placeLegend(){
   const compact=compactLayout.matches;
-  const parent=compact?$('helpDialog'):document.querySelector('.turn-panel');
-  const before=compact?parent.lastElementChild:null;
-  parent.insertBefore(legendPanel,before);
-  legendPanel.open=!compact;
+  if(!compact&&$('guideDialog').open)$('guideDialog').close();
+  const parent=compact?$('guideDialog'):document.querySelector('.turn-panel');
+  parent.append(legendPanel);legendPanel.open=true;
+  $('guide').hidden=!compact;
 }
 compactLayout.addEventListener('change',placeLegend);
 placeLegend();

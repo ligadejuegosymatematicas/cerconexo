@@ -5,9 +5,12 @@ export const HAPTIC_PATTERNS=Object.freeze({turn:8,wall:12,secured:Object.freeze
 export function createHaptics({nav=globalThis.navigator,storage,visible=()=>!globalThis.document?.hidden,
   reduced=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')??{matches:false},now=()=>performance.now()}={}){
   if(storage===undefined){try{storage=globalThis.localStorage;}catch{}}
-  let enabled=false,lastPulse=-Infinity;
+  let enabled=true,lastPulse=-Infinity;
   const supported=typeof nav?.vibrate==='function';
-  try{enabled=JSON.parse(storage?.getItem(HAPTIC_KEY))?.vibration===true;}catch{}
+  try{
+    const saved=JSON.parse(storage?.getItem(HAPTIC_KEY)??'null');
+    if(typeof saved?.vibration==='boolean')enabled=saved.vibration;
+  }catch{}
   function stop(){if(supported&&enabled){try{nav.vibrate(0);}catch{}}}
   return {
     get supported(){return supported;},
