@@ -1,4 +1,4 @@
-import {territory,CELL_COUNT,adjacent,wallSet,wallKey} from './engine.mjs';
+import {territory,SIZE,CELL_COUNT,adjacent,wallSet,wallKey} from './engine.mjs';
 
 // Instantánea de consulta. El motor sigue siendo la única fuente de regiones y puntos.
 export function finalRegions(game){
@@ -35,4 +35,38 @@ export function regionDescription(region){
     size:`${size} ${size===1?'casilla conectada':'casillas conectadas'}`,
     pieces:empty?'Sin fichas · No otorga puntos':`${region.ids.length===1?'Ficha presente':'Fichas presentes'}: ${region.ids.join(' y ')}`,
     explanation:'Estas casillas están conectadas porque podemos desplazarnos entre ellas sin cruzar muros.'};
+}
+
+// Geometría de la unión de casillas recibida; no descubre ni reclasifica regiones.
+// Los lados se orientan dejando la casilla a la derecha: exterior y agujeros
+// tienen orientaciones opuestas. En un vértice de contacto se sigue el giro
+// más a la derecha para no unir artificialmente bordes que solo se tocan.
+export function componentBoundary(cells){
+  const inside=new Set(cells),segments=[];
+  const add=(x,y,dx,dy,direction)=>segments.push({from:[x,y],to:[x+dx,y+dy],direction});
+  for(const cell of inside){
+    const x=cell%SIZE,y=Math.floor(cell/SIZE);
+    if(y===0||!inside.has(cell-SIZE))add(x,y,1,0,0);
+    if(x===SIZE-1||!inside.has(cell+1))add(x+1,y,0,1,1);
+    if(y===SIZE-1||!inside.has(cell+SIZE))add(x+1,y+1,-1,0,2);
+    if(x===0||!inside.has(cell-1))add(x,y+1,0,-1,3);
+  }
+  const key=point=>point.join(','),outgoing=new Map(),unused=new Set(segments);
+  for(const segment of segments){const k=key(segment.from);if(!outgoing.has(k))outgoing.set(k,[]);outgoing.get(k).push(segment);}
+  const loops=[];
+  while(unused.size){
+    let edge=unused.values().next().value;const first=edge.from,loop=[first];
+    do{
+      unused.delete(edge);loop.push(edge.to);
+      if(key(edge.to)===key(first))break;
+      const candidates=(outgoing.get(key(edge.to))||[]).filter(next=>unused.has(next));
+      const rank=next=>[1,0,3,2].indexOf((next.direction-edge.direction+4)%4);
+      candidates.sort((a,b)=>rank(a)-rank(b));edge=candidates[0];
+      if(!edge)throw new Error('Frontera abierta de componente');
+    }while(true);
+    loops.push(loop);
+  }
+  const point=([x,y])=>`${60+x*80} ${60+y*80}`;
+  const path=loops.map(loop=>'M'+point(loop[0])+loop.slice(1,-1).map(p=>'L'+point(p)).join('')+'Z').join('');
+  return {segments,loops,path};
 }

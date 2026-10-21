@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {initialState,territory,verifyState,adjacent,wallKey,regions} from '../src/engine.mjs';
-import {finalRegions,explorationLayers,regionDescription} from '../src/explorationData.mjs';
+import {finalRegions,explorationLayers,regionDescription,componentBoundary} from '../src/explorationData.mjs';
+import {contourShapes,contourFixture} from './contour-fixtures.mjs';
 import {resultFixture} from './result-fixtures.mjs';
 
 test('5B: antes del final no existe instantánea educativa',()=>assert.equal(finalRegions(initialState()),null));
@@ -34,6 +35,60 @@ test('5B: dos fichas compañeras comparten una región y no duplican casillas',(
     const r=model.regions.find(r=>r.type===team);assert.deepEqual(r.ids,[team+'1',team+'2']);
     assert.equal(r.cells.length,model.score[team]);assert.match(regionDescription(r).pieces,new RegExp(team+'1 y '+team+'2'));
   }
+});
+
+// Oráculo independiente: XOR de los cuatro lados no orientados de cada cuadrado.
+function boundaryOracle(cells){
+  const edges=new Set(),key=(a,b)=>[a.join(','),b.join(',')].sort().join('|');
+  for(const cell of cells){
+    const x=cell%7,y=Math.floor(cell/7),corners=[[x,y],[x+1,y],[x+1,y+1],[x,y+1]];
+    for(let i=0;i<4;i++){const k=key(corners[i],corners[(i+1)%4]);if(edges.has(k))edges.delete(k);else edges.add(k);}
+  }
+  return {edges,key};
+}
+function verifyBoundary(cells){
+  const {segments,loops,path}=componentBoundary(cells),{edges,key}=boundaryOracle(cells);
+  const represented=segments.map(e=>key(e.from,e.to));
+  assert.equal(represented.length,new Set(represented).size,'Sin segmentos duplicados');
+  assert.deepEqual(new Set(represented),edges,'Solo y todos los lados de la frontera');
+  const traversed=[],points=[];let signedArea=0;
+  for(const loop of loops){
+    assert.deepEqual(loop[0],loop.at(-1),'Cada contorno se cierra');
+    for(let i=1;i<loop.length;i++){
+      const a=loop[i-1],b=loop[i];assert.equal(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1]),1);
+      traversed.push(key(a,b));signedArea+=(a[0]*b[1]-b[0]*a[1])/2;
+    }
+    points.push(...loop.slice(0,-1).map(([x,y])=>[60+80*x,60+80*y]));
+  }
+  assert.deepEqual(traversed.sort(),represented.sort(),'Los bucles recorren cada segmento exactamente una vez');
+  assert.equal(signedArea,cells.length,'Área exterior menos agujeros = número de casillas');
+  assert.deepEqual([...path.matchAll(/[ML](\d+) (\d+)/g)].map(m=>[+m[1],+m[2]]),points,'El SVG representa los mismos vértices, en la geometría original');
+  assert.equal((path.match(/Z/g)||[]).length,loops.length);
+  return {segments,loops,path};
+}
+for(const [name,cells] of Object.entries(contourShapes))test(`Contorno: geometría exacta ${name}, sin fronteras internas`,()=>{
+  const original=[...cells],boundary=verifyBoundary(cells);assert.deepEqual(cells,original);
+  const game=contourFixture(name);assert.ok(verifyState(game));assert.ok(game.over);
+  const region=finalRegions(game).byCell[cells[0]];assert.deepEqual(new Set(region.cells),new Set(cells));
+  assert.deepEqual(new Set(componentBoundary(region.cells).segments.map(e=>JSON.stringify(e))),new Set(boundary.segments.map(e=>JSON.stringify(e))));
+  if(name==='hole')assert.equal(boundary.loops.length,2);
+  if(name==='large')assert.equal(boundary.loops.length,3);
+});
+test('Contorno: perímetro del tablero y frontera común de dos componentes',()=>{
+  const whole=verifyBoundary(Array.from({length:49},(_,i)=>i));assert.equal(whole.segments.length,28);assert.equal(whole.loops.length,1);
+  const a=componentBoundary([0]),b=componentBoundary([1]);
+  assert.ok(a.segments.some(e=>JSON.stringify(e.from)==='[1,0]'&&JSON.stringify(e.to)==='[1,1]'));
+  assert.ok(b.segments.some(e=>JSON.stringify(e.from)==='[1,1]'&&JSON.stringify(e.to)==='[1,0]'));
+  assert.equal(componentBoundary([0,1]).segments.length,6);
+});
+test('Contorno: exhaustividad de las 511 uniones de un sector 3×3, incluidos contactos de vértice',()=>{
+  const sector=[0,1,2,7,8,9,14,15,16];
+  for(let mask=1;mask<512;mask++)verifyBoundary(sector.filter((_,i)=>mask&(1<<i)));
+});
+test('Contorno: permutar casillas no cambia lados ni área; el modelo y BFS se conservan',()=>{
+  const game=contourFixture('hole'),saved=JSON.stringify(game),model=finalRegions(game),region=model.byCell[16];
+  const original=explorationLayers(model,16);verifyBoundary(region.cells);verifyBoundary([...region.cells].reverse());
+  assert.deepEqual(explorationLayers(model,16),original);assert.equal(JSON.stringify(game),saved);
 });
 test('5B: singular, plural y región vacía sin atribuir puntos',()=>{
   assert.deepEqual(regionDescription({type:'A',cells:[8],ids:['A1']}),{

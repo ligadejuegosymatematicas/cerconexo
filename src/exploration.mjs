@@ -1,5 +1,5 @@
 import {SIZE,CELL_COUNT,coords} from './engine.mjs';
-import {finalRegions,explorationLayers,regionDescription} from './explorationData.mjs';
+import {finalRegions,explorationLayers,regionDescription,componentBoundary} from './explorationData.mjs';
 
 export const EXPLORATION_MS=320;
 
@@ -37,6 +37,11 @@ export function createExploration({board,banner,button,panel,announcement,
     title.textContent=data.title;size.textContent=data.size;pieces.textContent=data.pieces;explanation.textContent='Estas casillas se comunican por caminos que no cruzan muros.';
     panel.dataset.owner=region.type;
     announcement.textContent=`${data.title}. ${data.size}. ${data.pieces}.`;
+    const boundary=componentBoundary(region.cells),clip=make('clipPath',{id:'exploration-clip',clipPathUnits:'userSpaceOnUse'});
+    clip.append(make('path',{d:boundary.path,'clip-rule':'evenodd'}));highlight.append(clip);
+    // Trazo sobre la frontera exacta, recortado hacia el interior de la región.
+    // El grupo está debajo de muros/perímetro/fichas: nunca los tapa.
+    highlight.append(make('path',{d:boundary.path,class:'region-boundary','data-region-boundary':'','clip-path':'url(#exploration-clip)'}));
     const nodes=new Map();
     for(const id of region.cells){
       const rect=make('rect',{x:64+(id%SIZE)*80,y:64+Math.floor(id/SIZE)*80,width:72,height:72,rx:7,class:'region-outline','data-region-cell':id});
@@ -47,7 +52,8 @@ export function createExploration({board,banner,button,panel,announcement,
     layers.forEach((layer,index)=>layer.forEach(id=>{
       const node=nodes.get(id);
       if(!node.animate)return;
-      const animation=node.animate([{strokeWidth:3,strokeOpacity:.65},{strokeWidth:9,strokeOpacity:1,offset:.45},{strokeWidth:3,strokeOpacity:.65}],
+      // Misma BFS y tiempos; luz suave sin dibujar bordes entre casillas aliadas.
+      const animation=node.animate([{opacity:0},{opacity:.28,offset:.45},{opacity:0}],
         {duration:120,delay:layers.length<2?0:index*spread/(layers.length-1),easing:'ease-out'});
       animations.add(animation);void animation.finished.catch(()=>{}).finally(()=>animations.delete(animation));
     }));

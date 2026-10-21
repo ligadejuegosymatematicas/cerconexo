@@ -98,3 +98,5 @@
 !/docs/src/exploration.mjs
 !/tests/exploration.test.mjs
 !/tests/phase5b.browser.cjs
+
+!/tests/contour-fixtures.mjs

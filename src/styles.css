@@ -1639,7 +1639,9 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .exploration-targets { cursor:crosshair; }
 .exploration-targets rect:focus { outline:none; }
 .exploration-targets rect:focus-visible { stroke:#102A43; stroke-width:5; stroke-dasharray:8 5; }
-.region-outline { fill:none; stroke:#8b681f; stroke-width:3; stroke-opacity:.65; pointer-events:none; }
+.exploration-highlight { pointer-events:none; }
+.region-boundary { fill:none; stroke:#8b681f; stroke-width:20; stroke-linejoin:round; stroke-opacity:.85; pointer-events:none; }
+.region-outline { fill:#fff; stroke:none; opacity:0; pointer-events:none; }
 @media(max-width:760px), (max-height:500px) {
   .exploration-panel { inset:5px 9px; gap:2px; }
   .exploration-page h2 { font-size:12px; line-height:16px; margin-bottom:1px; }
