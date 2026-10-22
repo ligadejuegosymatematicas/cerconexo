@@ -1,6 +1,7 @@
-import {initialState,territory,activeIds,availableMoves,wallOptions,applyTurn,verifyState,pieceById,legalActors} from './engine.mjs';
+import {initialState,territory,activeIds,availableMoves,wallOptions,applyTurn,legalActors} from './engine.mjs';
 import {PIECE_TURNS,TEAM_TURNS,turnMode} from './turnPolicies.mjs';
-import {beginDraft,selectDraft} from './turnDraft.mjs';
+import {beginDraft,selectDraft,committedDraft,advanceDraft} from './turnDraft.mjs';
+import {GAME_SAVE_KEY,decodeGameSave,writeGameSave} from './gameSave.mjs';
 import {createBoardView} from './boardView.mjs';
 import {InteractionGate,createFeedback} from './feedback.mjs';
 import {createHaptics} from './haptics.mjs';
@@ -14,7 +15,6 @@ import {matchupPresentation} from './matchup.mjs';
 import {createExploration} from './exploration.mjs';
 
 const $=id=>document.getElementById(id);
-const SAVE_KEY='wallgo-league-v2';
 const TEAM_NAME={A:'Equipo A',B:'Equipo B'};
 const gate=new InteractionGate();
 const boardView=createBoardView($('board'));
@@ -25,39 +25,48 @@ const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turn
 const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('recentEvent'),prompt:$('prompt'),announcement:$('participationAnnouncement')});
 const resultFeedback=createResultFeedback({banner:$('turnBanner'),result:$('endScreen'),title:$('winnerTitle'),subtitle:$('winnerDetails'),detail:$('winnerDifference'),announcement:$('resultAnnouncement'),scores:{A:$('scoreA'),B:$('scoreB')}});
 let game=initialState(),draft=beginDraft(game);
-const piece=(id)=>pieceById(game,id);
-const safeStore=()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify({game}));}catch{}};
+function safeStore(nextGame=game,nextDraft=draft){
+  try{writeGameSave(localStorage,nextGame,nextDraft);return true;}
+  catch{feedback.notice('No se pudo guardar. La acción no se realizó; vuelve a intentarlo.');return false;}
+}
 
 function loadGame(){
   try{
-    const restored=JSON.parse(localStorage.getItem(SAVE_KEY));
-    if(restored&&verifyState(restored.game)){
-      game=restored.game;
+    const restored=decodeGameSave(localStorage.getItem(GAME_SAVE_KEY));
+    if(restored.game){
+      game=restored.game;draft=restored.draft;
+      if(restored.recovered){
+        safeStore();
+        return 'El turno guardado estaba dañado. Se recuperó la última posición confirmada.';
+      }
     }
   }catch{}
-  draft=beginDraft(game);
+  return '';
 }
 function newGame(mode=PIECE_TURNS){
+  const next=initialState({turnMode:mode}),nextDraft=beginDraft(next);
+  if(!safeStore(next,nextDraft))return;
   exploration.reset();
   gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();haptics.stop();
   resultFeedback.reset();$('prompt').setAttribute('aria-live','polite');
-  game=initialState({turnMode:mode});
-  draft=beginDraft(game);
-  safeStore();render();announceTurn();haptics.pulse('turn');
+  game=next;draft=nextDraft;
+  render();announceTurn();haptics.pulse('turn');
 }
 function announceTurn(){
   feedback.turnStarted({actor:draft.actor,team:game.turnTeam});
 }
 function setBusy(){
   boardView.setBusy(gate.busy);
-  $('cancel').disabled=gate.busy;
 }
 async function step(to){
   if(gate.busy||game.over||!draft.actor||draft.path.length>=3)return;
   const from=draft.path.at(-1);
   if(!availableMoves(game,draft.actor,from).includes(to))return;
+  const nextDraft=advanceDraft(game,draft,to);
+  // El paso debe quedar persistido antes de presentar su animación.
+  if(!safeStore(game,nextDraft))return;
   const ticket=gate.begin(),actor=draft.actor;
-  draft.path.push(to);render();
+  draft=nextDraft;render();
   await feedback.move(boardView.token(actor),from,to);
   if(!gate.finish(ticket))return;
   setBusy();
@@ -67,13 +76,15 @@ async function build(to){
   let next;
   try{next=applyTurn(game,{actor:draft.actor,path:draft.path,to});}
   catch(error){feedback.notice(error.message);return;}
+  const nextDraft=beginDraft(next);
+  if(!safeStore(next,nextDraft))return;
   const events=deriveTerritoryEvents(game,next),ticket=gate.begin();
   if(next.over)participationFeedback.dismiss();
   game=next;
   if(game.over)$('prompt').setAttribute('aria-live','off');
   $('turnBanner').querySelector('h2').textContent='RESOLVIENDO';
   // Confirmar y guardar una sola vez, ANTES del efecto: recargar es seguro.
-  safeStore();setBusy();
+  setBusy();
   haptics.committed({secured:events.participation.secured.length>0});
   await feedback.wall(boardView.revealWall(game.lastMove.wall));
   if(!gate.current(ticket))return;
@@ -85,28 +96,15 @@ async function build(to){
       onConfirmed:()=>renderRoster(null,new Set([...events.participation.after.A,...events.participation.after.B]))})
   ]);
   if(!gate.finish(ticket))return;
-  draft=beginDraft(game);
+  draft=nextDraft;
   render();
   if(game.over)resultFeedback.enter();
   else{announceTurn();participationFeedback.announce(events.participation,{mode:turnMode(game)});}
 }
-async function cancel(){
-  if(gate.busy||game.over||draft.path.length<2)return;
-  const ticket=gate.begin(),actor=draft.actor;
-  setBusy();
-  for(let i=draft.path.length-1;i>0;i--){
-    await feedback.move(boardView.token(actor),draft.path[i],draft.path[i-1]);
-    if(!gate.current(ticket))return;
-  }
-  if(!gate.finish(ticket))return;
-  draft={actor,path:[piece(actor).pos]};render();
-}
 function selectActor(id){
-  if(gate.busy||game.over||turnMode(game)!==TEAM_TURNS||draft.actor===id)return;
-  const previous=draft;
+  if(gate.busy||game.over||committedDraft(draft)||turnMode(game)!==TEAM_TURNS||draft.actor===id)return;
   try{draft=selectDraft(game,draft,id);}catch{return;}
   render();announceTurn();
-  if(previous.path.length>1)feedback.notice(`Recorrido provisional cancelado · Ahora eliges ${id}`);
 }
 function render(){
   const actor=draft.actor;
@@ -147,7 +145,7 @@ function renderPlayers(actor,active,score){
   $('turnBanner').querySelector('h2').textContent='AHORA JUEGA';
   renderRoster(actor,active);
   $('moveCount').textContent=`${game.moves} ${game.moves===1?'muro construido':'muros construidos'}`;
-  $('cancel').hidden=game.over || draft.path.length<2;
+  for(const row of document.querySelectorAll('[data-team-guide]'))row.hidden=turnMode(game)!==TEAM_TURNS;
   const matchup=matchupPresentation(game,active);
   $('matchup').style.visibility=matchup?'visible':'hidden';
   $('matchup').setAttribute('aria-hidden',String(!matchup));
@@ -205,9 +203,8 @@ $('board').addEventListener('click',event=>{
 $('board').addEventListener('keydown',event=>{
   if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;if(!event.repeat)activateBoard(event.target);}
 });
-$('cancel').addEventListener('click',cancel);
 bindDialog($('newDialog'),$('new'),{onOpen:()=>{
-  if(game.moves&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return false;
+  if((game.moves||committedDraft(draft))&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return false;
   document.querySelector(`input[name="turnMode"][value="${turnMode(game)}"]`).checked=true;
 }});
 $('startLocal').addEventListener('click',()=>{
@@ -228,10 +225,6 @@ matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',()=>{ha
 document.addEventListener('visibilitychange',()=>{if(document.hidden)haptics.stop();});
 window.addEventListener('pagehide',()=>haptics.stop());
 updateHapticOption();
-document.addEventListener('keydown',event=>{
-  if(document.querySelector('dialog[open]'))return;
-  if(event.key==='Escape'&&!game.over)cancel();
-});
 // Una sola guía; en ventanas compactas se consulta sin cambiar la retícula del juego.
 const compactLayout=matchMedia('(max-width:1199px), (max-height:650px)');
 const legendPanel=document.querySelector('.legend-panel');
@@ -251,4 +244,5 @@ function fitViewport(){
 window.visualViewport?.addEventListener('resize',fitViewport);
 window.addEventListener('resize',fitViewport);
 fitViewport();
-loadGame();render();announceTurn();
+const recoveryNotice=loadGame();render();if(!committedDraft(draft))announceTurn();
+if(recoveryNotice)feedback.notice(recoveryNotice);

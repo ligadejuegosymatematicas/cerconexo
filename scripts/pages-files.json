@@ -19,5 +19,6 @@
   "src/explorationData.mjs",
   "src/exploration.mjs",
   "src/turnPolicies.mjs",
-  "src/turnDraft.mjs"
+  "src/turnDraft.mjs",
+  "src/gameSave.mjs"
 ]

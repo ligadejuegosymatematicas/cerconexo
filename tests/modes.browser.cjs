@@ -45,9 +45,8 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    assert.match(await p.locator('#prompt').innerText(),/Elige A1 o A2/);await screenshot('equipo-inicio');
    const official=await saved(p),writes=await p.evaluate(()=>m1Audit.writes);
    await hit(p,'[data-actor=A1]',{touch,keyboard:width===1366});assert.equal(await saved(p),official);assert.equal(await p.locator('[data-actor=A1]').getAttribute('aria-pressed'),'true');await screenshot('seleccion-A1');
-   await hit(p,'[data-to="9"]',{touch});assert.equal(await saved(p),official);
    await hit(p,'[data-actor=A2]',{touch});assert.equal(await saved(p),official);assert.equal(await p.evaluate(()=>m1Audit.writes),writes);
-   assert.equal(await p.locator('[data-piece=A1]').getAttribute('transform'),'translate(180 180)');assert.match(await p.locator('#prompt').innerText(),/Recorrido provisional cancelado/);await screenshot('cambio-A2');
+   assert.equal(await p.locator('[data-piece=A1]').getAttribute('transform'),'translate(180 180)');assert.match(await p.locator('#prompt').innerText(),/Turno de A2/);await screenshot('cambio-A2');
    await hit(p,'[data-to="39"]',{touch});await hit(p,'[data-to="32"]',{touch});
    assert.equal(await p.locator('#turnBanner > h2').innerText(),'2 PASOS · CONSTRUYE');
    const to=Number(await p.locator('[data-wall]').first().getAttribute('data-wall')),expected=engine.applyTurn(JSON.parse(official).game,{actor:'A2',path:[40,39,32],to});
@@ -81,7 +80,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    const audit=await p.evaluate(()=>m1Audit);audit.frames=[...collectedFrames,...audit.frames];for(const f of audit.frames){assert.deepEqual(f.page,[width,height]);assert.deepEqual(f.board,baseline.board);}
    report.frames+=audit.frames.length;report.screens.push({viewport:[width,height],board:baseline.board,frames:audit.frames.length});await context.close();
   }
-  report.checks.push('Nueve resoluciones: selector accesible, selección de A/B, cambio provisional, giro, muro único, alternancia, recarga, aislamiento, 1 vs. 1, final, consulta y reinicio; sin cambios del tablero ni scroll transitorio');
+  report.checks.push('Nueve resoluciones: selector accesible, selección de A/B, cambio de ficha antes de mover, giro, muro único, alternancia, recarga, aislamiento, 1 vs. 1, final, consulta y reinicio; sin cambios del tablero ni scroll transitorio');
   // Modo reducido, teclado, retorno al origen y cancelación de una transición pendiente.
   const context=await browser.newContext({viewport:{width:360,height:740},hasTouch:true,reducedMotion:'reduce'}),p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(site.url);
   await p.locator('#new').click();await p.keyboard.press('Tab');await p.keyboard.press('ArrowRight');assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.keyboard.press('Tab');await p.keyboard.press('Enter');assert.deepEqual(await game(p),engine.initialState({turnMode:'team'}));

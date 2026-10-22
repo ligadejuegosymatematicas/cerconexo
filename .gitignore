@@ -110,3 +110,8 @@
 !/tests/classic-engine-v2.mjs
 !/tests/modes.test.mjs
 !/tests/modes.browser.cjs
+
+!/src/gameSave.mjs
+!/docs/src/gameSave.mjs
+!/tests/committed.test.mjs
+!/tests/committed.browser.cjs

@@ -79,7 +79,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       await page.locator('#options').click();assert.ok(await page.locator('#vibration').isChecked());await page.screenshot({path:path.join(out,`opciones-${width}x${height}.png`)});await page.keyboard.press('Escape');
       if(await page.locator('#guide').isVisible()){
         await checkDialog(page,'#guide','#guideDialog');await page.locator('#guide').click();
-        assert.equal(await page.locator('#guideDialog .legend-content>div').count(),6);await page.screenshot({path:path.join(out,`guia-${width}x${height}.png`)});await page.keyboard.press('Escape');
+        assert.equal(await page.locator('#guideDialog .legend-content>div:visible').count(),6);await page.screenshot({path:path.join(out,`guia-${width}x${height}.png`)});await page.keyboard.press('Escape');
       }else assert.ok(await page.locator('.turn-panel .legend-panel').isVisible());
       await checkFrames('diálogos');
       const fixture=fixtures.participationFixture();await load(page,fixture.before);await choose(page,fixture.to);
@@ -134,7 +134,8 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     const reduced=await create(360,740,{motion:'reduce'}),b=fixtures.participationFixture({team:'B'});await load(reduced.page,b.before);await choose(reduced.page,b.to);assert.equal(await reduced.page.locator('#matchupLabel').innerText(),'2 vs. 1');assert.equal(await reduced.page.evaluate(()=>document.getAnimations().length),0);assert.ok(await reduced.page.locator('#recentEvent').isVisible());
     await load(reduced.page,engine.initialState());await reduced.page.locator('[data-to="9"]').focus();await reduced.page.keyboard.press('Enter');await idle(reduced.page);
     await reduced.page.locator('#help').click();await reduced.page.keyboard.press('Escape');assert.equal(await reduced.page.locator('#stepsPill').textContent(),'1 paso');
-    await reduced.page.keyboard.press('Escape');await idle(reduced.page);assert.equal(await reduced.page.locator('#stepsPill').textContent(),'Elige casilla o borde');await reduced.context.close();
+    // Escape cierra diálogos, pero ya no puede borrar un paso ejecutado.
+    await reduced.page.keyboard.press('Escape');await idle(reduced.page);assert.equal(await reduced.page.locator('#stepsPill').textContent(),'1 paso');await reduced.context.close();
     report.checks.push('Nuevo valor por defecto, preferencias false/true intactas, persistencia, navegador sin API y movimiento reducido simétrico');
     for(const [w,h] of [[1280,280],[320,480]]){
       const tiny=await create(w,h),t=await metrics(tiny.page);assert.ok(t.page[1]>h);assert.equal(t.page[0],w);assert.ok(t.board[2]>=240);assert.equal(await tiny.page.locator('.app').evaluate(n=>getComputedStyle(n).overflowY),'visible');await tiny.context.close();
