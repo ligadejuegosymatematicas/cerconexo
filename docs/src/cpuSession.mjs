@@ -4,10 +4,15 @@ export function validCpuControl(control){
   return !!control&&control.version===1&&control.type==='cpu'&&['A','B'].includes(control.humanTeam)&&['beginner','intermediate','advanced'].includes(control.difficulty)&&Number.isInteger(control.seed)&&control.seed>=0&&control.seed<=4294967295;
 }
 export const isCpuTurn=(game,control)=>!game.over&&validCpuControl(control)&&game.turnTeam!==control.humanTeam;
+export function cpuFollowsPrefix(turn,prefix){
+  if(!prefix)return true;
+  if(!Array.isArray(prefix.path))return false;
+  return prefix.path.length<=1||turn.actor===prefix.actor&&turn.path.length>=prefix.path.length&&prefix.path.every((cell,i)=>turn.path[i]===cell);
+}
 export function validCpuPlan(game,draft,control,plan){
   if(!isCpuTurn(game,control)||!plan||plan.version!==1||plan.base!==JSON.stringify(game)||plan.team!==game.turnTeam)return false;
   try{validateTurn(game,plan.turn);}catch{return false;}
-  if(draft.path.length>1&&(draft.actor!==plan.turn.actor||draft.path.length>plan.turn.path.length||draft.path.some((cell,i)=>cell!==plan.turn.path[i])))return false;
+  if(!cpuFollowsPrefix(plan.turn,draft))return false;
   return true;
 }
 export function makeCpuPlan(game,turn){

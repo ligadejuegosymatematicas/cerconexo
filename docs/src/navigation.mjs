@@ -1,9 +1,11 @@
 import {bindDialog} from './dialogs.mjs';
 import {turnMode} from './turnPolicies.mjs';
 
-export function createNavigation({read,start,pause,resume}){
+export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
   const get=id=>document.getElementById(id),home=get('homeScreen'),app=document.querySelector('.app'),dialog=get('newDialog');
   let playing=false,controlType='local';
+  const difficultyDescriptions={beginner:'Decisiones sencillas y variedad para aprender.',intermediate:'Equilibrio entre territorio y anticipación.',advanced:'Más anticipación y análisis de respuestas rivales.'};
+  function describeDifficulty(){get('difficultyDescription').textContent=difficultyDescriptions[dialog.querySelector('input[name="difficulty"]:checked').value];}
   function setControl(type){
     controlType=type;
     for(const button of dialog.querySelectorAll('[data-control]'))button.setAttribute('aria-pressed',String(button.dataset.control===type));
@@ -30,12 +32,20 @@ export function createNavigation({read,start,pause,resume}){
     dialog.querySelector(`input[name="turnMode"][value="${fromGame?turnMode(s.game):'piece'}"]`).checked=true;
     dialog.querySelector(`input[name="difficulty"][value="${fromGame&&s.control?s.control.difficulty:'intermediate'}"]`).checked=true;
     dialog.querySelector(`input[name="humanTeam"][value="${fromGame&&s.control?s.control.humanTeam:'A'}"]`).checked=true;
+    describeDifficulty();
+    dialog.querySelector('.selector-content').scrollTop=0;
+    // showModal restaura el foco y puede restaurar el desplazamiento anterior.
+    // Restablecerlo con el diálogo visible, antes del siguiente pintado.
+    queueMicrotask(()=>{if(dialog.open)dialog.querySelector('.selector-content').scrollTop=0;});
+    get('configurationStatus').textContent='';
     const replacing=s.saved&&!s.game.over;
     get('replaceWarning').hidden=!replacing;
     get('startLocal').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';
   }});
-  for(const button of dialog.querySelectorAll('[data-control]'))button.addEventListener('click',()=>setControl(button.dataset.control));
+  for(const button of dialog.querySelectorAll('[data-control]'))button.addEventListener('click',()=>{feedback();setControl(button.dataset.control);});
+  dialog.addEventListener('change',event=>{if(event.target.matches('input[type="radio"]')){feedback();describeDifficulty();}});
   get('startLocal').addEventListener('click',()=>{
+    feedback();
     const mode=dialog.querySelector('input[name="turnMode"]:checked').value;
     let control=null;
     if(controlType==='cpu'){

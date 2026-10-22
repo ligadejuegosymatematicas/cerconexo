@@ -171,7 +171,7 @@ function resumeGame(){
   if(recoveryMessage){feedback.notice(recoveryMessage);recoveryMessage='';$('homeStatus').textContent='';}
   queueMicrotask(()=>cpu.resume());
 }
-const navigation=createNavigation({read:()=>({game,control,saved,notice:recoveryMessage}),start:newGame,pause:pauseGame,resume:resumeGame});
+const navigation=createNavigation({read:()=>({game,control,saved,notice:recoveryMessage}),start:newGame,pause:pauseGame,resume:resumeGame,feedback:()=>haptics.pulse('turn')});
 function renderDistribution(score){
   $('mixedCount').textContent=score.mixed;
   $('emptyCount').textContent=score.empty;

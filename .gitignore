@@ -139,3 +139,7 @@
 !/tests/navigation.cjs
 !/tests/cpu-fixtures.mjs
 !/tests/cpu.simulate.mjs
+!/tests/cpu-m2-reference.mjs
+!/tests/cpu.review.simulate.mjs
+!/tests/cpu.review.test.mjs
+!/tests/m2-review.browser.cjs

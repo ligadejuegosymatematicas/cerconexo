@@ -17,7 +17,8 @@ export function createCpuController({planner,read,savePlan,select,step,build,sta
         status('thinking');
         const result=await planner.find(s.game,{level:s.control.difficulty,seed:cpuDecisionSeed(s.game,s.control),prefix:committedDraft(s.draft)?s.draft:null});
         if(token!==generation||!eligible()||JSON.stringify(read().game)!==base||!result)return;
-        validateTurn(s.game,result.turn);plan=makeCpuPlan(s.game,result.turn);
+        s=read();validateTurn(s.game,result.turn);plan=makeCpuPlan(s.game,result.turn);
+        if(!validCpuPlan(s.game,s.draft,s.control,plan))throw new Error('La respuesta CPU no respeta el avance guardado.');
         if(!savePlan(plan,result.stats))return;
       }
       if(token!==generation||!eligible())return;
