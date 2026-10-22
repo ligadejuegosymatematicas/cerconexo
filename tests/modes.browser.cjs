@@ -20,7 +20,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
  const engine=await import('../src/engine.mjs'),{finishFixture}=await import('./territory-fixtures.mjs');
  const fixtures=await import('./participation-fixtures.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
  const {startPagesServer}=await import('./pages-server.mjs'),site=await startPagesServer();
- const browser=await chromium.launch({headless:true,channel:'msedge'}),errors=[],report={checks:[],screens:[],frames:0};
+ const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
  const asTeam=g=>finishFixture({...structuredClone(g),turnMode:'team'});
  try{
   for(const [width,height] of [[1440,900],[1366,768],[1366,600],[390,844],[360,740],[740,360],[1440,700],[1366,650],[1280,560]]){
@@ -29,7 +29,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
     window.m1Audit={frames:[],writes:0,animations:[]};
     const store=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='wallgo-league-v2')m1Audit.writes++;return store.call(this,key,value);};
     const animate=Element.prototype.animate;Element.prototype.animate=function(...args){m1Audit.animations.push(args[1]?.duration);return animate.apply(this,args);};
-    const tick=()=>{const b=document.getElementById('board')?.getBoundingClientRect();if(b)m1Audit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height]});if(m1Audit.frames.length<6000)requestAnimationFrame(tick);};requestAnimationFrame(tick);
+    const tick=()=>{const b=document.getElementById('board')?.getBoundingClientRect();if(b?.width)m1Audit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height]});if(m1Audit.frames.length<6000)requestAnimationFrame(tick);};requestAnimationFrame(tick);
    }));
    trackedPage=p;collectedFrames=[];await p.goto(site.url);await idle(p);const baseline=await frame(p);assert.deepEqual(baseline.page,[width,height]);assert.equal(baseline.scale,1);
    const screenshot=async name=>p.screenshot({path:path.join(out,`${name}-${width}x${height}.png`)});
@@ -37,7 +37,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    await p.locator('#new').click();assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'piece');
    assert.ok(await p.locator('#newDialog .dialog-close').evaluate(n=>n===document.activeElement));
    await p.keyboard.press('Shift+Tab');assert.ok(await p.locator('#startLocal').evaluate(n=>n===document.activeElement));await p.keyboard.press('Tab');
-   assert.equal(await p.locator('#newDialog input').count(),2);await screenshot('selector');
+   assert.equal(await p.locator('#newDialog input[name=turnMode]').count(),2);await screenshot('selector');
    await p.locator('#newDialog h2').click();assert.ok(await p.locator('#newDialog').isVisible());await p.keyboard.press('Escape');assert.ok(await p.locator('#new').evaluate(n=>n===document.activeElement));
    await p.locator('#new').click();await p.locator('[name=turnMode][value=team]').check();await p.locator('#startLocal').click();await idle(p);
    assert.equal((await game(p)).turnMode,'team');assert.equal((await game(p)).currentActor,null);assert.equal((await game(p)).moves,0);
@@ -58,8 +58,8 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    assert.equal((await game(p)).lastMove.actor,'B2');assert.equal((await game(p)).turnTeam,'A');assert.deepEqual(engine.legalActors(await game(p)),['A1','A2']);
    await hit(p,'[data-actor=A2]',{touch});assert.match(await p.locator('#turnName').innerText(),/Ficha A2/);
    const confirmed=await saved(p);await reload(p);assert.equal(await saved(p),confirmed);assert.equal(await p.locator('[data-wall]').count(),0);assert.equal(await p.locator('[data-actor]').count(),2);
-   p.once('dialog',d=>d.dismiss());await p.locator('#new').click();assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await saved(p),confirmed);
-   p.once('dialog',d=>d.accept());await p.locator('#new').click();assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.locator('#newDialog .dialog-close').click();assert.equal(await saved(p),confirmed);
+   await p.locator('#new').click();assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('#newDialog .dialog-close').click();assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await saved(p),confirmed);
+   await p.locator('#new').click();assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.locator('#newDialog .dialog-close').click();assert.equal(await saved(p),confirmed);
    for(const opener of ['#help','#options','#guide'])if(await p.locator(opener).isVisible()){
     await p.locator(opener).click();await p.keyboard.press('Escape');assert.equal(await saved(p),confirmed);
    }
@@ -83,7 +83,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
   report.checks.push('Nueve resoluciones: selector accesible, selección de A/B, cambio de ficha antes de mover, giro, muro único, alternancia, recarga, aislamiento, 1 vs. 1, final, consulta y reinicio; sin cambios del tablero ni scroll transitorio');
   // Modo reducido, teclado, retorno al origen y cancelación de una transición pendiente.
   const context=await browser.newContext({viewport:{width:360,height:740},hasTouch:true,reducedMotion:'reduce'}),p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(site.url);
-  await p.locator('#new').click();await p.keyboard.press('Tab');await p.keyboard.press('ArrowRight');assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.keyboard.press('Tab');await p.keyboard.press('Enter');assert.deepEqual(await game(p),engine.initialState({turnMode:'team'}));
+  await p.locator('#new').click();await p.locator('[name=turnMode][value=piece]').focus();await p.keyboard.press('ArrowRight');assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.locator('#startLocal').focus();await p.keyboard.press('Enter');assert.deepEqual(await game(p),engine.initialState({turnMode:'team'}));
   await hit(p,'[data-actor=A1]',{keyboard:true});await hit(p,'[data-to="9"]',{keyboard:true});await hit(p,'[data-to="8"]',{keyboard:true});await hit(p,'[data-wall="15"]',{keyboard:true});
   assert.deepEqual((await game(p)).lastMove.path,[8,9,8]);assert.equal(await p.evaluate(()=>document.getAnimations().length),0);
   for(const options of [{A:16,B:28},{A:23,B:23},{A:25,B:24}]){
@@ -93,7 +93,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
   await context.close();report.checks.push('Teclado y movimiento reducido: retorno al origen, muro sin animación, victoria B, empate y cero vacías con recarga');
   const animated=await browser.newContext({viewport:{width:390,height:844},hasTouch:true}),q=await animated.newPage();await q.goto(site.url);
   await load(q,asTeam(fixtures.participationFixture().before));await hit(q,'[data-actor=A1]');await q.locator('[data-wall="15"]').dispatchEvent('click');await q.waitForFunction(()=>document.getElementById('board').getAttribute('aria-busy')==='true');
-  q.once('dialog',d=>d.accept());await q.locator('#new').click();await q.locator('#startLocal').click();await q.waitForTimeout(1500);assert.deepEqual(await game(q),engine.initialState({turnMode:'team'}));assert.equal(await q.locator('.marker-check:visible,.wall-built').count(),0);assert.ok(await q.locator('#recentEvent').isHidden());await animated.close();
+  await q.locator('#new').click();await q.locator('#startLocal').click();await q.waitForTimeout(1500);assert.deepEqual(await game(q),engine.initialState({turnMode:'team'}));assert.equal(await q.locator('.marker-check:visible,.wall-built').count(),0);assert.ok(await q.locator('#recentEvent').isHidden());await animated.close();
   report.checks.push('Reinicio durante conquista pendiente cancela confirmaciones y mensajes de la partida anterior');
   const fileContext=await browser.newContext({viewport:{width:360,height:740},reducedMotion:'reduce'}),f=await fileContext.newPage();f.on('pageerror',e=>errors.push(e.message));await f.goto(pathToFileURL(path.join(root,'Cerconexo_Premium_Listo_Para_Jugar.html')).href);await f.locator('#new').click();await f.locator('[name=turnMode][value=team]').check();await f.locator('#startLocal').click();await hit(f,'[data-actor=A2]');await hit(f,'[data-wall]');assert.equal((await game(f)).turnTeam,'B');await fileContext.close();
   assert.deepEqual(errors,[]);report.errors=errors;await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

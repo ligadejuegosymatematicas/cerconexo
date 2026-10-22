@@ -37,7 +37,7 @@ async function probe(context){await context.addInitScript(()=>document.addEventL
   new MutationObserver(()=>{for(const n of document.querySelectorAll('.token-isolated'))if(!seen.has(n.dataset.piece)){seen.add(n.dataset.piece);p.confirmations.push({id:n.dataset.piece,at:performance.now(),durations:n.querySelector('.secured-aura').getAnimations().map(a=>a.effect.getTiming().duration)});}}).observe(get('piecesLayer'),{attributes:true,subtree:true});
   const tick=()=>{
     const b=get('board').getBoundingClientRect(),t=get('turnBanner').getBoundingClientRect();
-    p.samples.push({at:performance.now(),page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.width,b.height,b.x,b.y],banner:t.height,
+    if(b.width)p.samples.push({at:performance.now(),page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.width,b.height,b.x,b.y],banner:t.height,
       busy:get('board').getAttribute('aria-busy'),result:!get('endScreen').hidden,notice:get('territoryNotice').dataset.kind,
       wall:document.querySelector('.wall-built')?.getAnimations().map(a=>a.effect.getTiming().duration)||[],scores:[get('scoreA').textContent,get('scoreB').textContent]});
     if(p.samples.length<1000)requestAnimationFrame(tick);
@@ -46,7 +46,7 @@ async function probe(context){await context.addInitScript(()=>document.addEventL
 (async()=>{
   await fs.mkdir(out,{recursive:true});
   const engine=await import('../src/engine.mjs'),{resultFixture}=await import('./result-fixtures.mjs'),{startPagesServer}=await import('./pages-server.mjs');
-  const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:'msedge'}),errors=[],report={checks:[],resolutions:[],sequences:[]};
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],resolutions:[],sequences:[]};
   async function create(width=390,height=844,motion='no-preference',vibrate=false){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,reducedMotion:motion});
     if(vibrate)await context.addInitScript(()=>{window.pulses=[];Object.defineProperty(navigator,'vibrate',{value:p=>{window.pulses.push(p);return true;},configurable:true});});

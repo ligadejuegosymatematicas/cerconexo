@@ -12,7 +12,7 @@ async function tap(p,selector,touch){const r=await p.locator(selector).boundingB
   const {startPagesServer}=await import('./pages-server.mjs'),engine=await import('../src/engine.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
   const {finalRegions,regionDescription,componentBoundary,componentSummary}=await import('../src/explorationData.mjs');
   const {contourFixture}=await import('./contour-fixtures.mjs');
-  const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:'msedge'}),errors=[],report={checks:[],screens:[],frames:0};
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
   try{
     const fixture=resultFixture({pockets:true}),model=finalRegions(fixture.after);
     async function contour(p,region){
@@ -42,7 +42,7 @@ async function tap(p,selector,touch){const r=await p.locator(selector).boundingB
           });
           const a=document.getElementById('explorationAnnouncement');new MutationObserver(()=>{if(a.textContent)window.explorationAudit.announcements.push(a.textContent);}).observe(a,{subtree:true,childList:true,characterData:true});
           new MutationObserver(()=>{if(!document.getElementById('territoryNotice').hidden)window.explorationAudit.territory++;}).observe(document.getElementById('territoryNotice'),{attributes:true});
-          const frame=()=>{const b=document.getElementById('board').getBoundingClientRect();window.explorationAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height]});if(window.explorationAudit.frames.length<6000)requestAnimationFrame(frame);};requestAnimationFrame(frame);
+          const frame=()=>{const b=document.getElementById('board').getBoundingClientRect();if(b.width)window.explorationAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height]});if(window.explorationAudit.frames.length<6000)requestAnimationFrame(frame);};requestAnimationFrame(frame);
         });
       });
       const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(site.url);await idle(p);

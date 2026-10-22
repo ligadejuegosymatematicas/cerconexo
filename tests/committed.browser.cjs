@@ -19,13 +19,13 @@ async function instrument(context){await context.addInitScript(()=>document.addE
  const during=event=>{if(!event.target.closest?.('[data-to]')||document.getElementById('board').getAttribute('aria-busy')!=='true')return;const before=localStorage.getItem('wallgo-league-v2');document.querySelector('[data-wall]')?.dispatchEvent(new MouseEvent('click',{bubbles:true}));stepAudit.blocked.push(before===localStorage.getItem('wallgo-league-v2'));};document.addEventListener('click',during);document.addEventListener('keydown',during);
  document.addEventListener('pointerdown',e=>stepAudit.pointers.push(e.pointerType),true);
  const animate=Element.prototype.animate;Element.prototype.animate=function(...args){stepAudit.animations.push(args[1]?.duration);return animate.apply(this,args);};
- const frame=()=>{const b=document.getElementById('board')?.getBoundingClientRect();if(b)stepAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height]});if(stepAudit.frames.length<6000)requestAnimationFrame(frame);};requestAnimationFrame(frame);
+ const frame=()=>{const b=document.getElementById('board')?.getBoundingClientRect();if(b?.width)stepAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height]});if(stepAudit.frames.length<6000)requestAnimationFrame(frame);};requestAnimationFrame(frame);
 }));}
 (async()=>{
  await fs.mkdir(out,{recursive:true});
  const engine=await import('../src/engine.mjs'),{encodeGameSave}=await import('../src/gameSave.mjs'),{beginDraft,advanceDraft,selectDraft}=await import('../src/turnDraft.mjs');
  const {resultFixture}=await import('./result-fixtures.mjs'),{startPagesServer}=await import('./pages-server.mjs'),site=await startPagesServer();
- const browser=await chromium.launch({headless:true,channel:'msedge'}),errors=[],report={checks:[],screens:[],frames:0,focus:[],fullGames:[]};
+ const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],screens:[],frames:0,focus:[],fullGames:[]};
  const load=async(p,game,draft=beginDraft(game))=>{await p.evaluate(value=>localStorage.setItem('wallgo-league-v2',value),encodeGameSave(game,draft));await reload(p);};
  const screenshot=(p,name)=>p.screenshot({path:path.join(out,name+'.png')});
  try{
@@ -40,7 +40,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
      const saved=await raw(p);await hit(p,'[data-actor=A1]',input);await screenshot(p,`seleccion-A1-${width}x${height}`);await hit(p,'[data-actor=A2]',input);assert.equal(await raw(p),saved);await screenshot(p,`cambio-A2-${width}x${height}`);
      const available=await p.locator('[data-actor=A1]').evaluate(n=>({outline:getComputedStyle(n).outlineStyle,stroke:getComputedStyle(n.querySelector('.actor-hit')).stroke}));assert.equal(available.outline,'none');assert.equal(available.stroke,'none');
      if(await p.locator('#guide').isVisible())await p.locator('#guide').click();
-     assert.equal(await p.locator('.legend-content > div:visible').count(),8);assert.ok(await p.locator('[data-team-guide]').first().isVisible());await screenshot(p,`guia-${width}x${height}`);if(await p.locator('#guideDialog').isVisible())await p.keyboard.press('Escape');
+     assert.equal(await p.locator('.legend-content > div:visible').count(),8);assert.ok(await p.locator('[data-team-guide]').first().isVisible());await screenshot(p,`guia-${width}x${height}`);if(await p.locator('#guideDialog').isVisible()){await p.keyboard.press('Escape');await p.waitForFunction(()=>!document.getElementById('guideDialog').open&&document.getElementById('guide').getAttribute('aria-expanded')==='false');}
     }
     await hit(p,`[data-to="${first}"]`,{...input,wait:false});
     let saved=await envelope(p);assert.deepEqual(saved.game,game);assert.deepEqual(saved.pendingTurn.path,[start,first]);assert.equal(saved.pendingTurn.steps,1);
@@ -61,8 +61,8 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     const wall=engine.wallOptions(game,second)[0];await hit(p,`[data-wall="${wall}"]`,input);assert.deepEqual((await envelope(p)).game,engine.applyTurn(game,{actor,path:[start,first,second],to:wall}));
     // Reinicio de un primer paso todavía sin muro: confirmar rechazo y aceptación.
     await load(p,game);if(mode==='team')await hit(p,'[data-actor=A2]',input);await hit(p,`[data-to="${first}"]`,input);const incomplete=await raw(p);
-    p.once('dialog',d=>d.dismiss());await p.locator('#new').click();assert.equal(await raw(p),incomplete);assert.ok(await p.locator('#newDialog').isHidden());
-    p.once('dialog',d=>d.accept());await p.locator('#new').click();await p.locator('#startLocal').click();assert.deepEqual((await envelope(p)).game,game);assert.equal(Object.hasOwn(await envelope(p),'pendingTurn'),false);
+    await p.locator('#new').click();assert.equal(await raw(p),incomplete);assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('#newDialog .dialog-close').click();assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await raw(p),incomplete);
+    await p.locator('#new').click();await p.locator('#startLocal').click();assert.deepEqual((await envelope(p)).game,game);assert.equal(Object.hasOwn(await envelope(p),'pendingTurn'),false);
    }
    const frames=[...collected,...await p.evaluate(()=>stepAudit.frames)];for(const frame of frames){assert.deepEqual(frame.page,[width,height]);assert.deepEqual(frame.board,baseline);}
    report.frames+=frames.length;report.screens.push({viewport:[width,height],board:baseline,frames:frames.length});await context.close();tracked=null;
@@ -102,11 +102,11 @@ async function instrument(context){await context.addInitScript(()=>document.addE
    const game=engine.initialState({turnMode:mode}),actor=mode==='team'?'A2':'A1',start=engine.pieceById(game,actor).pos,first=mode==='team'?39:9;await load(i,game);
    if(mode==='team')await hit(i,'[data-actor=A2]',{touch:true});
    for(const [to,count] of [[first,1],[start,2]]){
-    await i.evaluate(count=>window.reloadAtStep=count,count);const loaded=i.waitForEvent('domcontentloaded');await hit(i,`[data-to="${to}"]`,{touch:true,wait:false});await loaded;await idle(i);
+    await i.evaluate(count=>window.reloadAtStep=count,count);const loaded=i.waitForEvent('domcontentloaded');await hit(i,`[data-to="${to}"]`,{touch:true,wait:false});await loaded;await require('./navigation.cjs').continueHistorical(i);await idle(i);
     const saved=await envelope(i);assert.deepEqual(saved.game,game);assert.equal(saved.pendingTurn.steps,count);assert.deepEqual(saved.pendingTurn.path,count===1?[start,first]:[start,first,start]);
     assert.equal(await i.locator(`[data-piece=${actor}]`).getAttribute('transform'),transform(to));assert.equal(await i.locator('[data-actor]').count(),0);assert.equal(await i.evaluate(()=>document.getAnimations().length),0);await screenshot(i,`recarga-inmediata-${mode}-paso${count}`);
    }
-   const to=engine.wallOptions(game,start)[0],expected=engine.applyTurn(game,{actor,path:[start,first,start],to});await i.evaluate(()=>window.reloadAtWall=1);const loaded=i.waitForEvent('domcontentloaded');await hit(i,`[data-wall="${to}"]`,{touch:true,wait:false});await loaded;await idle(i);
+   const to=engine.wallOptions(game,start)[0],expected=engine.applyTurn(game,{actor,path:[start,first,start],to});await i.evaluate(()=>window.reloadAtWall=1);const loaded=i.waitForEvent('domcontentloaded');await hit(i,`[data-wall="${to}"]`,{touch:true,wait:false});await loaded;await require('./navigation.cjs').continueHistorical(i);await idle(i);
    assert.deepEqual((await envelope(i)).game,expected);assert.equal(Object.hasOwn(await envelope(i),'pendingTurn'),false);assert.equal(await i.locator('.wall-confirmation').count(),0);assert.equal(await i.locator('.wall-built').count(),1);
   }
   await immediateContext.close();report.checks.push('Recarga disparada dentro de setItem antes de animar: pasos 1/2 y muro de ambas modalidades se recuperan exactamente una vez');

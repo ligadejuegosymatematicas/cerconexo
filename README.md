@@ -4,11 +4,11 @@ Juego de estrategia territorial local con dos equipos y cuatro fichas, de la Lig
 
 ## Sitio publicado y versión de trabajo
 
-M1, versión estable `5c1ffdca6ded1485b75f8cce008a2b5d6956ac6e`, está publicada en:
+La revisión de M1, versión estable `b543efd8a5b14f2a54ae3e95c0e85d59534a72c9`, está publicada en:
 
 [ligadejuegosymatematicas.github.io/cerconexo/](https://ligadejuegosymatematicas.github.io/cerconexo/)
 
-La revisión de M1 se prepara exclusivamente en `desarrollo`: pasos definitivos y persistentes, bloqueo de ficha después del primer paso y corrección del foco SVG. Conserva las dos modalidades locales y las funciones anteriores. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
+M2 se prepara exclusivamente en `desarrollo`: rival CPU con tres niveles, las dos políticas de turnos y portada premium. Conserva los pasos definitivos, la recuperación, las reglas y el motor de la revisión de M1. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
 
 ## Abrir en desarrollo
 
@@ -44,7 +44,7 @@ Ese archivo generado se conserva localmente y no es necesario para Pages.
 
 - index.html y src/: fuentes modulares de la interfaz y del motor.
 - assets/: marca oficial completa y recorte utilizado por la cabecera.
-- docs/: veintitrés archivos estáticos que constituyen el paquete candidato del sitio.
+- docs/: treinta y dos archivos estáticos que constituyen el paquete candidato del sitio.
 - scripts/: manifiesto y preparación reproducible de Pages.
 - tests/: pruebas originales del motor, geometría y comprobación del sitio bajo /cerconexo/.
 - .github/workflows/verificar.yml: comprobaciones automáticas; no publica ni fusiona.
@@ -247,3 +247,33 @@ El rectángulo negro se reprodujo como outline nativo `rgb(16,16,16) auto 5px` s
 Pruebas: 132 casos (113 anteriores y 19 nuevos), nueve suites anteriores y `tests/committed.browser.cjs`. Se conservan las pruebas de equivalencia clásica; se actualizan solo los escenarios que exigían cancelación o pérdida de pasos al recargar. La suite nueva incluye recuperación, bloqueos, almacenamiento dañado o sin cuota, teclado, tacto, partidas completas y fotogramas en nueve resoluciones. El paquete local ahora contiene 23 archivos, incluido gameSave.mjs. Regenerar con `python scripts/build_pages.py` y `python build.py`.
 
 Evidencias y diagnóstico: `validation/m1-revision/`. Entrega: `entregas/M1_Revision/`. No se inicia M2, CPU, online ni una pantalla inicial nueva.
+
+
+## M2 — CPU local y portada (candidata local, sin publicar)
+
+La portada utiliza el logotipo completo transparente ya existente, sin lemas. Jugar abre un selector compacto Local / Contra CPU; se conservan ambas políticas. Contra CPU permite elegir dificultad y equipo humano, sin intercambiar colores ni posiciones. A comienza siempre. Continuar conserva todos los parámetros. Inicio pausa sin borrar. La confirmación de reemplazo se integra en el selector, mediante el aviso y Reemplazar y comenzar; cerrarlo conserva la partida.
+
+### Núcleo estratégico
+
+- `cpuMoves.mjs`: jugadas completas mediante `legalActors`, `availableMoves` y `wallOptions`. Enumera cero, uno y dos pasos, giros, regreso y todos los muros; puede deduplicar resultados equivalentes y respetar un prefijo irreversible.
+- `cpuEvaluate.mjs`: evaluación pura con territorio oficial, influencia por distancias BFS del grafo abierto, movilidad y oportunidades de puentes. Los puntos siempre proceden de `territory`. Pesos iniciales normalizados: asegurado 90, potencial 42, movilidad 10 y conexiones 20; no son pesos óptimos. Los resultados oficiales terminales tienen prioridad absoluta (±1.000.000; empate 0).
+- `cpuSearch.mjs`: Principiante elige entre hasta cinco alternativas razonables próximas al mejor valor inmediato; Intermedio evalúa amenazas de resultado y pérdidas territoriales en las respuestas a sus cinco mejores candidatas; Avanzado realiza minimax selectivo de dos plies con poda alfa-beta sobre doce candidatas propias y respuestas legales del rival. Los empates numéricos se resuelven con semilla para evitar sesgo de enumeración.
+- Presupuestos orientativos: 120/340/850 ms, con 200/900/2600 nodos. La pasada inicial examina todas las candidatas únicas y conserva una alternativa legal incluso si se agotó el presupuesto; el límite se aplica a la búsqueda adicional. No se promete optimalidad ni mayor fuerza en toda posición.
+- `cpuPlanner.mjs` y `cpuWorker.mjs`: cálculo en Worker de módulo; el autónomo utiliza un Worker Blob con exactamente las mismas fuentes. Si no está disponible o falla, el generador cede el hilo aproximadamente cada 6 ms. El watchdog de un Worker sin respuesta es de 2,5 s; es recuperación de fallo, no un retraso de dificultad.
+- `cpuController.mjs`: cancela por generación, revalida la jugada, persiste el plan y ejecuta selección, pasos y muro con las acciones comunes de la interfaz. No contiene reglas ni puntuación.
+
+### Guardado y cancelación
+
+Se mantiene `wallgo-league-v2` y el estado oficial versión 2. Los guardados locales mantienen su formato. Solo las partidas CPU añaden `control` (versión 1, equipo humano, dificultad, semilla) y, mientras corresponde, `cpuPlan` (versión 1, equipo, estado base textual y jugada completa). `pendingTurn` sigue registrando los pasos realmente aceptados. Una sola escritura guarda estos elementos coherentemente antes de cada acción irreversible; el muro limpia plan y avance al guardar el siguiente estado.
+
+Recargar vuelve a la portada; Continuar reanuda el plan ya fijado sin cambiar de decisión. Un plan dañado se descarta con aviso, preservando el juego oficial y cualquier prefijo legal para buscar únicamente su continuación. Si la configuración CPU es irreconocible, se preserva el tablero válido en recuperación local con aviso; no se inventan equipo ni dificultad. Los guardados locales antiguos nunca se convierten a CPU. Un fallo de escritura impide aceptar nuevas acciones; Inicio / Continuar permite reintentar. Preferencias de vibración intactas.
+
+Inicio y Nueva partida cancelan búsquedas y efectos de otra generación. Se recupera el estado realmente guardado, incluido un muro que ya se confirmó aunque su efecto visual siguiera en curso. Reglas y Opciones pausan la ejecución automática de forma segura y reanudan al cerrar. No hay sonidos, servicios externos, nuevas reglas ni funcionalidades online.
+
+### Verificación M2
+
+Ejecutar `node --test tests/*.test.mjs`, las diez suites históricas y `node tests/m2.browser.cjs`. Las suites antiguas usan `tests/navigation.cjs` para abrir sus fixtures por Continuar; solo cambia navegación, confirmación de reemplazo y muestreo cuando el tablero está visible. Sus aserciones de reglas, resultados, animaciones y geometría se conservan. M2 verifica por separado la portada sin guardado y el flujo nuevo completo.
+
+`validation/m2/` contiene pruebas, simulaciones reproducibles, tiempos reales y evidencias. Los resultados y limitaciones finales se incluyen en `entregas/M2/`. El paquete local contiene 32 archivos; regenerar con `python scripts/build_pages.py` y `python build.py`. No se publica sin autorización posterior.
+
+Simulaciones reproducibles: `node tests/cpu.simulate.mjs` (224 partidas, semillas independientes por agente y colores intercambiados; informe en `validation/m2/simulations.json`). Incluyen comprobaciones del guardado en cada prefijo CPU, sin DOM. Los tiempos de cálculo excluyen animaciones.

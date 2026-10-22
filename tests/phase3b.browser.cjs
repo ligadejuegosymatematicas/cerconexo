@@ -28,7 +28,7 @@ async function metric(page){return page.evaluate(()=>{
   const fixtures=await import('./participation-fixtures.mjs'),territorial=await import('./territory-fixtures.mjs');
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
   const {startPagesServer}=await import('./pages-server.mjs');
-  const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:'msedge'});
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'}));
   const report={checks:[],screens:[],events:[]},errors=[];
   async function create(width=390,height=844,motion='no-preference'){
     const context=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:true,reducedMotion:motion});
@@ -124,7 +124,7 @@ async function metric(page){return page.evaluate(()=>{
     await page.reload();await idle(page);assert.equal((await roster(page)).filter(p=>p.badge).length,1);
     // Reiniciar cancela los efectos y los avisos de la partida previa.
     await load(page,a.before);await choose(page,a.to,{wait:false});await page.waitForFunction(()=>document.querySelector('.secured-aura').getAnimations().length>0);
-    page.once('dialog',d=>d.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);await page.waitForTimeout(1600);
+    await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);await page.waitForTimeout(1600);
     assert.equal((await saved(page)).moves,0);assert.ok((await roster(page)).every(p=>!p.badge));assert.ok(await page.locator('#recentEvent').isHidden());
     // Preferencia dinámica y preferencia al iniciar: confirmación directa sin perder mensajes.
     await load(page,a.before);await choose(page,a.to,{wait:false});await page.waitForFunction(()=>document.querySelector('.secured-aura').getAnimations().length>0);

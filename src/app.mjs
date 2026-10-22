@@ -13,6 +13,11 @@ import {createResultFeedback} from './resultFeedback.mjs';
 import {bindDialog} from './dialogs.mjs';
 import {matchupPresentation} from './matchup.mjs';
 import {createExploration} from './exploration.mjs';
+import {CPU_LEVELS} from './cpuSearch.mjs';
+import {createCpuPlanner} from './cpuPlanner.mjs';
+import {createCpuController} from './cpuController.mjs';
+import {isCpuTurn,validCpuPlan} from './cpuSession.mjs';
+import {createNavigation} from './navigation.mjs';
 
 const $=id=>document.getElementById(id);
 const TEAM_NAME={A:'Equipo A',B:'Equipo B'};
@@ -24,42 +29,50 @@ const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
 const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('recentEvent'),prompt:$('prompt'),announcement:$('participationAnnouncement')});
 const resultFeedback=createResultFeedback({banner:$('turnBanner'),result:$('endScreen'),title:$('winnerTitle'),subtitle:$('winnerDetails'),detail:$('winnerDifference'),announcement:$('resultAnnouncement'),scores:{A:$('scoreA'),B:$('scoreB')}});
-let game=initialState(),draft=beginDraft(game);
-function safeStore(nextGame=game,nextDraft=draft){
-  try{writeGameSave(localStorage,nextGame,nextDraft);return true;}
-  catch{feedback.notice('No se pudo guardar. La acción no se realizó; vuelve a intentarlo.');return false;}
+let game=initialState(),draft=beginDraft(game),control=null,cpuPlan=null,saved=false,cpuPhase='idle',pausing=false,boardKeyboard=false,recoveryMessage='';
+function safeStore(nextGame=game,nextDraft=draft,session={control,cpuPlan}){
+  try{writeGameSave(localStorage,nextGame,nextDraft,session);saved=true;return true;}
+  catch{
+    if(isCpuTurn(game,control)){cpuPhase='blocked';feedback.message('No se pudo guardar. Vuelve a Inicio y continúa para reintentar.');}
+    else feedback.notice('No se pudo guardar. La acción no se realizó; vuelve a intentarlo.');
+    return false;
+  }
 }
 
 function loadGame(){
   try{
     const restored=decodeGameSave(localStorage.getItem(GAME_SAVE_KEY));
     if(restored.game){
-      game=restored.game;draft=restored.draft;
+      game=restored.game;draft=restored.draft;control=restored.control??null;cpuPlan=restored.cpuPlan??null;saved=true;
+      if(cpuPlan&&!committedDraft(draft))draft=selectDraft(game,draft,cpuPlan.turn.actor);
       if(restored.recovered){
         safeStore();
-        return 'El turno guardado estaba dañado. Se recuperó la última posición confirmada.';
+        recoveryMessage='El turno guardado estaba dañado. Se recuperó la última posición confirmada.';
+        return recoveryMessage;
       }
     }
   }catch{}
   return '';
 }
-function newGame(mode=PIECE_TURNS){
+function newGame(mode=PIECE_TURNS,nextControl=null){
   const next=initialState({turnMode:mode}),nextDraft=beginDraft(next);
-  if(!safeStore(next,nextDraft))return;
+  if(!safeStore(next,nextDraft,{control:nextControl,cpuPlan:null}))return false;
+  cpu.cancel();
   exploration.reset();
   gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();haptics.stop();
   resultFeedback.reset();$('prompt').setAttribute('aria-live','polite');
-  game=next;draft=nextDraft;
+  game=next;draft=nextDraft;control=nextControl;cpuPlan=null;cpuPhase='idle';boardKeyboard=false;recoveryMessage='';$('homeStatus').textContent='';
   render();announceTurn();haptics.pulse('turn');
+  return true;
 }
 function announceTurn(){
   feedback.turnStarted({actor:draft.actor,team:game.turnTeam});
 }
 function setBusy(){
-  boardView.setBusy(gate.busy);
+  boardView.setBusy(gate.busy||isCpuTurn(game,control));
 }
-async function step(to){
-  if(gate.busy||game.over||!draft.actor||draft.path.length>=3)return;
+async function step(to,automatic=false){
+  if(gate.busy||game.over||!draft.actor||draft.path.length>=3||isCpuTurn(game,control)&&!automatic)return false;
   const from=draft.path.at(-1);
   if(!availableMoves(game,draft.actor,from).includes(to))return;
   const nextDraft=advanceDraft(game,draft,to);
@@ -68,19 +81,21 @@ async function step(to){
   const ticket=gate.begin(),actor=draft.actor;
   draft=nextDraft;render();
   await feedback.move(boardView.token(actor),from,to);
-  if(!gate.finish(ticket))return;
+  if(!gate.finish(ticket))return false;
   setBusy();
+  queueMicrotask(()=>cpu.resume());
+  return true;
 }
-async function build(to){
-  if(gate.busy||game.over||!draft.actor||!wallOptions(game,draft.path.at(-1)).includes(to))return;
+async function build(to,automatic=false){
+  if(gate.busy||game.over||!draft.actor||!wallOptions(game,draft.path.at(-1)).includes(to)||isCpuTurn(game,control)&&!automatic)return false;
   let next;
   try{next=applyTurn(game,{actor:draft.actor,path:draft.path,to});}
   catch(error){feedback.notice(error.message);return;}
   const nextDraft=beginDraft(next);
-  if(!safeStore(next,nextDraft))return;
+  if(!safeStore(next,nextDraft,{control,cpuPlan:null}))return false;
   const events=deriveTerritoryEvents(game,next),ticket=gate.begin();
   if(next.over)participationFeedback.dismiss();
-  game=next;
+  game=next;cpuPlan=null;
   if(game.over)$('prompt').setAttribute('aria-live','off');
   $('turnBanner').querySelector('h2').textContent='RESOLVIENDO';
   // Confirmar y guardar una sola vez, ANTES del efecto: recargar es seguro.
@@ -95,29 +110,68 @@ async function build(to){
     participationFeedback.confirm(events.participation,{delay:events.conquests.length?TERRITORY_MS.spread:0,
       onConfirmed:()=>renderRoster(null,new Set([...events.participation.after.A,...events.participation.after.B]))})
   ]);
-  if(!gate.finish(ticket))return;
+  if(!gate.finish(ticket))return false;
   draft=nextDraft;
   render();
   if(game.over)resultFeedback.enter();
   else{announceTurn();participationFeedback.announce(events.participation,{mode:turnMode(game)});}
+  if(automatic&&!game.over&&boardKeyboard&&document.activeElement===document.body&&!document.querySelector('dialog[open]'))$('interactionLayer').querySelector('[role="button"]')?.focus({preventScroll:true});
+  queueMicrotask(()=>cpu.resume());
+  return true;
 }
-function selectActor(id){
-  if(gate.busy||game.over||committedDraft(draft)||turnMode(game)!==TEAM_TURNS||draft.actor===id)return;
+function selectActor(id,automatic=false){
+  if(gate.busy||game.over||committedDraft(draft)||turnMode(game)!==TEAM_TURNS||draft.actor===id||isCpuTurn(game,control)&&!automatic)return;
   try{draft=selectDraft(game,draft,id);}catch{return;}
   render();announceTurn();
 }
 function render(){
   const actor=draft.actor;
   const {score}=territory(game),active=activeIds(game);
-  boardView.render(game,draft,{busy:gate.busy});
+  boardView.render(game,draft,{busy:gate.busy,interactive:!isCpuTurn(game,control)});
   setBusy();
   $('scoreA').textContent=score.A;
   $('scoreB').textContent=score.B;
   for(const team of ['A','B'])$(`score${team}`).setAttribute('aria-label',`${score[team]} casillas aseguradas`);
   renderDistribution(score);
   renderPlayers(actor,active,score);
-  exploration.update(game,game.over&&!gate.busy);
+  renderCpuIdentity();
+  exploration.update(game,game.over&&!gate.busy&&navigation.playing);
 }
+function renderCpuIdentity(){
+  $('boardMeta').textContent=control&&game.over?`Tú ${control.humanTeam} · CPU ${control.humanTeam==='A'?'B':'A'}`:'7 × 7';
+  $('cpuIdentity').hidden=!control||game.over;
+  if(!control||game.over)return;
+  const cpuTeam=control.humanTeam==='A'?'B':'A';
+  $('cpuIdentity').textContent=`Tú: ${control.humanTeam} · CPU: ${cpuTeam} · ${CPU_LEVELS[control.difficulty].label}`;
+  if(draft.path.length===3)$('turnBanner').querySelector('h2').textContent='2 PASOS';
+  if(isCpuTurn(game,control)){
+    $('turnName').textContent=`CPU · Equipo ${game.turnTeam}${draft.actor?` · ${draft.actor}`:''}`;
+    if(!committedDraft(draft))$('turnBanner').querySelector('h2').textContent='TURNO CPU';
+    if(cpuPhase==='thinking')feedback.message('Preparando su jugada…');
+  }
+}
+const cpu=createCpuController({
+  planner:createCpuPlanner(),
+  read:()=>({game,draft,control,plan:cpuPlan,visible:navigation.playing,blocked:gate.busy||!!document.querySelector('dialog[open]')||document.hidden}),
+  savePlan:(plan)=>{
+    if(!validCpuPlan(game,draft,control,plan)||!safeStore(game,draft,{control,cpuPlan:plan}))return false;
+    cpuPlan=plan;return true;
+  },
+  select:actor=>selectActor(actor,true),step:to=>step(to,true),build:to=>build(to,true),
+  status:phase=>{if(phase==='idle'&&cpuPhase==='blocked')return;cpuPhase=phase;if(phase==='idle'&&isCpuTurn(game,control))return;if(phase==='acting'&&draft.path.length<=1)feedback.message(`Turno de ${draft.actor} · Mueve o construye`);renderCpuIdentity();},
+  onError:()=>{cpuPhase='blocked';feedback.message('La CPU no pudo completar la acción. Vuelve a Inicio y continúa para reintentar.');}
+});
+function pauseGame(){
+  pausing=true;cpu.cancel();cpuPhase='idle';
+  gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();resultFeedback.reset();haptics.stop();
+  loadGame();render();pausing=false;
+}
+function resumeGame(){
+  render();if(!committedDraft(draft))announceTurn();
+  if(recoveryMessage){feedback.notice(recoveryMessage);recoveryMessage='';$('homeStatus').textContent='';}
+  queueMicrotask(()=>cpu.resume());
+}
+const navigation=createNavigation({read:()=>({game,control,saved,notice:recoveryMessage}),start:newGame,pause:pauseGame,resume:resumeGame});
 function renderDistribution(score){
   $('mixedCount').textContent=score.mixed;
   $('emptyCount').textContent=score.empty;
@@ -155,7 +209,7 @@ function renderPlayers(actor,active,score){
     $('turnBanner').classList.remove('team-b');$('stepsPill').textContent='Territorios cerrados';
     $('prompt').setAttribute('aria-live','off');
     feedback.message('Partida finalizada');
-    resultFeedback.show(finalPresentation(game,score));
+    if(navigation.playing&&!pausing)resultFeedback.show(finalPresentation(game,score));
   }else{
     const team=game.turnTeam,steps=Math.max(0,draft.path.length-1),byTeam=turnMode(game)===TEAM_TURNS;
     if(steps)$('turnBanner').querySelector('h2').textContent=steps===1?'1 PASO':'2 PASOS · CONSTRUYE';
@@ -170,14 +224,15 @@ function renderPlayers(actor,active,score){
 }
 function activateBoard(target){
   const obj=target.closest?.('[data-to],[data-wall],[data-actor]');
-  if(!obj||gate.busy||document.querySelector('dialog[open]'))return;
+  if(!obj||gate.busy||isCpuTurn(game,control)||!navigation.playing||document.querySelector('dialog[open]'))return;
   if(obj.hasAttribute('data-actor'))selectActor(obj.dataset.actor);
   else if(obj.hasAttribute('data-wall'))build(Number(obj.dataset.wall));
   else if(obj.hasAttribute('data-to'))step(Number(obj.dataset.to));
 }
 let pointerOrigin=null;
 $('board').addEventListener('pointerdown',event=>{
-  pointerOrigin={x:event.clientX,y:event.clientY,blocked:gate.busy};
+  boardKeyboard=false;
+  pointerOrigin={x:event.clientX,y:event.clientY,blocked:gate.busy||isCpuTurn(game,control)||!navigation.playing};
   const preview=event.target.closest?.('.wall-pick');
   if(!gate.busy&&preview)preview.classList.add('is-pressed');
 });
@@ -186,6 +241,9 @@ $('board').addEventListener('pointercancel',()=>{pointerOrigin=null;clearPreview
 $('board').addEventListener('pointerup',clearPreview);
 $('board').addEventListener('pointerleave',clearPreview);
 $('board').addEventListener('click',event=>{
+  // Un clic incompatible no debe consumir la protección de un gesto iniciado
+  // durante la CPU: podría terminar después, cuando vuelva el turno humano.
+  if(gate.busy||isCpuTurn(game,control)||!navigation.playing)return;
   const origin=pointerOrigin;
   pointerOrigin=null;
   if(gate.busy||origin?.blocked)return;
@@ -201,20 +259,12 @@ $('board').addEventListener('click',event=>{
   activateBoard(event.target);
 });
 $('board').addEventListener('keydown',event=>{
-  if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;if(!event.repeat)activateBoard(event.target);}
+  if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;boardKeyboard=true;if(!event.repeat)activateBoard(event.target);}
 });
-bindDialog($('newDialog'),$('new'),{onOpen:()=>{
-  if((game.moves||committedDraft(draft))&&!game.over&&!confirm('¿Comenzar una nueva partida? Se perderá la posición actual.'))return false;
-  document.querySelector(`input[name="turnMode"][value="${turnMode(game)}"]`).checked=true;
-}});
-$('startLocal').addEventListener('click',()=>{
-  if(!$('newDialog').open)return;
-  const mode=document.querySelector('input[name="turnMode"]:checked').value;
-  $('newDialog').close();newGame(mode);
-});
-bindDialog($('helpDialog'),$('help'));
-bindDialog($('optionsDialog'),$('options'));
-bindDialog($('guideDialog'),$('guide'),{fallback:$('help'),onOpen:()=>{document.querySelector('.legend-panel').open=true;}});
+bindDialog($('helpDialog'),$('help'),{extraOpeners:[$('homeRules')],fallback:$('homeRules'),onOpen:()=>cpu.cancel()});
+bindDialog($('optionsDialog'),$('options'),{extraOpeners:[$('homeOptions')],fallback:$('homeOptions'),onOpen:()=>cpu.cancel()});
+bindDialog($('guideDialog'),$('guide'),{fallback:$('help'),onOpen:()=>{cpu.cancel();document.querySelector('.legend-panel').open=true;}});
+for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('close',()=>{if(navigation.playing)queueMicrotask(()=>cpu.resume());});
 function updateHapticOption(){
   $('vibration').checked=haptics.enabled;
   $('vibration').disabled=!haptics.supported;
@@ -222,7 +272,8 @@ function updateHapticOption(){
 }
 $('vibration').addEventListener('change',()=>{haptics.setEnabled($('vibration').checked);updateHapticOption();});
 matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',()=>{haptics.stop();updateHapticOption();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)haptics.stop();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){haptics.stop();cpu.cancel();}else if(navigation.playing)cpu.resume();});
+window.addEventListener('focus',()=>{if(navigation.playing)cpu.resume();});
 window.addEventListener('pagehide',()=>haptics.stop());
 updateHapticOption();
 // Una sola guía; en ventanas compactas se consulta sin cambiar la retícula del juego.
@@ -244,5 +295,4 @@ function fitViewport(){
 window.visualViewport?.addEventListener('resize',fitViewport);
 window.addEventListener('resize',fitViewport);
 fitViewport();
-const recoveryNotice=loadGame();render();if(!committedDraft(draft))announceTurn();
-if(recoveryNotice)feedback.notice(recoveryNotice);
+loadGame();render();navigation.showHome({focus:false});

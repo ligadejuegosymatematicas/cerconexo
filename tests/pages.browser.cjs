@@ -8,7 +8,7 @@ const assert=require('node:assert/strict');
   const {startPagesServer,publicFiles}=await import('./pages-server.mjs');
   const {decodePNG}=await import('./png.mjs');
   const site=await startPagesServer();
-  const browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
+  const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}));
   const root=path.resolve(__dirname,'..');
   const report={mount:'/cerconexo/',checks:[],screens:[],resources:[]};
   try{

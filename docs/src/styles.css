@@ -1672,3 +1672,50 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .mode-choice input { width:20px; height:20px; flex-shrink:0; accent-color:var(--gold); }
 .mode-choice strong { font-size:15px; display:block; }
 .mode-choice small { font-size:13px; line-height:18px; display:block; color:var(--muted); margin-top:4px; }
+
+/* M2: portada independiente; la retícula y el tamaño del tablero se conservan. */
+.home-screen { min-height:var(--viewport-height,100dvh); display:grid; place-items:center; padding:24px; background:radial-gradient(ellipse at 50% 32%,#102A43 0,#071A2F 70%); }
+.home-content { width:min(100%,640px); display:flex; flex-direction:column; align-items:center; gap:28px; }
+.home-brand { width:min(100%,560px); margin:0; padding:0; border:1px solid var(--frame); border-radius:20px; background:var(--board); box-shadow:0 16px 45px #0003; }
+.home-logo { display:block; width:100%; height:min(39dvh,350px); object-fit:contain; }
+.home-menu { width:min(100%,310px); display:grid; gap:12px; }
+.home-menu button { min-height:50px; border:1px solid var(--edge); border-radius:11px; color:var(--text); background:var(--panel); font-size:17px; font-weight:650; }
+.home-menu .play-button { min-height:56px; background:var(--gold); border-color:var(--frame); color:var(--bg); font-size:20px; font-weight:800; }
+.home-menu .continue-button { border-color:var(--frame); }
+.home-secondary { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.home-secondary button { font-size:15px; }
+#homeStatus:empty { display:none; }
+#homeStatus { color:var(--muted); font-size:13px; line-height:18px; }
+.control-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.control-options button { min-height:64px; padding:10px; border:1px solid var(--edge); border-radius:10px; background:var(--panel); color:var(--text); font-size:16px; text-align:left; }
+.control-options small { display:block; color:var(--muted); font-size:12px; line-height:18px; }
+.control-options button[aria-pressed="true"] { border-color:var(--frame); background:#183650; box-shadow:inset 0 0 0 1px var(--frame); }
+.compact-options { margin:0 0 12px; padding:0; border:0; display:flex; flex-wrap:wrap; gap:6px; }
+.compact-options legend { color:var(--muted); font-size:13px; margin-bottom:6px; }
+.compact-options label { display:flex; align-items:center; gap:6px; min-height:44px; padding:6px 8px; border:1px solid var(--edge); border-radius:8px; font-size:13px; cursor:pointer; }
+.compact-options label:has(:checked) { border-color:var(--frame); }
+.compact-options input { width:18px; height:18px; accent-color:var(--gold); }
+.replace-warning { color:var(--gold); font-size:13px!important; }
+#configurationStatus { color:var(--gold); }
+.new-dialog #startLocal { position:sticky; bottom:0; width:100%; min-height:48px; background:var(--panel); }
+.cpu-identity { color:var(--muted); font-size:12px; line-height:16px; margin-top:3px; }
+.cpu-paused-action { min-height:44px; border:1px solid var(--frame); border-radius:8px; background:var(--panel); color:var(--text); }
+@media(max-width:760px), (max-height:500px) {
+  #home>span:last-child,#new>span:last-child { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .cpu-identity { position:absolute; right:10px; top:8px; font-size:11px; max-width:62%; text-align:right; }
+  .turn-card:has(.cpu-identity:not([hidden]))>h2 { max-width:43%; }
+  .home-content { gap:22px; }
+}
+@media(max-height:500px) and (min-width:600px) {
+  .home-content { width:min(100%,760px); display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:32px; }
+  .home-logo { height:250px; max-height:calc(var(--viewport-height,100dvh) - 48px); }
+  .home-menu { gap:8px; }
+  .home-menu button { min-height:44px; }
+}
+@media(max-width:380px) {
+  .header-actions #help .button-icon { display:inline; }
+  #help>span:last-child { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+}
+@media(max-width:340px) {
+  .official-logo { width:82px; height:24px; }
+}

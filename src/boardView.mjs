@@ -37,9 +37,9 @@ export function createBoardView(board){
     }
   }
   let renderedGame=null;
-  function render(game,draft,{busy=false}={}){
+  function render(game,draft,{busy=false,interactive=true}={}){
     const active=activeIds(game),actor=draft.actor??game.currentActor;
-    const choices=turnMode(game)===TEAM_TURNS&&!committedDraft(draft)?legalActors(game):[];
+    const choices=interactive&&turnMode(game)===TEAM_TURNS&&!committedDraft(draft)?legalActors(game):[];
     if(renderedGame!==game){
       paintTerritory(game);
       const walls=wallSet(game);
@@ -71,7 +71,7 @@ export function createBoardView(board){
       const hit=id===actor?{x:x+22,y:y+22,width:36,height:36}:from===undefined?{x:x+6,y:y+6,width:68,height:68}:moveHitBox(x,y,60+(from%SIZE)*80,60+Math.floor(from/SIZE)*80);
       targets+=`<g role="button" tabindex="0" class="actor-pick" data-actor="${id}" aria-pressed="${id===actor}" aria-label="Elegir ficha ${id} del equipo ${p.team}"><rect class="actor-hit" x="${hit.x}" y="${hit.y}" width="${hit.width}" height="${hit.height}"/><circle class="actor-focus" cx="${x+40}" cy="${y+40}" r="34" aria-hidden="true"/></g>`;
     }
-    if(!game.over&&actor){
+    if(!game.over&&actor&&interactive){
       const from=draft.path.at(-1);
       if(draft.path.length<3)for(const a of availableMoves(game,actor,from)){
         const x=100+(a%SIZE)*80,y=100+Math.floor(a/SIZE)*80;

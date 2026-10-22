@@ -9,12 +9,24 @@
   <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
-<div class="app">
+<main id="homeScreen" class="home-screen" aria-label="Inicio de Cerconexo">
+  <div class="home-content">
+    <h1 class="home-brand"><img class="home-logo" src="./assets/Cerconexo_logo_v3_transparente.png" alt="CERCONEXO"></h1>
+    <nav class="home-menu" aria-label="Menú principal">
+      <button type="button" id="play" class="play-button">Jugar</button>
+      <button type="button" id="continueGame" class="continue-button" hidden>Continuar partida</button>
+      <div class="home-secondary"><button type="button" id="homeRules">Reglas</button><button type="button" id="homeOptions">Opciones</button></div>
+      <p id="homeStatus" role="status"></p>
+    </nav>
+  </div>
+</main>
+<div class="app" hidden>
   <header class="topbar">
     <div class="branding">
       <h1><img class="official-logo" src="./assets/Cerconexo_wordmark_transparente.png" alt="CERCONEXO"></h1>
     </div>
     <nav class="header-actions" aria-label="Opciones de partida">
+      <button type="button" id="home" class="icon-btn" aria-label="Volver al inicio" title="Inicio"><span class="button-icon" aria-hidden="true">⌂</span><span>Inicio</span></button>
       <button type="button" id="help" class="icon-btn" aria-label="Reglas de Cerconexo"><span class="button-icon" aria-hidden="true">?</span><span>Reglas</span></button>
       <button type="button" id="options" class="icon-btn" aria-label="Opciones" title="Opciones"><span class="button-icon" aria-hidden="true">⚙</span><span>Opciones</span></button>
       <button type="button" id="new" class="icon-btn new-button" aria-label="Nueva partida"><span class="button-icon" aria-hidden="true">+</span><span>Nueva partida</span></button>
@@ -39,12 +51,13 @@
       </section>
     </aside>
     <section class="arena" aria-label="Mesa de juego">
-      <div class="board-topline"><span id="boardLabel">Tablero</span><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><span>7 × 7</span></div>
+      <div class="board-topline"><span id="boardLabel">Tablero</span><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><span id="boardMeta">7 × 7</span></div>
       <div class="board-wrap"><svg id="board" viewBox="28 20 624 624" role="group" aria-label="Tablero Cerconexo de siete por siete casillas"></svg></div>
     </section>
     <aside class="turn-panel" aria-label="Turno e indicaciones">
       <section class="turn-card panel" id="turnBanner" aria-label="Turno actual">
         <h2 class="micro">AHORA JUEGA</h2>
+        <p id="cpuIdentity" class="cpu-identity" hidden></p>
         <div class="turn-identity"><span class="turn-disc" id="turnDisc">A1</span><strong id="turnName">Equipo A · Jugador 1</strong></div>
         <div class="turn-meta"><span id="stepsPill">Sin desplazamiento</span><small id="moveCount">0 muros construidos</small></div>
         <div class="matchup-state" id="matchup"><strong id="matchupLabel">2 vs. 2</strong><span id="matchupPlayers">A1 y A2 vs. B1 y B2</span></div>
@@ -92,12 +105,29 @@
 </dialog>
 <dialog id="newDialog" class="help-dialog new-dialog" aria-labelledby="newTitle" aria-describedby="localDescription">
   <form method="dialog"><button class="dialog-close" aria-label="Cerrar nueva partida" autofocus>×</button></form>
-  <h2 id="newTitle">Nueva partida local</h2>
+  <h2 id="newTitle">Nueva partida</h2>
+  <div class="control-options" role="group" aria-label="Control de la partida">
+    <button type="button" data-control="local" aria-pressed="true">Local<small>Un dispositivo compartido</small></button>
+    <button type="button" data-control="cpu" aria-pressed="false">Contra CPU<small>Un rival automático</small></button>
+  </div>
   <p id="localDescription">Dos equipos, cuatro fichas y un dispositivo compartido.</p>
   <fieldset class="mode-options"><legend>Sistema de turnos</legend>
     <label class="mode-choice"><input type="radio" name="turnMode" value="piece" checked><span><strong>Turnos por ficha · Clásico</strong><small>Las fichas juegan en orden: A1, B1, A2, B2.</small></span></label>
     <label class="mode-choice"><input type="radio" name="turnMode" value="team"><span><strong>Turnos por equipo</strong><small>Cada equipo elige una de sus fichas activas en cada turno.</small></span></label>
   </fieldset>
+  <div id="cpuOptions" hidden>
+    <fieldset class="compact-options"><legend>Dificultad</legend>
+      <label><input type="radio" name="difficulty" value="beginner">Principiante</label>
+      <label><input type="radio" name="difficulty" value="intermediate" checked>Intermedio</label>
+      <label><input type="radio" name="difficulty" value="advanced">Avanzado</label>
+    </fieldset>
+    <fieldset class="compact-options"><legend>Tu equipo</legend>
+      <label><input type="radio" name="humanTeam" value="A" checked>Equipo A · naranja</label>
+      <label><input type="radio" name="humanTeam" value="B">Equipo B · celeste</label>
+    </fieldset>
+  </div>
+  <p id="replaceWarning" class="replace-warning" hidden>Al comenzar reemplazarás la partida guardada. Si cierras esta ventana, la conservarás.</p>
+  <p id="configurationStatus" role="status"></p>
   <button type="button" class="secondary dialog-ok" id="startLocal">Comenzar partida</button>
 </dialog>
 <div id="participationAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
