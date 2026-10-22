@@ -384,14 +384,7 @@ h1 {
   touch-action:manipulation;
   filter:drop-shadow(0 9px 10px #0005)
 }
-.game-controls {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  min-width:0;
-  padding:0 8px
-}
+
 .board-caption {
   font:italic 12px Georgia,serif;
   color:#afc1d1
@@ -401,13 +394,7 @@ h1 {
   border:1px solid #4a6883;
   color:var(--text)
 }
-.reset-path {
-  min-height:30px;
-  border-radius:7px;
-  padding:5px 10px;
-  font-size:10px;
-  white-space:nowrap
-}
+
 .secondary:hover {
   background:#204565
 }
@@ -979,17 +966,11 @@ h1 {
     letter-spacing:1.1px;
     padding:0 6px
   }
-  .game-controls {
-    padding:0 5px
-  }
+
   .board-caption {
     font-size:10px
   }
-  .reset-path {
-    min-height:34px;
-    font-size:10px;
-    padding:5px 8px
-  }
+
   .score-panel {
     grid-row:3;
     padding:10px;
@@ -1150,7 +1131,7 @@ h1 {
     grid-template-rows:34px auto
   }
 
-  .board-topline,.game-controls {
+  .board-topline {
     grid-row:1;
     grid-column:1
   }
@@ -1164,18 +1145,11 @@ h1 {
     display:none
   }
 
-  .game-controls {
-    justify-content:flex-end;
-    pointer-events:none
-  }
 
-  .reset-path {
-    pointer-events:auto
-  }
 
-  .arena:has(#cancel:not([hidden])) .board-topline {
-    visibility:hidden
-  }
+
+
+
 
   .player-state {
     font-size:10px
@@ -1231,14 +1205,14 @@ h1 {
 .minor-stats strong { font-size:15px; margin-left:0; }
 .status-swatch { width:10px; height:10px; flex-shrink:0; border-radius:2px; }
 .arena { grid-template-rows:44px minmax(0,1fr); }
-.board-topline,.game-controls { grid-row:1; grid-column:1; }
+.board-topline { grid-row:1; grid-column:1; }
 .board-topline { font-size:12px; letter-spacing:.4px; }
 .board-wrap { grid-row:2; grid-column:1; }
 .board-wrap svg { width:min(100%,calc(100dvh - 222px)); }
-.game-controls { justify-content:flex-end; pointer-events:none; }
-.reset-path { pointer-events:auto; min-height:44px; font-size:13px; padding:8px 12px; }
-.arena:has(#cancel:not([hidden])) .board-topline { visibility:visible; }
-.arena:has(#cancel:not([hidden])) .board-topline span:last-child { visibility:hidden; }
+
+
+
+
 .turn-card { padding:16px; border-top-width:3px; background:radial-gradient(ellipse at 0 0,color-mix(in srgb,var(--turn) 12%,transparent),transparent 75%),#0D223A; }
 .turn-card .micro { font-size:12px; letter-spacing:1px; }
 .turn-identity { margin:14px 0; }
@@ -1298,7 +1272,7 @@ h1 {
   .arena { grid-template-rows:44px auto; padding:3px; }
   .board-topline { font-size:12px; padding:0 9px; }
   .board-wrap svg { width:100%; }
-  .reset-path { font-size:13px; min-height:44px; }
+
   .score-panel { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; padding:10px; }
   .section-heading { grid-column:1/-1; grid-row:1; margin:0; align-items:center; }
   .section-heading .micro,.subtle { font-size:12px; letter-spacing:0; }
@@ -1384,7 +1358,7 @@ h1 {
   .territory-meter { grid-column:1/-1; grid-row:3; margin:1px 0; height:10px; }
   .minor-stats { grid-column:1/-1; grid-row:4; font-size:12px; }
   .minor-stats strong { font-size:14px; }
-  .reset-path { min-height:44px; }
+
 }
 
 @media(max-height:500px) and (min-width:600px) {
@@ -1682,8 +1656,15 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .token-candidate .candidate-aura { display:block; }
 .actor-pick { cursor:pointer; }
 .actor-hit { fill:transparent; }
-.actor-pick:focus-visible { outline:none; }
-.actor-pick:focus-visible .actor-hit { stroke:var(--text); stroke-width:3; stroke-dasharray:5 3; }
+/* Foco nativo SVG acotado: cada control mantiene su señal de teclado propia. */
+#interactionLayer > [role="button"]:focus { outline:none; }
+.actor-focus { display:none; fill:none; stroke:var(--panel); stroke-width:3; stroke-dasharray:3 4; pointer-events:none; }
+.actor-pick:focus-visible .actor-focus { display:block; }
+.legend-piece { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex-shrink:0; border-radius:50%; background:var(--a); color:#102A43; font-size:11px; font-weight:800; position:relative; }
+.legend-piece::after { content:""; position:absolute; inset:-4px; border:2px solid var(--a-glow); border-radius:50%; }
+.legend-piece.available::after { border-style:dashed; }
+.legend-piece.selected::after { border-color:var(--text); }
+.legend-content [data-team-guide] { align-items:center; gap:16px; line-height:17px; }
 .mode-options { border:0; padding:0; margin:16px 0; display:grid; gap:10px; }
 .mode-options legend { font-size:13px; color:var(--muted); margin-bottom:8px; }
 .mode-choice { display:flex; align-items:center; gap:12px; border:1px solid var(--edge); border-radius:10px; padding:12px; min-height:64px; cursor:pointer; }

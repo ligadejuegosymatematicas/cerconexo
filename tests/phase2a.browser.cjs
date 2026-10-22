@@ -114,26 +114,29 @@ async function layout(page){
       await context.close();
     }
     const {page,context}=await create(390,844);
-    // Recarga durante un paso: solo el borrador desaparece; el motor no avanzó.
+    // Recarga durante un paso: el recorrido persiste y el turno oficial aún no avanzó.
     await activate(page,'[data-to="9"]',{wait:false});await page.reload();await idle(page);
-    assert.equal(await page.locator('[data-piece="A1"]').getAttribute('transform'),'translate(180 180)');
+    assert.equal(await page.locator('[data-piece="A1"]').getAttribute('transform'),'translate(260 180)');
+    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('wallgo-league-v2')).pendingTurn.path),[8,9]);
     // Recarga durante muro: el turno ya se guardó exactamente una vez.
     await activate(page,'[data-wall]',{wait:false});const committed=await saved(page);
     await page.reload();await idle(page);assert.deepEqual(await saved(page),committed);
     // Nueva partida durante el efecto cancela toda continuación pendiente.
-    await reset(page);await activate(page,'[data-to="9"]',{wait:false});await page.locator('#new').click();await page.locator('#startLocal').click();await settle(page);await idle(page);
+    await reset(page);await activate(page,'[data-to="9"]',{wait:false});page.once('dialog',d=>d.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await settle(page);await idle(page);
     assert.equal((await saved(page)).moves,0);assert.equal(await page.locator('#turnDisc').innerText(),'A1');
     await activate(page,'[data-wall]',{wait:false});page.once('dialog',d=>d.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await settle(page);await idle(page);
     assert.equal((await saved(page)).moves,0);assert.equal(await page.locator('.wall-confirmation').count(),0);
     // Confirmación rechazada conserva la partida.
     await activate(page,'[data-wall]');const current=await saved(page);
     page.once('dialog',d=>d.dismiss());await page.locator('#new').click();assert.deepEqual(await saved(page),current);
-    // Regresar por el recorrido provisional no cambia la partida confirmada.
+    // Escape no elimina pasos ejecutados; la partida oficial solo avanza con el muro.
     await reset(page);await activate(page,'[data-to="15"]');await activate(page,'[data-to="16"]');
-    await page.locator('#cancel').click();await idle(page);
-    assert.equal(await page.locator('[data-piece="A1"]').getAttribute('transform'),'translate(180 180)');
+    await page.keyboard.press('Escape');await idle(page);
+    assert.equal(await page.locator('#cancel').count(),0);
+    assert.equal(await page.locator('[data-piece="A1"]').getAttribute('transform'),'translate(260 260)');
+    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('wallgo-league-v2')).pendingTurn.path),[8,15,16]);
     assert.equal((await saved(page))?.moves??0,0);
-    report.checks.push('Recarga durante paso/muro, reinicio durante ambas transiciones, confirmación y cancelación del recorrido');
+    report.checks.push('Recarga durante paso/muro, reinicio durante ambas transiciones, confirmación y ausencia de cancelación de pasos');
     // Aislamiento real provocado por un muro y paso al compañero en los turnos de A.
     let isolated=engine.initialState();isolated.walls=[1,7,9].map(to=>engine.wallKey(8,to));isolated.moves=3;
     assert.ok(engine.verifyState(isolated));await reset(page,isolated);

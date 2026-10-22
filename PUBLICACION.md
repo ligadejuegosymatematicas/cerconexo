@@ -1,6 +1,6 @@
 # Publicar CERCONEXO en GitHub Pages
 
-**Estado: versión estable publicada `d1264a190f122a29778048b7166efb1b8ec4b6f6`. M1 se prepara únicamente en `desarrollo`, sin autorización para subir, crear PR, fusionar ni publicar esta entrega.**
+**Estado: M1 publicada y verificada en `5c1ffdca6ded1485b75f8cce008a2b5d6956ac6e`. La revisión de movimientos definitivos se prepara únicamente en `desarrollo`; no está autorizada para subir, crear PR, fusionar ni publicar.**
 
 ## Destino previsto
 
@@ -16,7 +16,7 @@ No se modifica el repositorio del sitio principal `ligadejuegosymatematicas.gith
 
 `index.html` de la raíz sigue siendo el archivo fuente de entrada. `python scripts/build_pages.py` copia sin modificar sus bytes los archivos de ejecución a `docs/`. Esa carpeta será la raíz del sitio: `docs/index.html` se sirve como `/cerconexo/`.
 
-La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete local de M1 contiene veintidós archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
+La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete local de la revisión de M1 contiene veintitrés archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
 
 La lista explícita de `.gitignore` excluye también del repositorio los documentos internos, `validation/`, capturas, herramientas específicas del entorno y HTML generados. Los originales de la marca se conservan intactos y el paquete de Fase 2B usa solo el wordmark transparente derivado; el derivado completo permanece como recurso fuente del repositorio.
 

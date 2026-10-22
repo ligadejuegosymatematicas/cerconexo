@@ -76,11 +76,12 @@ test('M1: ficha rival o asegurada rechazada por el motor, sin alterar el estado'
   assert.equal(beginDraft(secured).actor,'A2');assert.equal(JSON.stringify(game),saved);
 });
 
-test('M1: selección y cambio descartan solo el recorrido provisional, no consumen ni guardan turno',()=>{
+test('M1 revisado: elegir y cambiar antes de mover no consume turno; después queda fijada',()=>{
   const game=engine.initialState({turnMode:TEAM_TURNS}),saved=JSON.stringify(game),empty=beginDraft(game);
-  const a=selectDraft(game,empty,'A1');a.path.push(9,16);
+  const a=selectDraft(game,empty,'A1');
   const b=selectDraft(game,a,'A2');assert.deepEqual(b,{actor:'A2',path:[40]});
-  assert.deepEqual(a.path,[8,9,16]);assert.equal(selectDraft(game,b,'A2'),b);
+  assert.deepEqual(a.path,[8]);assert.equal(selectDraft(game,b,'A2'),b);
+  a.path.push(9,16);assert.throws(()=>selectDraft(game,a,'A2'),/completar el turno/);
   assert.equal(JSON.stringify(game),saved);assert.deepEqual(beginDraft(JSON.parse(saved)),empty);
 });
 

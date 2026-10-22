@@ -41,7 +41,6 @@
     <section class="arena" aria-label="Mesa de juego">
       <div class="board-topline"><span id="boardLabel">Tablero</span><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><span>7 × 7</span></div>
       <div class="board-wrap"><svg id="board" viewBox="28 20 624 624" role="group" aria-label="Tablero Cerconexo de siete por siete casillas"></svg></div>
-      <div class="game-controls" aria-label="Controles del tablero"><button type="button" id="cancel" class="secondary reset-path" hidden>↶ Cambiar recorrido</button></div>
     </section>
     <aside class="turn-panel" aria-label="Turno e indicaciones">
       <section class="turn-card panel" id="turnBanner" aria-label="Turno actual">
@@ -58,7 +57,10 @@
       </section>
       <details class="legend-panel panel" open>
         <summary>Guía del tablero</summary>
-        <div class="legend-content"><div><span class="legend-dot" aria-hidden="true"></span><span>Punto turquesa <b>Dar un paso</b></span></div><div><span class="legend-gold" aria-hidden="true"></span><span>Borde dorado <b>Construir un muro</b></span></div><div><span class="legend-solid" aria-hidden="true"></span><span>Muro construido</span></div><div><span class="legend-dash" aria-hidden="true"></span><span>Lado abierto</span></div><div><span class="legend-cell" aria-hidden="true"></span><span>En disputa · sin puntos</span></div><div><span class="legend-cell empty" aria-hidden="true"></span><span>Región vacía · sin puntos</span></div></div>
+        <div class="legend-content"><div><span class="legend-dot" aria-hidden="true"></span><span>Punto turquesa <b>Dar un paso</b></span></div><div><span class="legend-gold" aria-hidden="true"></span><span>Borde dorado <b>Construir un muro</b></span></div><div><span class="legend-solid" aria-hidden="true"></span><span>Muro construido</span></div><div><span class="legend-dash" aria-hidden="true"></span><span>Lado abierto</span></div><div><span class="legend-cell" aria-hidden="true"></span><span>En disputa · sin puntos</span></div><div><span class="legend-cell empty" aria-hidden="true"></span><span>Región vacía · sin puntos</span></div>
+          <div data-team-guide hidden><span class="legend-piece available" aria-hidden="true">A1</span><span><b>Ficha disponible</b>Aro discontinuo: puedes elegirla antes de dar un paso.</span></div>
+          <div data-team-guide hidden><span class="legend-piece selected" aria-hidden="true">A1</span><span><b>Ficha seleccionada</b>Aro continuo: jugarás con ella. Tras el primer paso, queda fijada.</span></div>
+        </div>
       </details>
     </aside>
   </main>

@@ -1,14 +1,14 @@
 # CERCONEXO
 
-Juego de estrategia territorial local para cuatro personas, en dos equipos, de la Liga de Juegos y Matemáticas. Funciona en computadores y teléfonos. Las cuatro personas comparten un dispositivo; alojar el juego no añade partidas online.
+Juego de estrategia territorial local con dos equipos y cuatro fichas, de la Liga de Juegos y Matemáticas. Funciona en computadores y teléfonos. Los jugadores se organizan libremente para compartir un dispositivo; alojar el juego no añade partidas online.
 
 ## Sitio publicado y versión de trabajo
 
-La Fase 4 (incorporación `89dbe98`, candidata `954ec63`) está publicada en:
+M1, versión estable `5c1ffdca6ded1485b75f8cce008a2b5d6956ac6e`, está publicada en:
 
 [ligadejuegosymatematicas.github.io/cerconexo/](https://ligadejuegosymatematicas.github.io/cerconexo/)
 
-La Fase 5A se prepara exclusivamente en `desarrollo`: interfaz compacta, instrucciones breves, opciones separadas y estado persistente del enfrentamiento. Conserva la Fase 3A, el motor, las superficies táctiles y el formato de guardado. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
+La revisión de M1 se prepara exclusivamente en `desarrollo`: pasos definitivos y persistentes, bloqueo de ficha después del primer paso y corrección del foco SVG. Conserva las dos modalidades locales y las funciones anteriores. Esta entrega no actualiza el sitio publicado. Consulta [PUBLICACION.md](PUBLICACION.md) para publicar únicamente versiones aprobadas.
 
 ## Abrir en desarrollo
 
@@ -44,7 +44,7 @@ Ese archivo generado se conserva localmente y no es necesario para Pages.
 
 - index.html y src/: fuentes modulares de la interfaz y del motor.
 - assets/: marca oficial completa y recorte utilizado por la cabecera.
-- docs/: dieciocho archivos estáticos que constituyen el paquete candidato del sitio.
+- docs/: veintitrés archivos estáticos que constituyen el paquete candidato del sitio.
 - scripts/: manifiesto y preparación reproducible de Pages.
 - tests/: pruebas originales del motor, geometría y comprobación del sitio bajo /cerconexo/.
 - .github/workflows/verificar.yml: comprobaciones automáticas; no publica ni fusiona.
@@ -83,7 +83,7 @@ node tests/phase5a.browser.cjs
 
 La segunda prueba usa animaciones reales y comprueba bloqueo de entradas, recorridos, reinicios y recargas durante transiciones, aislamiento, partida completa, teclado, movimiento reducido y HTML autónomo. Genera capturas y resultados en `validation/phase2a/`, excluidos del repositorio y del sitio. La prueba de `file://` requiere generar antes el HTML autónomo.
 
-Los pasos provisionales se descartan al recargar, como en la Fase 1. El muro confirma la jugada y guarda el estado completo antes del efecto visual. En móvil, Reglas conserva la guía detallada; los jugadores con territorio asegurado se identifican con ✓ y permanecen en el tablero. Las comprobaciones de viewport no sustituyen la evaluación en teléfonos físicos.
+Los pasos ejecutados se conservan al recargar mediante el avance parcial del turno. El muro confirma la jugada completa y limpia ese avance antes del efecto visual. La Guía del tablero se consulta de forma independiente; los jugadores con territorio asegurado se identifican con ✓ y permanecen en el tablero. Las comprobaciones de viewport no sustituyen la evaluación en teléfonos físicos.
 
 ## Vibración y marca derivada
 
@@ -198,7 +198,9 @@ Se conservan las 92 pruebas previas, adaptando únicamente las expectativas de n
 Entrega local únicamente en desarrollo. No se sube ni publica; main y GitHub Pages deben conservar 2ece078f5b2563c35016ade18327e75daa4b2f55 hasta nueva autorización. No se comienza Fase 5C.
 
 
-## M1 — Modalidades locales (candidata local)
+## Referencia histórica — M1 original, publicada en 5c1ffdca
+
+Esta sección describe la entrega anterior. La revisión al final de este documento sustituye su comportamiento de cancelación y su guardado de recorridos.
 
 Referencia estable: `d1264a190f122a29778048b7166efb1b8ec4b6f6`. Esta entrega se desarrolla exclusivamente en `desarrollo`; no autoriza publicación, PR ni fusión. No incorpora CPU, online ni Arena.
 
@@ -226,3 +228,22 @@ Se conserva la clave `wallgo-league-v2`, la envoltura `{game}` y la versión 2. 
 Ejecutar las ocho suites históricas y `node tests/modes.browser.cjs`. Los escenarios de reinicio históricos completan el nuevo selector; mantienen las aserciones originales de las fases anteriores. El empaquetado local se regenera con `python scripts/build_pages.py` y `python build.py`. `python scripts/build_pages.py --check` verifica los 22 archivos publicables sin publicar nada.
 
 Evidencias e informe en `validation/m1/`; entrega autónoma y ZIP en `entregas/M1/`. Se detiene el desarrollo al finalizar M1, pendiente de aprobación.
+
+
+## Revisión de M1 — pasos definitivos (solo desarrollo)
+
+Referencia pública: `5c1ffdca6ded1485b75f8cce008a2b5d6956ac6e`. Esta revisión no se sube ni publica. Conserva ambas políticas de M1 y todo el motor matemático, incluido su SHA-256 `ee7982394c38dbdee738f04bb7811590e70dc4d9d6e3b39bea44aac8844b3a90`.
+
+Cada paso legal es definitivo. Se elimina Cambiar recorrido y Escape deja de cancelar pasos. En turnos por equipo se puede cambiar de ficha solamente antes del primer paso; después se fija hasta construir el muro. Regresar al origen sigue siendo un segundo paso legal, consume ambos pasos y exige construir. Las animaciones siguen usando 180 ms por paso y 280 ms por muro.
+
+`src/turnDraft.mjs` mantiene el recorrido ejecutado separado de la partida oficial. `src/gameSave.mjs` escribe atómicamente `{game, pendingTurn}` en la misma clave `wallgo-league-v2`. El estado oficial v2 no cambia. `pendingTurn`, solo presente tras mover, contiene versión 1, identidad de la ficha, recorrido ordenado, pasos consumidos y una firma textual exacta del estado base. El paso se guarda antes de animar. El muro se aplica con `applyTurn` y reemplaza la envoltura por `{game}` antes de presentarlo.
+
+La recarga valida el estado con el motor, verifica la base y recorre el camino utilizando `availableMoves`; recupera posición y pasos sin repetir animaciones antiguas. Los guardados anteriores sin pendingTurn se cargan sin reescritura y conservan su modalidad. Un avance inválido se descarta, se conserva la partida oficial válida y se informa de la recuperación. Un fallo de escritura impide aceptar el paso, muro o reinicio para no perder decisiones ejecutadas.
+
+No hay que alterar legalidad ni filtrar nuevos movimientos: todo paso legal mantiene abierto el borde interior por el que se llegó, que siempre permite construir un muro. Las pruebas comprueban este argumento en callejones y en todos los prefijos de partidas completas.
+
+El rectángulo negro se reprodujo como outline nativo `rgb(16,16,16) auto 5px` sobre grupos SVG con foco táctil, pese a no coincidir con :focus-visible. Se elimina únicamente el outline nativo de los controles SVG que tienen indicadores de teclado propios; las fichas usan un círculo explícito al navegar por teclado y los botones exteriores conservan su foco. La restauración de foco al reconstruir objetivos solo se realiza para teclado. No se cambian sus superficies de selección. La guía añade dos explicaciones contextuales para los aros de ficha disponible y seleccionada.
+
+Pruebas: 132 casos (113 anteriores y 19 nuevos), nueve suites anteriores y `tests/committed.browser.cjs`. Se conservan las pruebas de equivalencia clásica; se actualizan solo los escenarios que exigían cancelación o pérdida de pasos al recargar. La suite nueva incluye recuperación, bloqueos, almacenamiento dañado o sin cuota, teclado, tacto, partidas completas y fotogramas en nueve resoluciones. El paquete local ahora contiene 23 archivos, incluido gameSave.mjs. Regenerar con `python scripts/build_pages.py` y `python build.py`.
+
+Evidencias y diagnóstico: `validation/m1-revision/`. Entrega: `entregas/M1_Revision/`. No se inicia M2, CPU, online ni una pantalla inicial nueva.
