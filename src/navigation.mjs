@@ -6,8 +6,12 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
   let playing=false,controlType='local';
   const difficultyDescriptions={beginner:'Decisiones sencillas y variedad para aprender.',intermediate:'Equilibrio entre territorio y anticipación.',advanced:'Más anticipación y análisis de respuestas rivales.'};
   function describeDifficulty(){get('difficultyDescription').textContent=difficultyDescriptions[dialog.querySelector('input[name="difficulty"]:checked').value];}
+  function describeTeam(){get('humanTeamDescription').textContent=dialog.querySelector('[name="humanTeam"]:checked').value==='A'?'Tú juegas con A (naranja) y comienzas. La CPU controla B (celeste)':'Tú juegas con B (celeste). La CPU controla A (naranja) y comienza';}
+  function scrollHint(){const n=dialog.querySelector('.selector-content');dialog.querySelector('.selector-scroll-hint').hidden=n.scrollHeight<=n.clientHeight+2||n.scrollTop+n.clientHeight>=n.scrollHeight-2;}
+  new ResizeObserver(scrollHint).observe(dialog.querySelector('.selector-content'));
+  dialog.querySelector('.selector-content').addEventListener('scroll',scrollHint);
   function setControl(type){
-    controlType=type;
+    controlType=type;dialog.dataset.selectorControl=type;queueMicrotask(scrollHint);
     for(const button of dialog.querySelectorAll('[data-control]'))button.setAttribute('aria-pressed',String(button.dataset.control===type));
     get('cpuOptions').hidden=type!=='cpu';
     get('localDescription').textContent=type==='cpu'?'Tú controlas un equipo. La CPU controla el rival.':'Dos equipos, cuatro fichas y un dispositivo compartido.';
@@ -32,7 +36,7 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
     dialog.querySelector(`input[name="turnMode"][value="${fromGame?turnMode(s.game):'piece'}"]`).checked=true;
     dialog.querySelector(`input[name="difficulty"][value="${fromGame&&s.control?s.control.difficulty:'intermediate'}"]`).checked=true;
     dialog.querySelector(`input[name="humanTeam"][value="${fromGame&&s.control?s.control.humanTeam:'A'}"]`).checked=true;
-    describeDifficulty();
+    describeDifficulty();describeTeam();
     dialog.querySelector('.selector-content').scrollTop=0;
     // showModal restaura el foco y puede restaurar el desplazamiento anterior.
     // Restablecerlo con el diálogo visible, antes del siguiente pintado.
@@ -43,7 +47,7 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
     get('startLocal').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';
   }});
   for(const button of dialog.querySelectorAll('[data-control]'))button.addEventListener('click',()=>{feedback();setControl(button.dataset.control);});
-  dialog.addEventListener('change',event=>{if(event.target.matches('input[type="radio"]')){feedback();describeDifficulty();}});
+  dialog.addEventListener('change',event=>{if(event.target.matches('input[type="radio"]')){feedback();describeDifficulty();describeTeam();}});
   get('startLocal').addEventListener('click',()=>{
     feedback();
     const mode=dialog.querySelector('input[name="turnMode"]:checked').value;

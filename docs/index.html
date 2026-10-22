@@ -113,9 +113,9 @@
     <button type="button" data-control="cpu" aria-pressed="false"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4M19 9h4m-4 6h4"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg><span class="option-name">Contra CPU</span><small>Un rival automático</small><span class="option-check" aria-hidden="true">✓</span></button>
   </div>
   <p id="localDescription">Dos equipos, cuatro fichas y un dispositivo compartido.</p>
-  <fieldset class="mode-options"><legend>Sistema de turnos</legend>
-    <label class="mode-choice"><input type="radio" name="turnMode" value="piece" checked><span><strong>Turnos por ficha <span class="classic-chip">Clásico</span></strong><small>Las fichas juegan en orden: A1, B1, A2, B2.</small></span></label>
-    <label class="mode-choice"><input type="radio" name="turnMode" value="team"><span><strong>Turnos por equipo</strong><small>Cada equipo elige una de sus fichas activas en cada turno.</small></span></label>
+  <div class="selector-columns"><fieldset class="mode-options"><legend>Sistema de turnos</legend>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="piece" checked><span><strong>Turnos por ficha</strong><small>Cada ficha juega cuando le corresponde su turno</small></span></label>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="team"><span><strong>Turnos por equipo</strong><small>Cada equipo elige qué ficha activa utilizar en su turno</small></span></label>
   </fieldset>
   <div id="cpuOptions" hidden>
     <fieldset class="compact-options difficulty-options" aria-describedby="difficultyDescription"><legend>Dificultad</legend>
@@ -124,14 +124,16 @@
       <label><input type="radio" name="difficulty" value="advanced"><span class="level-bars" aria-hidden="true"><i></i><i></i><i></i></span><span>Avanzado</span><span class="choice-check" aria-hidden="true">✓</span></label>
     </fieldset>
     <p id="difficultyDescription" class="difficulty-description">Equilibrio entre territorio y anticipación.</p>
-    <fieldset class="compact-options team-options"><legend>Tu equipo</legend>
-      <label><input type="radio" name="humanTeam" value="A" checked><span class="selector-team team-a" aria-hidden="true">A</span><span>Equipo A<small>Naranja · comienza</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
-      <label><input type="radio" name="humanTeam" value="B"><span class="selector-team team-b" aria-hidden="true">B</span><span>Equipo B<small>Celeste · CPU inicia</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+    <fieldset class="compact-options team-options"><legend>¿Con qué equipo quieres jugar?</legend>
+      <label><input type="radio" name="humanTeam" value="A" checked><span class="selector-team team-a" aria-hidden="true">A</span><span>Equipo A · Naranja<small>Empiezas tú</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+      <label><input type="radio" name="humanTeam" value="B"><span class="selector-team team-b" aria-hidden="true">B</span><span>Equipo B · Celeste<small>Empieza la CPU</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
     </fieldset>
-  </div>
+  <p id="humanTeamDescription" class="human-team-description" aria-live="polite"></p>
+  </div></div>
   <p id="replaceWarning" class="replace-warning" hidden>Al comenzar reemplazarás la partida guardada. Si cierras esta ventana, la conservarás.</p>
   <p id="configurationStatus" role="status"></p>
   </div>
+  <p class="selector-scroll-hint" hidden>Más opciones abajo ↓ · Desliza para verlas</p>
   <button type="button" class="secondary dialog-ok" id="startLocal">Comenzar partida</button>
 </dialog>
 <div id="participationAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>

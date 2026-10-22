@@ -143,3 +143,5 @@
 !/tests/cpu.review.simulate.mjs
 !/tests/cpu.review.test.mjs
 !/tests/m2-review.browser.cjs
+
+!/tests/selector-final.browser.cjs
