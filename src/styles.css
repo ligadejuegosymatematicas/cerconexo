@@ -1785,3 +1785,26 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
  .new-dialog .selector-columns .mode-options { margin-top:0; }
  .new-dialog #cpuOptions fieldset:first-child { margin-top:0; }
 }
+
+/* M2: compactación vertical exclusiva del selector en móvil. */
+@media(max-width:600px) {
+ .new-dialog { padding-block:12px; }
+ .new-dialog h2 { padding-block:0; }
+ .new-dialog .selector-intro { margin-bottom:6px; }
+ .new-dialog .control-options { margin-bottom:6px; }
+ .new-dialog .control-options button { min-height:72px; padding-block:6px; row-gap:2px; }
+ .new-dialog .control-options small { margin-top:4px; }
+ .new-dialog #localDescription { margin:6px 0 8px; }
+ .new-dialog .mode-options { margin:6px 0 8px; gap:4px; }
+ .new-dialog fieldset legend { margin-bottom:4px; }
+ .new-dialog .mode-choice { min-height:54px; padding-block:6px; }
+ .new-dialog .difficulty-options label { min-height:50px; padding-block:5px; gap:3px; }
+ .new-dialog .difficulty-description { min-height:16px; margin:3px 0 5px; }
+ .new-dialog .team-options { margin-bottom:8px; }
+ .new-dialog .team-options label { min-height:56px; padding-block:4px; }
+ .new-dialog .human-team-description { min-height:0; margin:6px 0 2px; line-height:16px; }
+ .new-dialog #configurationStatus:empty { margin:0; }
+ .new-dialog .replace-warning { margin:6px 0 0; line-height:17px; }
+ .new-dialog .selector-scroll-hint { margin-top:2px; }
+ .new-dialog #startLocal { margin-top:10px; }
+}
