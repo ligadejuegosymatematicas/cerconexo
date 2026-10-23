@@ -10,6 +10,7 @@ async function reload(p){if(p===trackedPage)collectedFrames.push(...await p.eval
 const frame=p=>p.evaluate(()=>{const b=document.getElementById('board').getBoundingClientRect();return {page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height],scale:visualViewport.scale};});
 async function hit(p,selector,{keyboard=false,touch=false}={}){
  const node=p.locator(selector).first();
+ await node.waitFor({state:'visible'});
  if(keyboard){await node.focus();await p.keyboard.press('Enter');}
  else{const box=await node.boundingBox();assert.ok(box,selector);if(touch)await p.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);else await p.mouse.click(box.x+box.width/2,box.y+box.height/2);}
  await idle(p);

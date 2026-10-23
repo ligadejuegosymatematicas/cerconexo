@@ -6,7 +6,7 @@ const idle=p=>p.waitForFunction(()=>document.getElementById('board').getAttribut
 const stored=p=>p.evaluate(()=>localStorage.getItem('wallgo-league-v2'));
 async function load(p,game){await p.evaluate(game=>{localStorage.setItem('wallgo-league-v2',JSON.stringify({game}));},game);await p.reload();await idle(p);}
 const layout=p=>p.evaluate(()=>{const r=document.getElementById('board').getBoundingClientRect();return {page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[r.x,r.y,r.width,r.height],zoom:visualViewport.scale};});
-async function tap(p,selector,touch){const r=await p.locator(selector).boundingBox();assert.ok(r,selector);if(touch)await p.touchscreen.tap(r.x+r.width/2,r.y+r.height/2);else await p.mouse.click(r.x+r.width/2,r.y+r.height/2);}
+async function tap(p,selector,touch){await p.locator(selector).waitFor({state:'visible'});const r=await p.locator(selector).boundingBox();assert.ok(r,selector);if(touch)await p.touchscreen.tap(r.x+r.width/2,r.y+r.height/2);else await p.mouse.click(r.x+r.width/2,r.y+r.height/2);}
 (async()=>{
   await fs.mkdir(out,{recursive:true});
   const {startPagesServer}=await import('./pages-server.mjs'),engine=await import('../src/engine.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
@@ -142,7 +142,13 @@ async function tap(p,selector,touch){const r=await p.locator(selector).boundingB
     const rotating=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'}),rot=await rotating.newPage();
     await rot.goto(site.url);await load(rot,fixture.after);await tap(rot,'[data-explore-cell="8"]',true);const contourBeforeResize=await rot.locator('[data-region-boundary]').getAttribute('d');
     for(const [w,h,size] of [[740,360,240],[360,740,336],[1366,600,440],[390,844,366]]){
-      await rot.setViewportSize({width:w,height:h});await rot.waitForFunction(()=>document.documentElement.scrollHeight===innerHeight&&document.documentElement.scrollWidth===innerWidth);
+      await rot.setViewportSize({width:w,height:h});
+      // La orientación CSS puede cambiar antes del evento visualViewport.resize.
+      // Esperar a que la aplicación haya ajustado su altura; después comprobar
+      // por separado las dimensiones exactas, sin esperar el valor que se afirma.
+      await rot.waitForFunction(height=>Math.abs(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--viewport-height'))-height)<1,h);
+      await rot.locator('#board').waitFor({state:'visible'});
+      assert.equal(await rot.evaluate(()=>document.documentElement.scrollHeight),h);assert.equal(await rot.evaluate(()=>document.documentElement.scrollWidth),w);
       assert.equal((await rot.locator('#board').boundingBox()).width,size);assert.equal(await rot.locator('[data-region-boundary]').getAttribute('d'),contourBeforeResize);
       assert.ok(await rot.locator('#winnerTitle').isVisible());assert.equal(await rot.locator('[data-explore-cell][tabindex="0"]').count(),1);await contour(rot,model.byCell[8]);
     }
