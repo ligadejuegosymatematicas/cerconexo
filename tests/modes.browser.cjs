@@ -11,8 +11,12 @@ const frame=p=>p.evaluate(()=>{const b=document.getElementById('board').getBound
 async function hit(p,selector,{keyboard=false,touch=false}={}){
  const node=p.locator(selector).first();
  await node.waitFor({state:'visible'});
+ assert.ok(await node.isVisible(),selector);
  if(keyboard){await node.focus();await p.keyboard.press('Enter');}
- else{const box=await node.boundingBox();assert.ok(box,selector);if(touch)await p.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);else await p.mouse.click(box.x+box.width/2,box.y+box.height/2);}
+ // Visible no garantiza que CDP ya pueda calcular la caja de un grupo SVG.
+ // Las acciones reales esperan además estabilidad y recepción de eventos.
+ else if(touch)await node.tap();
+ else await node.click();
  await idle(p);
 }
 async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallgo-league-v2',JSON.stringify({game:state})),state);await reload(p);}
