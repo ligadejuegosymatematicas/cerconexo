@@ -29,7 +29,7 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
   const {resultFixture}=await import('./result-fixtures.mjs'),{directDuelFixture}=await import('./participation-fixtures.mjs');
   const {ArenaSession,replayArenaSave}=await import('../arena/src/session.mjs');
   const site=await startPagesServer({entry:''}),browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
-  const report={platform:process.platform,browser:browser.version(),diagnostic,errors:[],geometry:[],restart:[],arena:[],monitor:[]};
+  const report={platform:process.platform,browser:browser.version(),diagnostic,errors:[],geometry:[],restart:[],arena:[],monitor:[],fastArena:[]};
   const create=async(width,height,reducedMotion='reduce')=>{
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,reducedMotion});
     await context.tracing.start({screenshots:true,snapshots:true,sources:true});const p=await context.newPage();p.on('pageerror',e=>report.errors.push({message:e.message,stack:e.stack}));return {context,p};
@@ -46,6 +46,20 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
       await seedClassic(p,engine.initialState());await p.click('#home');await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
       await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await p.screenshot({path:path.join(out,'monitor-home.png')});await c.close();
+      // Reproducir la secuencia histórica sin añadir consultas que ralenticen el foco.
+      for(let trial=0;trial<10;trial++){
+        const {context,p}=await create(390,844,'no-preference');
+        await context.addInitScript(()=>{window.focusLog=[];for(const type of ['focusin','keydown','close'])document.addEventListener(type,e=>focusLog.push({type,key:e.key,id:e.target.id,kind:e.target.getAttribute?.('data-kind'),cell:e.target.getAttribute?.('data-cell'),at:performance.now()}),true);});
+        await p.goto(site.url+'arena/');await p.check('[name=mode][value=duo]');await p.check('[name=policy][value=piece]');
+        await p.locator('#experimentJson').evaluate(n=>n.value=JSON.stringify({initial:[{cell:11,type:'extraWall'},{cell:20,type:'jump'}],waves:[],symmetry:'vertical',placement:'center-first'}));
+        await p.click('#startArena');await p.waitForFunction(()=>!document.getElementById('newDialog').open);
+        await p.locator('[data-kind=move][data-cell="11"]').focus();await p.keyboard.press('Tab');await p.keyboard.press('Shift+Tab');
+        await p.locator('[data-kind=move][data-cell="11"]').evaluate(n=>getComputedStyle(n.querySelector('.focus-ring')).stroke);
+        await p.keyboard.press('Enter');
+        const observed=await p.evaluate(()=>({inventory:document.getElementById('inventoryTitle').textContent,raw:localStorage.getItem('cerconexo-arena-m3a-v1'),events:focusLog,active:document.activeElement?.outerHTML,dialog:document.getElementById('newDialog').open}));
+        report.fastArena.push(observed);
+        await context.tracing.stop({path:path.join(out,`inventory-fast-${trial}.zip`)});await context.close();
+      }
     }
     for(const [width,height] of [[1440,900],[1366,768],[1366,600],[390,844],[360,740],[740,360],[1280,560]]){
       const {context,p}=await create(width,height),fixture=resultFixture();await seedClassic(p,fixture.before);
@@ -54,6 +68,18 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
       const direct=directDuelFixture();await seedClassic(p,direct.before);await p.locator(`[data-wall="${direct.to}"]`).click();await idle(p);
       const participation=await geometry(p);await p.screenshot({path:path.join(out,`participacion-${width}x${height}.png`)});
       report.geometry.push({width,height,before,after,participation});
+      if(!diagnostic){
+        assert.deepEqual(after.nodes['#board'].box,before.nodes['#board'].box,`Tablero estable ${width}×${height}`);
+        assert.deepEqual(after.page,[width,height]);assert.deepEqual(participation.page,[width,height]);
+        for(const key of ['.context-slot','#recentEvent']){
+          const n=participation.nodes[key];assert.ok(n.scroll[0]<=n.client[0]+1&&n.scroll[1]<=n.client[1]+1,`Texto completo ${key} ${width}×${height}`);
+        }
+        const slot=participation.nodes['.context-slot'].box;
+        for(const key of ['.recent-heading','.recent-detail']){
+          const n=participation.nodes[key];assert.ok(n.text.trim());
+          assert.ok(n.box[1]+n.box[3]<=slot[1]+slot[3]+1,`Aviso dentro de su reserva ${key} ${width}×${height}`);
+        }
+      }
       await context.tracing.stop({path:path.join(out,`layout-${width}x${height}.zip`)});await context.close();
     }
     // Secuencia exacta que falló al reiniciar después de terminar una partida.
@@ -65,7 +91,11 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
       const snapshot=await classicSnapshot(p),decoded=decodeGameSave(snapshot.raw);
       report.restart.push({stage:'motion-preference-changed',...snapshot,legal9:engine.availableMoves(decoded.game,decoded.draft.actor,decoded.draft.path.at(-1)).includes(9)});
       const target=p.locator('[data-to="9"]');
-      if(await target.isVisible()){await target.click();await idle(p);report.restart.push({stage:'step9',...await classicSnapshot(p)});}
+      if(!diagnostic){assert.ok(report.restart.at(-1).legal9);await target.waitFor({state:'visible'});}
+      if(await target.isVisible()){
+        await target.click();await idle(p);const after=await classicSnapshot(p);report.restart.push({stage:'step9',...after});
+        if(!diagnostic){const data=JSON.parse(after.raw);assert.deepEqual(data.pendingTurn.path,[8,9]);assert.equal(data.game.moves,0);}
+      }
       await p.screenshot({path:path.join(out,'restart.png')});await context.tracing.stop({path:path.join(out,'restart.zip')});await context.close();
     }
     // Antes/después del poder: diario, estado oficial reconstruido y foco real.
@@ -74,14 +104,31 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
       await context.addInitScript(()=>{window.keyboardAudit=[];for(const type of ['focusin','keydown','close'])document.addEventListener(type,e=>keyboardAudit.push({type,key:e.key,id:e.target.id,kind:e.target.getAttribute?.('data-kind'),cell:e.target.getAttribute?.('data-cell')}),true);});
       await p.goto(site.url+'arena/');
       const experiment={initial:[{cell:11,type:'extraWall'},{cell:20,type:'jump'}],waves:[],symmetry:'vertical',placement:'center-first'};
-      await p.locator('#experimentJson').evaluate((n,v)=>n.value=JSON.stringify(v),experiment);await p.click('#startArena');await p.waitForFunction(()=>!document.getElementById('newDialog').open);
+      await p.locator('#experimentJson').evaluate((n,v)=>n.value=JSON.stringify(v),experiment);
+      await p.locator('#newDialog').evaluate(d=>{d.closeObserved=false;d.addEventListener('close',()=>d.closeObserved=true,{once:true});});
+      await p.click('#startArena');await p.waitForFunction(()=>{const d=document.getElementById('newDialog');return !d.open&&d.closeObserved;});
       const before=await arenaSnapshot(p);report.arena.push({stage:'new-game',...before});
       const expected=ArenaSession.restore({setItem(){}},before.raw);assert.ok(expected.ok);expected.session.dispatch({type:'move',to:11});
       await p.locator('[data-kind="move"][data-cell="11"]').focus();report.arena.push({stage:'focus',...await arenaSnapshot(p)});
       await p.keyboard.press('Tab');report.arena.push({stage:'Tab',...await arenaSnapshot(p)});
       await p.keyboard.press('Shift+Tab');report.arena.push({stage:'Shift+Tab',...await arenaSnapshot(p)});
+      if(!diagnostic)assert.ok(await p.locator('[data-kind="move"][data-cell="11"]').evaluate(n=>n===document.activeElement&&n.matches(':focus-visible')));
       await p.keyboard.press('Enter');
       const after=await arenaSnapshot(p);report.arena.push({stage:'Enter',...after,game:replayArenaSave(after.raw).game,expectedGame:expected.session.game});
+      if(!diagnostic){
+        assert.deepEqual(replayArenaSave(after.raw).game,expected.session.game);assert.match(after.inventory,/1\/1/);
+        assert.equal(expected.session.game.pieces.find(p=>p.id==='A1').pos,11);assert.equal(expected.session.game.drops.some(p=>p.cell===11),false);
+        await p.reload();assert.equal((await arenaSnapshot(p)).raw,after.raw);assert.match(await p.locator('#inventoryTitle').innerText(),/1\/1/);
+        // La misma recogida con ratón y tacto debe producir el mismo diario que Enter.
+        for(const method of ['click','tap']){
+          await p.evaluate(({ak,raw})=>localStorage.setItem(ak,raw),{ak,raw:before.raw});await p.reload();
+          await p.locator('[data-kind="move"][data-cell="11"]')[method]();
+          const selected=await arenaSnapshot(p);assert.deepEqual(replayArenaSave(selected.raw).game,expected.session.game);
+          assert.equal(JSON.parse(selected.raw).commands.length,1);assert.match(selected.inventory,/1\/1/);
+        }
+        await p.click('#arenaHome');await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
+        await p.locator('[data-mode=arena] [data-continue]').click();assert.equal((await arenaSnapshot(p)).raw,after.raw);
+      }
       await p.screenshot({path:path.join(out,'inventory-original-sequence.png')});
       // Selección explícita y verificada: no confundir el estado de foco con el motor.
       if(await p.locator('#newDialog').evaluate(n=>n.open))await p.keyboard.press('Escape');
@@ -95,6 +142,6 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
   }finally{
     await fs.writeFile(path.join(out,'diagnosis.json'),JSON.stringify(report,null,2));await browser.close();await site.close();
   }
-  console.log(JSON.stringify({platform:report.platform,browser:report.browser,geometryCases:report.geometry.length,restart:report.restart,arena:report.arena.map(s=>({stage:s.stage,active:s.active,dialog:s.dialog,inventory:s.inventory,commands:JSON.parse(s.raw).commands,equalToEngine:s.equalToEngine})),errors:report.errors},null,2));
+  console.log(JSON.stringify({platform:report.platform,browser:report.browser,geometryCases:report.geometry.length,restart:report.restart,arena:report.arena.map(s=>({stage:s.stage,active:s.active,dialog:s.dialog,inventory:s.inventory,commands:JSON.parse(s.raw).commands,equalToEngine:s.equalToEngine})),fastArena:report.fastArena,errors:report.errors},null,2));
   if(!diagnostic)assert.equal(report.errors.length,0);
 })().catch(e=>{console.error(e);process.exitCode=1;});

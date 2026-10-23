@@ -23,7 +23,10 @@ const {pathToFileURL}=require('node:url');
     await page.check(`[name="mode"][value="${mode}"]`);
     if(mode==='duo')await page.check(`[name="policy"][value="${policy}"]`);
     if(experiment)await page.locator('#experimentJson').evaluate((el,cfg)=>{el.value=JSON.stringify(cfg);},experiment);
-    await page.click('#startArena');await page.waitForFunction(()=>!document.getElementById('newDialog').open);
+    // close() cambia .open antes de emitir close y restaurar el foco. No empezar
+    // una prueba de teclado hasta haber observado ese acontecimiento real.
+    await page.locator('#newDialog').evaluate(d=>{d.closeObserved=false;d.addEventListener('close',()=>d.closeObserved=true,{once:true});});
+    await page.click('#startArena');await page.waitForFunction(()=>{const d=document.getElementById('newDialog');return !d.open&&d.closeObserved;});
   };
   const saved=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('cerconexo-arena-m3a-v1')));
   const newContext=async(viewport,reducedMotion='reduce',video=false)=>{
@@ -69,7 +72,14 @@ const {pathToFileURL}=require('node:url');
     await page.locator('[data-kind="move"][data-cell="11"]').focus();
     await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');
     assert.equal(await page.locator('[data-kind="move"][data-cell="11"]').evaluate(e=>{const ring=e.querySelector('.focus-ring');return getComputedStyle(ring).stroke!=='rgba(0, 0, 0, 0)';}),true);
-    await page.keyboard.press('Enter');assert.match(await page.locator('#inventoryTitle').innerText(),/1\/1/);
+    assert.ok(await page.locator('[data-kind="move"][data-cell="11"]').evaluate(n=>n===document.activeElement&&n.matches(':focus-visible')));
+    const pickupBefore=await saved(page);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(n=>JSON.parse(localStorage.getItem('cerconexo-arena-m3a-v1')).commands.length===n+1,pickupBefore.commands.length);
+    const pickupAfter=await saved(page),{replayArenaSave}=await import('../src/session.mjs'),beforePower=replayArenaSave(JSON.stringify(pickupBefore)),afterPower=replayArenaSave(JSON.stringify(pickupAfter));
+    assert.ok(beforePower.ok&&afterPower.ok);assert.equal(beforePower.game.inventories.A1.length,0);assert.equal(afterPower.game.inventories.A1.length,1);
+    assert.deepEqual(pickupAfter.commands.at(-1),{type:'move',to:11});assert.equal(afterPower.game.pieces.find(p=>p.id==='A1').pos,11);
+    assert.equal(afterPower.game.drops.some(p=>p.cell===11),false);assert.match(await page.locator('#inventoryTitle').innerText(),/1\/1/);
     await click(page,'[data-kind="move"][data-cell="20"]',true);await shot(page,'inventario-lleno-pendiente');
     assert.equal(await page.locator('#decisionPanel').isVisible(),true);assert.equal(await page.locator('[data-action]').count(),0);
     const pendingBefore=await saved(page);await page.reload();assert.deepEqual(await saved(page),pendingBefore);assert.equal(await page.locator('#decisionPanel').isVisible(),true);

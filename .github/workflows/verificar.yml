@@ -42,7 +42,9 @@ jobs:
         env:
           CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_BROWSER_CHANNEL: chromium
-        run: node tests/browser-runner.cjs
+        run: |
+          node tests/platform.browser.cjs --diagnose
+          node tests/browser-runner.cjs
       - name: Diagnosticar diferencias entre plataformas si falla el navegador
         if: failure() && steps.browser.outcome == 'failure'
         env:
@@ -55,8 +57,14 @@ jobs:
         with:
           name: evidencia-navegador-${{ github.run_id }}
           path: |
-            validation/
-            arena/evidence/
+            validation/platform/
+            validation/integration/suites/
+            validation/integration/browser/results.json
+            validation/phase2a/missing-target*
+            validation/phase4/*.png
+            validation/phase4/results.json
+            validation/phase5a/results.json
+            arena/evidence/m3b-regression/results.json
           retention-days: 7
       - name: Verificar ZIP, extracción limpia y reconstrucción
         env:

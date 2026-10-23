@@ -1502,7 +1502,7 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .matchup-state { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:24px; font-size:12px; line-height:16px; color:var(--text); }
 .matchup-state strong { white-space:nowrap; font-weight:700; }
 .matchup-state span { color:var(--muted); text-align:right; }
-.context-slot { position:relative; height:64px; margin-top:8px; border-top:1px solid #35567480; }
+.context-slot { position:relative; height:80px; margin-top:8px; border-top:1px solid #35567480; }
 .context-slot .prompt,#recentEvent { position:absolute; inset:0; margin:0; padding:6px 0 0; min-height:0; border:0; font-size:13px; line-height:18px; }
 #recentEvent { font-size:12px; line-height:17px; color:var(--text); pointer-events:none; }
 .has-recent-event .context-slot .prompt { opacity:0; }
@@ -1558,7 +1558,8 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
   .context-slot .prompt,#recentEvent { grid-row:auto; height:40px; padding-top:2px; line-height:16px; }
   .context-slot .prompt { font-size:13px; }
   #recentEvent { font-size:12px; }
-  .score-panel { padding:7px 8px; gap:3px 8px; }
+  /* Reservar la misma altura que el marcador final, también con fuentes Linux. */
+  .score-panel { padding:7px 8px; gap:3px 8px; min-height:139.5px; }
   .player { min-height:32px; }
   .help-dialog { padding:16px; }
   .help-dialog h2 { font-size:21px; }
@@ -1650,6 +1651,13 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 
 #recentEvent[data-team="both"] .recent-heading { font-size:13px; letter-spacing:-.1px; }
 #recentEvent[data-team="both"] .recent-detail { font-size:12px; line-height:16px; }
+
+/* En horizontal el aviso doble puede necesitar dos líneas de título y dos de detalle.
+   La diferencia de 8px compensa exactamente disco y enfrentamiento compactados. */
+@media(max-height:500px) and (min-width:600px) {
+  .context-slot,.context-slot .prompt { height:56px; }
+  .has-recent-event .context-slot,#recentEvent { height:64px; }
+}
 
 /* M1: candidatas discontinuas; la elegida conserva el aro sólido existente. */
 .candidate-aura { display:none; fill:none; stroke:var(--piece-glow); stroke-width:3; stroke-dasharray:5 4; }

@@ -10,6 +10,9 @@ const idle=page=>page.waitForFunction(()=>document.getElementById('board').getAt
 const settle=page=>page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{}))));
 const saved=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('wallgo-league-v2'))?.game);
 async function activate(page,selector,{touch=false,wait=true}={}){
+  // Una caja consultada durante el cierre del diálogo puede ser nula aunque el
+  // objetivo legal ya exista en el DOM. Esperar visibilidad, no un retardo fijo.
+  await page.locator(selector).first().waitFor({state:'visible'});
   const box=await page.locator(selector).first().boundingBox();
   if(!box){
     const snapshot=await page.evaluate(()=>({url:location.href,raw:localStorage.getItem('wallgo-league-v2'),busy:document.getElementById('board')?.getAttribute('aria-busy'),

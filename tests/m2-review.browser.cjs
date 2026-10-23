@@ -9,7 +9,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/m2-review
   window.selectorAudit={pulses:[],frames:[]};
   Object.defineProperty(navigator,'vibrate',{configurable:true,value:options.api==='absent'?undefined:pattern=>{selectorAudit.pulses.push(pattern);if(options.api==='throw')throw Error('API rechazada');return true;}});
   if(options.disabled)localStorage.setItem('cerconexo-preferences-v1',JSON.stringify({vibration:false}));
-  document.addEventListener('DOMContentLoaded',()=>{const frame=()=>{const b=document.getElementById('board').getBoundingClientRect();selectorAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:b.width?[b.x,b.y,b.width,b.height]:null});if(selectorAudit.frames.length<4000)requestAnimationFrame(frame);};requestAnimationFrame(frame);});
+  document.addEventListener('DOMContentLoaded',()=>{const frame=()=>{const board=document.getElementById('board');if(!board)return;const b=board.getBoundingClientRect();selectorAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:b.width?[b.x,b.y,b.width,b.height]:null});if(selectorAudit.frames.length<4000)requestAnimationFrame(frame);};requestAnimationFrame(frame);});
  },options);const p=await context.newPage();p.on('pageerror',e=>report.errors.push(e.message));await p.goto(site.url);return {p,context};}
  async function capture(p,name){await p.waitForTimeout(180);await p.screenshot({path:path.join(out,name+'.png')});}
  try{
