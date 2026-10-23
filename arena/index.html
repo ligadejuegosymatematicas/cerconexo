@@ -4,41 +4,32 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071A2F">
-  <title>Cerconexo Arena · Prototipo M3-A</title>
+  <title>Cerconexo Arena · Experimental M3-B</title>
   <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
   <div class="arena-app">
     <header class="header">
-      <div class="brand"><img src="./assets/wordmark.png" alt="Cerconexo" width="176" height="45"><div><strong>ARENA</strong><span>Prototipo experimental M3-A</span></div></div>
+      <div class="brand"><img src="./assets/wordmark.png" alt="Cerconexo" width="176" height="45"><div><strong>ARENA</strong><span>Experimental M3-B</span></div></div>
       <nav aria-label="Controles"><button id="rulesOpen" type="button">Reglas</button><button id="newOpen" type="button">Nueva partida</button></nav>
     </header>
     <section class="scoreboard" aria-label="Puntuación territorial"><div id="scores"></div><p id="distribution"></p></section>
     <main class="workspace">
       <section class="play-area" aria-label="Partida Arena">
-        <div class="turn-banner" id="turnBanner"><span id="turnKicker" class="eyebrow"></span><h1 id="turnTitle"></h1><p id="turnHint"></p></div>
+        <div class="turn-banner" id="turnBanner" tabindex="0"><span id="turnKicker" class="eyebrow"></span><h1 id="turnTitle"></h1><p id="turnHint"></p></div>
         <div class="board-wrap"><svg id="arenaBoard" viewBox="0 0 900 900" role="group" aria-label="Tablero Arena de 9 por 9. Toca casillas para mover y bordes para construir."></svg></div>
-        <p id="eventNotice" class="event-notice" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div class="board-tools"><button id="inspectToggle" type="button" aria-pressed="false" aria-controls="arenaBoard">Inspeccionar regiones</button><button id="guideOpen" type="button" aria-label="Guía del tablero y poderes">Guía</button></div>
+        <p id="inspectionInfo" class="inspection-info" role="status" aria-live="polite" aria-atomic="true" tabindex="0" hidden></p>
+        <p id="eventNotice" class="event-notice" role="status" aria-live="polite" aria-atomic="true" tabindex="0"></p>
       </section>
       <aside class="side-panel" aria-label="Poderes y participantes">
         <section id="decisionPanel" class="decision" hidden aria-labelledby="decisionTitle"><span class="eyebrow">Decisión pendiente</span><h2 id="decisionTitle"></h2><p id="decisionDescription"></p><div id="discardOptions" class="discard-options"></div></section>
-        <section class="powers"><span class="eyebrow">Inventario</span><h2 id="inventoryTitle">Poderes disponibles</h2><div id="powerOptions" class="power-options"></div><p id="toolHelp" class="muted"></p><button id="cancelTool" type="button" hidden>Volver a mover o construir</button></section>
-        <section><h2>Las cuatro fichas</h2><ul id="participants" class="participants"></ul></section>
-        <details class="guide"><summary>Guía del tablero y poderes</summary><ul>
-          <li><span class="sample move-sample"></span> Punto turquesa: paso disponible.</li>
-          <li><span class="sample wall-sample"></span> Borde dorado: muro final obligatorio.</li>
-          <li><span class="sample built-sample"></span> Muro construido: bloquea el paso normal.</li>
-          <li><strong>✓</strong> Ficha asegurada: no actúa; puede reactivarse si vuelve a compartir región con rivales.</li>
-          <li>Aro discontinuo: ficha disponible para elegir. Aro dorado continuo: ficha seleccionada.</li>
-          <li><strong>D</strong> Demolición: retira un muro adyacente, sin gastar pasos.</li>
-          <li><strong>S</strong> Salto: cruza un muro hacia la casilla contigua libre; consume un paso.</li>
-          <li><strong>+</strong> Muro adicional: construye sin gastar pasos; no sustituye el muro final si sigues activo.</li>
-        </ul><p>Elige un poder del inventario y después su objetivo en el tablero. Puedes volver al movimiento normal sin gastar el poder. Los pasos y poderes ejecutados son definitivos.</p></details>
-        <details class="diagnostics"><summary>Registro experimental de oleadas</summary><div id="waveLog"></div><p class="muted">Las distancias registradas recorren conexiones abiertas; no consideran bloqueos temporales de otras fichas.</p></details>
+        <section class="powers"><h2 id="inventoryTitle">Poderes disponibles</h2><div id="powerOptions" class="power-options"></div><p id="toolHelp" class="muted"></p><button id="cancelTool" type="button" hidden>Movimiento y muro</button></section>
+
       </aside>
     </main>
     <p id="problem" class="problem" role="alert" hidden></p>
-    <p class="prototype-note">Solo prueba local · Guardado independiente de Cerconexo Premium</p>
+
   </div>
   <dialog id="newDialog" aria-labelledby="newTitle" aria-describedby="newIntro">
     <form id="newForm"><div class="dialog-heading"><h2 id="newTitle">Nueva partida Arena</h2><button type="button" class="close" data-close aria-label="Cerrar">×</button></div>
@@ -60,6 +51,16 @@
       <li><strong>Final.</strong> Al desaparecer la última región compartida termina la partida. Gana quien tiene más casillas exclusivas; puede haber empate. No se solicitan descartes después del final.</li></ol>
     <p class="muted">Los parámetros de aparición son experimentales y se consultan en Nueva partida. Esta aplicación utiliza un motor y un guardado propios; no modifica Cerconexo Premium.</p>
   </div></dialog>
+  <dialog id="guideDialog" aria-labelledby="guideTitle"><div class="dialog-heading"><h2 id="guideTitle">Guía del tablero y poderes</h2><button type="button" class="close" data-close aria-label="Cerrar">×</button></div><div class="dialog-body guide">        <ul>
+          <li><span class="sample move-sample"></span> Punto turquesa: paso disponible.</li>
+          <li><span class="sample wall-sample"></span> Borde dorado: muro final obligatorio.</li>
+          <li><span class="sample built-sample"></span> Muro construido: bloquea el paso normal.</li>
+          <li><strong>✓</strong> Ficha asegurada: no actúa; puede reactivarse si vuelve a compartir región con rivales.</li>
+          <li>Aro discontinuo: ficha disponible para elegir. Aro dorado continuo: ficha seleccionada.</li>
+          <li><span data-guide-icon="demolition"></span> Demolición: retira un muro adyacente, sin gastar pasos.</li>
+          <li><span data-guide-icon="jump"></span> Salto: cruza un muro hacia la casilla contigua libre; consume un paso.</li>
+          <li><span data-guide-icon="extraWall"></span> Muro adicional: construye sin gastar pasos; no sustituye el muro final si sigues activo.</li>
+        </ul><p>Elige un poder del inventario y después su objetivo en el tablero. Puedes volver al movimiento normal sin gastar el poder. Los pasos y poderes ejecutados son definitivos.</p></div></dialog>
   <script type="module" src="./src/app.mjs"></script>
 </body>
 </html>

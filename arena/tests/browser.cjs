@@ -7,7 +7,7 @@ const {pathToFileURL}=require('node:url');
 
 (async()=>{
   const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
-  const root=path.resolve(__dirname,'..'),out=path.join(root,'evidence');await fs.mkdir(out,{recursive:true});
+  const root=path.resolve(__dirname,'..'),out=path.join(root,'evidence/m3b-regression');await fs.mkdir(out,{recursive:true});
   const server=http.createServer(async(req,res)=>{
     try{
       const relative=decodeURIComponent(new URL(req.url,'http://arena.local').pathname).replace(/^\/arena\/?/,'')||'index.html';
@@ -140,7 +140,7 @@ const {pathToFileURL}=require('node:url');
 
     // Archivo autónomo real: sin servidor ni recursos externos.
     const fileContext=await browser.newContext({viewport:{width:1366,height:768},reducedMotion:'reduce'}),filePage=await fileContext.newPage();
-    filePage.on('pageerror',e=>report.errors.push(e.message));await filePage.goto(pathToFileURL(path.join(root,'Cerconexo_Arena_M3A.html')).href);
+    filePage.on('pageerror',e=>report.errors.push(e.message));await filePage.goto(pathToFileURL(path.join(root,'Cerconexo_Arena_M3B.html')).href);
     await setup(filePage,{mode:'ffa'});await click(filePage,'[data-kind="move"]');await filePage.reload();
     assert.match(await filePage.locator('#turnHint').innerText(),/1 paso/);assert.equal(await filePage.locator('[data-cell-bg]').count(),81);
     assert.equal(await filePage.locator('.brand img').evaluate(i=>i.complete&&i.naturalWidth>0),true);await shot(filePage,'autonomo-cuatro-equipos');

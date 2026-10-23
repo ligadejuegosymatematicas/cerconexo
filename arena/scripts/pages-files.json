@@ -1,0 +1,12 @@
+[
+  "index.html",
+  "src/app.mjs",
+  "src/styles.css",
+  "src/geometry.mjs",
+  "src/config.mjs",
+  "src/engine.mjs",
+  "src/session.mjs",
+  "src/regionInspection.mjs",
+  "src/powerIcons.mjs",
+  "assets/wordmark.png"
+]

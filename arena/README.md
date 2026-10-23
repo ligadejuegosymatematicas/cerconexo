@@ -1,10 +1,10 @@
-# CERCONEXO ARENA — prototipo experimental M3-A
+# CERCONEXO ARENA — revisión experimental M3-B
 
 Aplicación local independiente. No reemplaza Premium, no importa su motor y no forma parte del paquete de GitHub Pages. Sirve para probar las reglas, no constituye una versión definitiva de Arena.
 
 ## Jugar
 
-Abre `Cerconexo_Arena_M3A.html` en un navegador moderno. Contiene código, estilos y la marca oficial, sin recursos de red. El guardado depende de que el navegador permita almacenamiento local; los guardados de un archivo local, localhost y otro dispositivo no se transfieren automáticamente.
+Abre `Cerconexo_Arena_M3B.html` en un navegador moderno. Contiene código, estilos y la marca oficial, sin recursos de red. El guardado depende de que el navegador permita almacenamiento local; los guardados de un archivo local, localhost y otro dispositivo no se transfieren automáticamente.
 
 Para las fuentes modulares, inicia un servidor desde esta carpeta y abre su raíz:
 
@@ -46,7 +46,7 @@ Una visita desactiva inmediatamente la casilla especial. El motor conserva tempo
 
 Las oleadas consideran únicamente casillas desocupadas, sin poder activo y en componentes compartidas. Buscan parejas reflejadas verticalmente o conjuntos rotacionales de 90°. Deben caber todos los conjuntos previstos: no aparece una oleada parcial. Si no hay conjunto completo, se omite y registra. El criterio determinista `center-first` prioriza cercanía Manhattan al centro y luego orden de índices; `row-major` usa el orden de índices. El centro y las casillas fijas de una reflexión no cuentan como parejas completas.
 
-El registro experimental muestra casillas, omisiones y distancias del grafo abierto a las fichas. Las distancias ignoran la ocupación temporal por otras fichas; `sin camino` significa otra componente. La simetría no garantiza igual accesibilidad ni equilibrio competitivo.
+El motor conserva internamente casillas, omisiones y distancias del grafo abierto a las fichas; no hay registro técnico en la interfaz de juego. Las distancias ignoran la ocupación temporal por otras fichas; `sin camino` significa otra componente. La simetría no garantiza igual accesibilidad ni equilibrio competitivo.
 
 ## Arquitectura y guardado
 
@@ -75,7 +75,7 @@ Desde la raíz Premium, se usan `python arena/build.py`, `node --test arena/test
 ## Límites del prototipo
 
 - Interfaz funcional, sin animaciones elaboradas, sonidos, CPU ni online. La prioridad es probar las reglas.
-- En móvil y ventanas bajas existe desplazamiento accesible para inventarios, descartes y guías; no se oculta contenido para simular que todo cabe. El tablero no cambia de tamaño al seleccionar o confirmar acciones.
+- En las resoluciones móviles principales se compactan inventarios y descartes; la guía se abre en un panel temporal. En ventanas excepcionalmente pequeñas se conserva desplazamiento accesible. El tablero no cambia de tamaño al seleccionar o confirmar acciones.
 - Los objetivos de un tablero 9×9 son más pequeños que los de Premium 7×7; falta evaluación física de precisión en Android/iOS.
 - Teclado mediante Tab, Enter/Espacio y flechas entre objetivos legales; no equivale todavía a una auditoría con lectores de pantalla reales.
 - El diario se reproduce entero al cargar. Es adecuado para el prototipo finito de poderes y paredes; no es un sistema de historial navegable ni de seguridad contra manipulación de archivos.
@@ -83,3 +83,7 @@ Desde la raíz Premium, se usan `python arena/build.py`, `node --test arena/test
 - Al confirmar una acción se guarda antes de presentarla. Cerrar el navegador antes de que reciba el gesto no puede registrarse como una acción ejecutada.
 
 Sin publicación, PR ni fusión. Premium conserva sus fuentes, motor, guardados y paquete público.
+
+## M3-B: consulta y propuesta de publicación
+
+Ver INFORME_M3B.md y PUBLICACION_M3B.md. Inspeccionar regiones es una consulta temporal sobre las componentes del motor, sin acciones ni escrituras. La guía y el inventario usan los mismos SVG originales. El núcleo y la clave de guardado M3-A no cambian. Las pruebas nuevas se ejecutan con node tests/m3b.browser.cjs después de preparar el ensayo mediante python scripts/build_pages.py desde este directorio dentro del repositorio Premium. El ensayo no modifica docs/.

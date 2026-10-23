@@ -1,0 +1,846 @@
+{
+  "reference": "f450e7e304faae92751b03244bce980bfebdcc5d",
+  "hashes": {
+    "engine": "4f4527c9ba3153f0c760def8e5b89f748a82b320a6e9df9592d9789be49fe158",
+    "geometry": "e9ca60ab51cc6b9d625abdb9fed50ac82675c2962a734410b804dcdb3025c8e4",
+    "config": "67bfd53550c2ff0b7d4f041bb200d37e8e7f2eea3582f2200925ccec146e6f97",
+    "session": "81159bb796322360fa6d2b4b4c46d4cde38dc062a1004acae22c99ba141b4657"
+  },
+  "saves": [
+    {
+      "name": "duo-piece",
+      "raw": "{\"format\":\"cerconexo-arena-journal\",\"version\":1,\"setup\":{\"mode\":\"duo\",\"policy\":\"piece\",\"experiment\":{\"initial\":[{\"type\":\"demolition\",\"cell\":20},{\"type\":\"demolition\",\"cell\":24},{\"type\":\"jump\",\"cell\":56},{\"type\":\"jump\",\"cell\":60},{\"type\":\"extraWall\",\"cell\":39},{\"type\":\"extraWall\",\"cell\":41}],\"waves\":[{\"afterTurn\":8,\"type\":\"jump\",\"count\":2},{\"afterTurn\":16,\"type\":\"demolition\",\"count\":2}],\"symmetry\":\"vertical\",\"placement\":\"center-first\"}},\"commands\":[{\"type\":\"move\",\"to\":11}]}",
+      "game": {
+        "format": "cerconexo-arena",
+        "version": 1,
+        "mode": "duo",
+        "policy": "piece",
+        "experiment": {
+          "initial": [
+            {
+              "type": "demolition",
+              "cell": 20
+            },
+            {
+              "type": "demolition",
+              "cell": 24
+            },
+            {
+              "type": "jump",
+              "cell": 56
+            },
+            {
+              "type": "jump",
+              "cell": 60
+            },
+            {
+              "type": "extraWall",
+              "cell": 39
+            },
+            {
+              "type": "extraWall",
+              "cell": 41
+            }
+          ],
+          "waves": [
+            {
+              "afterTurn": 8,
+              "type": "jump",
+              "count": 2
+            },
+            {
+              "afterTurn": 16,
+              "type": "demolition",
+              "count": 2
+            }
+          ],
+          "symmetry": "vertical",
+          "placement": "center-first"
+        },
+        "teams": [
+          "A",
+          "B"
+        ],
+        "pieces": [
+          {
+            "id": "A1",
+            "team": "A",
+            "pos": 11
+          },
+          {
+            "id": "B1",
+            "team": "B",
+            "pos": 16
+          },
+          {
+            "id": "A2",
+            "team": "A",
+            "pos": 70
+          },
+          {
+            "id": "B2",
+            "team": "B",
+            "pos": 64
+          }
+        ],
+        "walls": [],
+        "inventories": {
+          "A1": [],
+          "B1": [],
+          "A2": [],
+          "B2": []
+        },
+        "drops": [
+          {
+            "type": "demolition",
+            "cell": 20,
+            "id": "initial-0"
+          },
+          {
+            "type": "demolition",
+            "cell": 24,
+            "id": "initial-1"
+          },
+          {
+            "type": "jump",
+            "cell": 56,
+            "id": "initial-2"
+          },
+          {
+            "type": "jump",
+            "cell": 60,
+            "id": "initial-3"
+          },
+          {
+            "type": "extraWall",
+            "cell": 39,
+            "id": "initial-4"
+          },
+          {
+            "type": "extraWall",
+            "cell": 41,
+            "id": "initial-5"
+          }
+        ],
+        "completedTurns": 0,
+        "revision": 1,
+        "lastActed": {
+          "A": null,
+          "B": null
+        },
+        "turn": {
+          "team": "A",
+          "actor": "A1",
+          "steps": 1,
+          "path": [
+            10,
+            11
+          ],
+          "committed": true,
+          "actions": 1
+        },
+        "resolution": null,
+        "pending": null,
+        "over": false,
+        "winners": [],
+        "waveLog": [],
+        "lastEvents": [
+          {
+            "type": "action",
+            "action": "move",
+            "actor": "A1",
+            "to": 11
+          }
+        ]
+      }
+    },
+    {
+      "name": "duo-team",
+      "raw": "{\"format\":\"cerconexo-arena-journal\",\"version\":1,\"setup\":{\"mode\":\"duo\",\"policy\":\"team\",\"experiment\":{\"initial\":[{\"type\":\"demolition\",\"cell\":20},{\"type\":\"demolition\",\"cell\":24},{\"type\":\"jump\",\"cell\":56},{\"type\":\"jump\",\"cell\":60},{\"type\":\"extraWall\",\"cell\":39},{\"type\":\"extraWall\",\"cell\":41}],\"waves\":[{\"afterTurn\":8,\"type\":\"jump\",\"count\":2},{\"afterTurn\":16,\"type\":\"demolition\",\"count\":2}],\"symmetry\":\"vertical\",\"placement\":\"center-first\"}},\"commands\":[{\"type\":\"select\",\"actor\":\"A1\"},{\"type\":\"move\",\"to\":11}]}",
+      "game": {
+        "format": "cerconexo-arena",
+        "version": 1,
+        "mode": "duo",
+        "policy": "team",
+        "experiment": {
+          "initial": [
+            {
+              "type": "demolition",
+              "cell": 20
+            },
+            {
+              "type": "demolition",
+              "cell": 24
+            },
+            {
+              "type": "jump",
+              "cell": 56
+            },
+            {
+              "type": "jump",
+              "cell": 60
+            },
+            {
+              "type": "extraWall",
+              "cell": 39
+            },
+            {
+              "type": "extraWall",
+              "cell": 41
+            }
+          ],
+          "waves": [
+            {
+              "afterTurn": 8,
+              "type": "jump",
+              "count": 2
+            },
+            {
+              "afterTurn": 16,
+              "type": "demolition",
+              "count": 2
+            }
+          ],
+          "symmetry": "vertical",
+          "placement": "center-first"
+        },
+        "teams": [
+          "A",
+          "B"
+        ],
+        "pieces": [
+          {
+            "id": "A1",
+            "team": "A",
+            "pos": 11
+          },
+          {
+            "id": "B1",
+            "team": "B",
+            "pos": 16
+          },
+          {
+            "id": "A2",
+            "team": "A",
+            "pos": 70
+          },
+          {
+            "id": "B2",
+            "team": "B",
+            "pos": 64
+          }
+        ],
+        "walls": [],
+        "inventories": {
+          "A": [],
+          "B": []
+        },
+        "drops": [
+          {
+            "type": "demolition",
+            "cell": 20,
+            "id": "initial-0"
+          },
+          {
+            "type": "demolition",
+            "cell": 24,
+            "id": "initial-1"
+          },
+          {
+            "type": "jump",
+            "cell": 56,
+            "id": "initial-2"
+          },
+          {
+            "type": "jump",
+            "cell": 60,
+            "id": "initial-3"
+          },
+          {
+            "type": "extraWall",
+            "cell": 39,
+            "id": "initial-4"
+          },
+          {
+            "type": "extraWall",
+            "cell": 41,
+            "id": "initial-5"
+          }
+        ],
+        "completedTurns": 0,
+        "revision": 2,
+        "lastActed": {
+          "A": null,
+          "B": null
+        },
+        "turn": {
+          "team": "A",
+          "actor": "A1",
+          "steps": 1,
+          "path": [
+            10,
+            11
+          ],
+          "committed": true,
+          "actions": 1
+        },
+        "resolution": null,
+        "pending": null,
+        "over": false,
+        "winners": [],
+        "waveLog": [],
+        "lastEvents": [
+          {
+            "type": "action",
+            "action": "move",
+            "actor": "A1",
+            "to": 11
+          }
+        ]
+      }
+    },
+    {
+      "name": "ffa-piece",
+      "raw": "{\"format\":\"cerconexo-arena-journal\",\"version\":1,\"setup\":{\"mode\":\"ffa\",\"policy\":\"piece\",\"experiment\":{\"initial\":[{\"type\":\"extraWall\",\"cell\":20},{\"type\":\"extraWall\",\"cell\":24},{\"type\":\"extraWall\",\"cell\":60},{\"type\":\"extraWall\",\"cell\":56}],\"waves\":[{\"afterTurn\":8,\"type\":\"jump\",\"count\":4},{\"afterTurn\":16,\"type\":\"demolition\",\"count\":4}],\"symmetry\":\"rotation\",\"placement\":\"center-first\"}},\"commands\":[{\"type\":\"move\",\"to\":11}]}",
+      "game": {
+        "format": "cerconexo-arena",
+        "version": 1,
+        "mode": "ffa",
+        "policy": "piece",
+        "experiment": {
+          "initial": [
+            {
+              "type": "extraWall",
+              "cell": 20
+            },
+            {
+              "type": "extraWall",
+              "cell": 24
+            },
+            {
+              "type": "extraWall",
+              "cell": 60
+            },
+            {
+              "type": "extraWall",
+              "cell": 56
+            }
+          ],
+          "waves": [
+            {
+              "afterTurn": 8,
+              "type": "jump",
+              "count": 4
+            },
+            {
+              "afterTurn": 16,
+              "type": "demolition",
+              "count": 4
+            }
+          ],
+          "symmetry": "rotation",
+          "placement": "center-first"
+        },
+        "teams": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "pieces": [
+          {
+            "id": "A",
+            "team": "A",
+            "pos": 11
+          },
+          {
+            "id": "B",
+            "team": "B",
+            "pos": 16
+          },
+          {
+            "id": "C",
+            "team": "C",
+            "pos": 70
+          },
+          {
+            "id": "D",
+            "team": "D",
+            "pos": 64
+          }
+        ],
+        "walls": [],
+        "inventories": {
+          "A": [],
+          "B": [],
+          "C": [],
+          "D": []
+        },
+        "drops": [
+          {
+            "type": "extraWall",
+            "cell": 20,
+            "id": "initial-0"
+          },
+          {
+            "type": "extraWall",
+            "cell": 24,
+            "id": "initial-1"
+          },
+          {
+            "type": "extraWall",
+            "cell": 60,
+            "id": "initial-2"
+          },
+          {
+            "type": "extraWall",
+            "cell": 56,
+            "id": "initial-3"
+          }
+        ],
+        "completedTurns": 0,
+        "revision": 1,
+        "lastActed": {
+          "A": null,
+          "B": null,
+          "C": null,
+          "D": null
+        },
+        "turn": {
+          "team": "A",
+          "actor": "A",
+          "steps": 1,
+          "path": [
+            10,
+            11
+          ],
+          "committed": true,
+          "actions": 1
+        },
+        "resolution": null,
+        "pending": null,
+        "over": false,
+        "winners": [],
+        "waveLog": [],
+        "lastEvents": [
+          {
+            "type": "action",
+            "action": "move",
+            "actor": "A",
+            "to": 11
+          }
+        ]
+      }
+    },
+    {
+      "name": "pending",
+      "raw": "{\"format\":\"cerconexo-arena-journal\",\"version\":1,\"setup\":{\"mode\":\"duo\",\"policy\":\"piece\",\"experiment\":{\"initial\":[{\"cell\":11,\"type\":\"extraWall\"},{\"cell\":20,\"type\":\"jump\"}],\"waves\":[],\"symmetry\":\"vertical\",\"placement\":\"center-first\"}},\"commands\":[{\"type\":\"move\",\"to\":11},{\"type\":\"move\",\"to\":20}]}",
+      "game": {
+        "format": "cerconexo-arena",
+        "version": 1,
+        "mode": "duo",
+        "policy": "piece",
+        "experiment": {
+          "initial": [
+            {
+              "cell": 11,
+              "type": "extraWall"
+            },
+            {
+              "cell": 20,
+              "type": "jump"
+            }
+          ],
+          "waves": [],
+          "symmetry": "vertical",
+          "placement": "center-first"
+        },
+        "teams": [
+          "A",
+          "B"
+        ],
+        "pieces": [
+          {
+            "id": "A1",
+            "team": "A",
+            "pos": 20
+          },
+          {
+            "id": "B1",
+            "team": "B",
+            "pos": 16
+          },
+          {
+            "id": "A2",
+            "team": "A",
+            "pos": 70
+          },
+          {
+            "id": "B2",
+            "team": "B",
+            "pos": 64
+          }
+        ],
+        "walls": [],
+        "inventories": {
+          "A1": [
+            {
+              "id": "initial-0",
+              "type": "extraWall"
+            },
+            {
+              "id": "initial-1",
+              "type": "jump"
+            }
+          ],
+          "B1": [],
+          "A2": [],
+          "B2": []
+        },
+        "drops": [],
+        "completedTurns": 0,
+        "revision": 2,
+        "lastActed": {
+          "A": null,
+          "B": null
+        },
+        "turn": {
+          "team": "A",
+          "actor": "A1",
+          "steps": 2,
+          "path": [
+            10,
+            11,
+            20
+          ],
+          "committed": true,
+          "actions": 2
+        },
+        "resolution": {
+          "actor": "A1",
+          "finish": false,
+          "pickup": null,
+          "pickupOwner": "A1"
+        },
+        "pending": {
+          "kind": "discard",
+          "owner": "A1",
+          "team": "A",
+          "capacity": 1,
+          "reason": "pickup"
+        },
+        "over": false,
+        "winners": [],
+        "waveLog": [],
+        "lastEvents": [
+          {
+            "type": "action",
+            "action": "move",
+            "actor": "A1",
+            "to": 20
+          },
+          {
+            "type": "pickup",
+            "actor": "A1",
+            "power": "jump"
+          }
+        ]
+      }
+    },
+    {
+      "name": "over",
+      "raw": "{\"format\":\"cerconexo-arena-journal\",\"version\":1,\"setup\":{\"mode\":\"duo\",\"policy\":\"piece\",\"experiment\":{\"initial\":[{\"type\":\"demolition\",\"cell\":20},{\"type\":\"demolition\",\"cell\":24},{\"type\":\"jump\",\"cell\":56},{\"type\":\"jump\",\"cell\":60},{\"type\":\"extraWall\",\"cell\":39},{\"type\":\"extraWall\",\"cell\":41}],\"waves\":[{\"afterTurn\":8,\"type\":\"jump\",\"count\":2},{\"afterTurn\":16,\"type\":\"demolition\",\"count\":2}],\"symmetry\":\"vertical\",\"placement\":\"center-first\"}},\"commands\":[{\"type\":\"wall\",\"to\":9},{\"type\":\"move\",\"to\":25},{\"type\":\"wall\",\"to\":16},{\"type\":\"move\",\"to\":69},{\"type\":\"wall\",\"to\":70},{\"type\":\"move\",\"to\":55},{\"type\":\"wall\",\"to\":64},{\"type\":\"move\",\"to\":1},{\"type\":\"wall\",\"to\":2},{\"type\":\"move\",\"to\":26},{\"type\":\"wall\",\"to\":35},{\"type\":\"move\",\"to\":60},{\"type\":\"wall\",\"to\":61},{\"type\":\"move\",\"to\":54},{\"type\":\"wall\",\"to\":45},{\"type\":\"move\",\"to\":0},{\"type\":\"wall\",\"to\":9},{\"type\":\"move\",\"to\":17},{\"type\":\"wall\",\"to\":8},{\"type\":\"move\",\"to\":69},{\"type\":\"wall\",\"to\":68},{\"type\":\"move\",\"to\":55},{\"type\":\"wall\",\"to\":46},{\"type\":\"move\",\"to\":1},{\"type\":\"wall\",\"to\":0},{\"type\":\"move\",\"to\":26},{\"type\":\"wall\",\"to\":17},{\"type\":\"move\",\"to\":78},{\"type\":\"wall\",\"to\":79},{\"type\":\"move\",\"to\":56},{\"type\":\"wall\",\"to\":65},{\"type\":\"move\",\"to\":10},{\"type\":\"wall\",\"to\":1},{\"type\":\"move\",\"to\":25},{\"type\":\"wall\",\"to\":26},{\"type\":\"move\",\"to\":77},{\"type\":\"wall\",\"to\":68},{\"type\":\"move\",\"to\":55},{\"type\":\"wall\",\"to\":56},{\"type\":\"move\",\"to\":19},{\"type\":\"wall\",\"to\":18},{\"type\":\"move\",\"to\":34},{\"type\":\"wall\",\"to\":25},{\"type\":\"move\",\"to\":76},{\"type\":\"wall\",\"to\":67},{\"type\":\"move\",\"to\":54},{\"type\":\"wall\",\"to\":55},{\"type\":\"move\",\"to\":20},{\"type\":\"wall\",\"to\":19},{\"type\":\"move\",\"to\":35},{\"type\":\"wall\",\"to\":44},{\"type\":\"move\",\"to\":75},{\"type\":\"wall\",\"to\":66},{\"type\":\"move\",\"to\":63},{\"type\":\"wall\",\"to\":54},{\"type\":\"move\",\"to\":29},{\"type\":\"wall\",\"to\":28},{\"type\":\"move\",\"to\":34},{\"type\":\"wall\",\"to\":35},{\"type\":\"move\",\"to\":74},{\"type\":\"wall\",\"to\":73},{\"type\":\"move\",\"to\":64},{\"type\":\"wall\",\"to\":73},{\"type\":\"move\",\"to\":20},{\"type\":\"wall\",\"to\":11},{\"type\":\"move\",\"to\":43},{\"type\":\"wall\",\"to\":34},{\"type\":\"move\",\"to\":75},{\"type\":\"wall\",\"to\":74},{\"type\":\"move\",\"to\":65},{\"type\":\"wall\",\"to\":66},{\"type\":\"move\",\"to\":29},{\"type\":\"wall\",\"to\":20},{\"type\":\"move\",\"to\":42},{\"type\":\"wall\",\"to\":33},{\"type\":\"move\",\"to\":76},{\"type\":\"wall\",\"to\":75},{\"type\":\"move\",\"to\":51},{\"type\":\"wall\",\"to\":60},{\"type\":\"move\",\"to\":38},{\"type\":\"discard\",\"owner\":\"A1\",\"power\":\"initial-0\"},{\"type\":\"move\",\"to\":47},{\"type\":\"wall\",\"to\":38},{\"type\":\"move\",\"to\":50},{\"type\":\"wall\",\"to\":51},{\"type\":\"move\",\"to\":77},{\"type\":\"wall\",\"to\":78},{\"type\":\"move\",\"to\":49},{\"type\":\"wall\",\"to\":48},{\"type\":\"move\",\"to\":46},{\"type\":\"wall\",\"to\":37},{\"type\":\"move\",\"to\":40},{\"type\":\"wall\",\"to\":41},{\"type\":\"move\",\"to\":47},{\"type\":\"wall\",\"to\":56},{\"type\":\"move\",\"to\":39},{\"type\":\"discard\",\"owner\":\"B1\",\"power\":\"wave-1-1\"},{\"type\":\"move\",\"to\":48},{\"type\":\"wall\",\"to\":57},{\"type\":\"move\",\"to\":46},{\"type\":\"wall\",\"to\":45},{\"type\":\"move\",\"to\":39},{\"type\":\"wall\",\"to\":48}]}",
+      "game": {
+        "format": "cerconexo-arena",
+        "version": 1,
+        "mode": "duo",
+        "policy": "piece",
+        "experiment": {
+          "initial": [
+            {
+              "type": "demolition",
+              "cell": 20
+            },
+            {
+              "type": "demolition",
+              "cell": 24
+            },
+            {
+              "type": "jump",
+              "cell": 56
+            },
+            {
+              "type": "jump",
+              "cell": 60
+            },
+            {
+              "type": "extraWall",
+              "cell": 39
+            },
+            {
+              "type": "extraWall",
+              "cell": 41
+            }
+          ],
+          "waves": [
+            {
+              "afterTurn": 8,
+              "type": "jump",
+              "count": 2
+            },
+            {
+              "afterTurn": 16,
+              "type": "demolition",
+              "count": 2
+            }
+          ],
+          "symmetry": "vertical",
+          "placement": "center-first"
+        },
+        "teams": [
+          "A",
+          "B"
+        ],
+        "pieces": [
+          {
+            "id": "A1",
+            "team": "A",
+            "pos": 46
+          },
+          {
+            "id": "B1",
+            "team": "B",
+            "pos": 39
+          },
+          {
+            "id": "A2",
+            "team": "A",
+            "pos": 77
+          },
+          {
+            "id": "B2",
+            "team": "B",
+            "pos": 65
+          }
+        ],
+        "walls": [
+          "9-10",
+          "16-25",
+          "69-70",
+          "55-64",
+          "1-2",
+          "26-35",
+          "60-61",
+          "45-54",
+          "0-9",
+          "8-17",
+          "68-69",
+          "46-55",
+          "0-1",
+          "17-26",
+          "78-79",
+          "56-65",
+          "1-10",
+          "25-26",
+          "68-77",
+          "55-56",
+          "18-19",
+          "25-34",
+          "67-76",
+          "54-55",
+          "19-20",
+          "35-44",
+          "66-75",
+          "54-63",
+          "28-29",
+          "34-35",
+          "73-74",
+          "64-73",
+          "11-20",
+          "34-43",
+          "74-75",
+          "65-66",
+          "20-29",
+          "33-42",
+          "75-76",
+          "51-60",
+          "38-47",
+          "50-51",
+          "77-78",
+          "48-49",
+          "37-46",
+          "40-41",
+          "47-56",
+          "48-57",
+          "45-46",
+          "39-48"
+        ],
+        "inventories": {
+          "A1": [
+            {
+              "id": "wave-1-0",
+              "type": "demolition"
+            }
+          ],
+          "B1": [
+            {
+              "id": "initial-4",
+              "type": "extraWall"
+            }
+          ],
+          "A2": [
+            {
+              "id": "initial-3",
+              "type": "jump"
+            }
+          ],
+          "B2": [
+            {
+              "id": "initial-2",
+              "type": "jump"
+            }
+          ]
+        },
+        "drops": [
+          {
+            "type": "demolition",
+            "cell": 24,
+            "id": "initial-1"
+          },
+          {
+            "type": "extraWall",
+            "cell": 41,
+            "id": "initial-5"
+          },
+          {
+            "cell": 30,
+            "type": "jump",
+            "id": "wave-0-0"
+          },
+          {
+            "cell": 32,
+            "type": "jump",
+            "id": "wave-0-1"
+          }
+        ],
+        "completedTurns": 50,
+        "revision": 103,
+        "lastActed": {
+          "A": "A1",
+          "B": "B1"
+        },
+        "turn": {
+          "team": "B",
+          "actor": null,
+          "steps": 1,
+          "path": [
+            48,
+            39
+          ],
+          "committed": true,
+          "actions": 2
+        },
+        "resolution": null,
+        "pending": null,
+        "over": true,
+        "winners": [
+          "B"
+        ],
+        "waveLog": [
+          {
+            "index": 0,
+            "turn": 8,
+            "type": "jump",
+            "placed": [
+              30,
+              32
+            ],
+            "access": [
+              {
+                "cell": 30,
+                "distances": {
+                  "A1": 5,
+                  "B1": 6,
+                  "A2": 6,
+                  "B2": 6
+                }
+              },
+              {
+                "cell": 32,
+                "distances": {
+                  "A1": 7,
+                  "B1": 4,
+                  "A2": 4,
+                  "B2": 8
+                }
+              }
+            ]
+          },
+          {
+            "index": 1,
+            "turn": 16,
+            "type": "demolition",
+            "placed": [
+              38,
+              42
+            ],
+            "access": [
+              {
+                "cell": 38,
+                "distances": {
+                  "A1": 5,
+                  "B1": 8,
+                  "A2": 8,
+                  "B2": 2
+                }
+              },
+              {
+                "cell": 42,
+                "distances": {
+                  "A1": 9,
+                  "B1": 4,
+                  "A2": 4,
+                  "B2": 6
+                }
+              }
+            ]
+          }
+        ],
+        "lastEvents": [
+          {
+            "type": "action",
+            "action": "wall",
+            "actor": "B1",
+            "to": 48
+          },
+          {
+            "type": "secured",
+            "actor": "A1",
+            "team": "A"
+          },
+          {
+            "type": "secured",
+            "actor": "B1",
+            "team": "B"
+          },
+          {
+            "type": "territory",
+            "team": "A",
+            "delta": 3
+          },
+          {
+            "type": "territory",
+            "team": "B",
+            "delta": 63
+          },
+          {
+            "type": "finished",
+            "winners": [
+              "B"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
