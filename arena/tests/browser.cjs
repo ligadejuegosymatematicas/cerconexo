@@ -8,15 +8,8 @@ const {pathToFileURL}=require('node:url');
 (async()=>{
   const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   const root=path.resolve(__dirname,'..'),out=path.join(root,'evidence/m3b-regression');await fs.mkdir(out,{recursive:true});
-  const server=http.createServer(async(req,res)=>{
-    try{
-      const relative=decodeURIComponent(new URL(req.url,'http://arena.local').pathname).replace(/^\/arena\/?/,'')||'index.html';
-      const file=path.resolve(root,relative);
-      if(!file.startsWith(root+path.sep))throw new Error('Ruta no válida');
-      const bytes=await fs.readFile(file);res.writeHead(200,{'Content-Type':file.endsWith('.mjs')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.png')?'image/png':'text/html'});res.end(bytes);
-    }catch{res.writeHead(404);res.end('No encontrado');}
-  });
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const url=`http://127.0.0.1:${server.address().port}/arena/`;
+  const {startPagesServer}=await import('../../tests/pages-server.mjs');
+  const site=await startPagesServer({entry:'arena/'}),url=site.url;
   const browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
   const report={checks:[],viewports:[],errors:[],screens:[],recordings:[]};
   const click=async(page,selector,touch=false)=>{
@@ -147,7 +140,7 @@ const {pathToFileURL}=require('node:url');
     report.checks.push('HTML autónomo file://: marca integrada, cuatro equipos, paso guardado y recarga sin servidor');await fileContext.close();
     assert.deepEqual(report.errors,[]);report.ok=true;
   }finally{
-    await fs.writeFile(path.join(out,'browser-results.json'),JSON.stringify(report,null,2));await browser.close();await new Promise(resolve=>server.close(resolve));
+    await fs.writeFile(path.join(out,'browser-results.json'),JSON.stringify(report,null,2));await browser.close();await site.close();
   }
   process.stdout.write(JSON.stringify({ok:report.ok,checks:report.checks.length,screens:report.screens.length,viewports:report.viewports},null,2)+'\n');
 })().catch(e=>{console.error(e);process.exitCode=1;});

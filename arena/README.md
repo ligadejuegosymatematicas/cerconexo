@@ -1,3 +1,5 @@
+> Integración actual: Arena continúa con motor y guardado independientes, pero comparte portada y empaquetador con Clásico. Ver [INTEGRACION.md](../INTEGRACION.md). Los apartados siguientes documentan las entregas M3-A/M3-B originales; el manifiesto de publicación vigente es `../scripts/pages-files.json`.
+
 # CERCONEXO ARENA — revisión experimental M3-B
 
 Aplicación local independiente. No reemplaza Premium, no importa su motor y no forma parte del paquete de GitHub Pages. Sirve para probar las reglas, no constituye una versión definitiva de Arena.

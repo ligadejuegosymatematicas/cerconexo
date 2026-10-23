@@ -42,7 +42,7 @@ async function instrument(context){
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
   const fixtures=await import('./territory-fixtures.mjs');
   const {startPagesServer}=await import('./pages-server.mjs');
-  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'}));
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}));
   const report={checks:[],screens:[],timing:[]},errors=[];
   async function create(width=390,height=844,motion='no-preference'){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,reducedMotion:motion});

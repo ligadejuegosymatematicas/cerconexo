@@ -25,7 +25,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
  await fs.mkdir(out,{recursive:true});
  const engine=await import('../src/engine.mjs'),{encodeGameSave}=await import('../src/gameSave.mjs'),{beginDraft,advanceDraft,selectDraft}=await import('../src/turnDraft.mjs');
  const {resultFixture}=await import('./result-fixtures.mjs'),{startPagesServer}=await import('./pages-server.mjs'),site=await startPagesServer();
- const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],screens:[],frames:0,focus:[],fullGames:[]};
+ const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'})),errors=[],report={checks:[],screens:[],frames:0,focus:[],fullGames:[]};
  const load=async(p,game,draft=beginDraft(game))=>{await p.evaluate(value=>localStorage.setItem('wallgo-league-v2',value),encodeGameSave(game,draft));await reload(p);};
  const screenshot=(p,name)=>p.screenshot({path:path.join(out,name+'.png')});
  try{

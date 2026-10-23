@@ -26,7 +26,7 @@ test('Pages contiene solo la lista pública y conserva idénticos HTML, motor, i
 });
 
 test('Raíz /cerconexo/, recursos y módulos se sirven con MIME correcto y sin rutas al dominio raíz',async()=>{
-  const site=await startPagesServer();
+  const site=await startPagesServer({entry:''});
   try{
     const response=await fetch(site.url);
     assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/html/);

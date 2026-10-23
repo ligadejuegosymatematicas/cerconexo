@@ -167,3 +167,26 @@ h1 { grid-column:1; grid-row:1; font-size:21px; margin:0; }
   .event-notice,.inspection-info { grid-column:2; grid-row:6; }
   #problem { grid-column:1/3; }
 }
+
+/* Inicio y repetición rápida dentro de los espacios ya disponibles. */
+.brand { text-decoration:none; color:inherit; min-height:44px; border-radius:9px; }
+.brand:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
+.brand span { display:block; }
+.replay-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; border:0!important; padding:0!important; }
+.replay-actions span { color:var(--muted); font-size:12px; }
+@media(max-height:580px) and (min-width:761px) {
+  .arena-app { padding-top:7px; }
+  .header,.scoreboard { margin-bottom:4px; }
+}
+@media(max-width:760px) {
+  .brand span { display:block; font-size:12px; }
+  .brand strong { font-size:14px; letter-spacing:.1em; }
+  .brand { gap:6px; }
+  .brand img { width:100px; }
+  .replay-actions { justify-content:center; }
+}
+@media(max-height:480px) and (min-width:620px) {
+  #inspectToggle { flex:0 1 auto; }
+  .board-tools { justify-content:space-between; }
+  .replay-actions button { font-size:13px; }
+}

@@ -58,7 +58,7 @@ test('5A: recarga y muros sin aseguramiento no fabrican acontecimientos; final s
   const final=resultFixture().after;assert.equal(matchupPresentation(final),null);assert.equal(recentParticipationMessage(deriveParticipationEvents(before,final)),null);
 });
 test('5A: controles y los cuatro pasos breves mantienen el contenido aprobado',async()=>{
-  const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+  const html=await readFile(new URL('../clasico/index.html',import.meta.url),'utf8');
   assert.doesNotMatch(html,/brand-copy|bottom-note|Cada muro cambia el mapa\.<\/span>|<p class="micro">LIGA/);
   for(const title of ['MUÉVETE','CONSTRUYE','ASEGURA TERRITORIO','GANA'])assert.ok(html.includes(title));
   const help=html.slice(html.indexOf('<dialog id="helpDialog"'),html.indexOf('<dialog id="optionsDialog"'));

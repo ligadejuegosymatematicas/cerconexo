@@ -14,8 +14,9 @@ for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'pow
     modules.append(source)
 html = html.replace('<link rel="stylesheet" href="./src/styles.css">', f'<style>\n{css}\n</style>')
 html = html.replace('<script type="module" src="./src/app.mjs"></script>', '<script type="module">\n' + '\n'.join(modules) + '\n</script>')
-logo = base64.b64encode((root / 'assets/wordmark.png').read_bytes()).decode('ascii')
-html = html.replace('./assets/wordmark.png', f'data:image/png;base64,{logo}')
+logo = base64.b64encode((root.parent / 'assets/Cerconexo_wordmark_transparente.png').read_bytes()).decode('ascii')
+html = html.replace('../assets/Cerconexo_wordmark_transparente.png', f'data:image/png;base64,{logo}')
 out = root / 'Cerconexo_Arena_M3B.html'
-out.write_text(html, encoding='utf-8')
+html = html.replace('href="../"', 'href="index.html"')
+out.write_bytes(html.encode('utf-8'))
 print(f'HTML independiente: {out.name} ({out.stat().st_size:,} bytes)')

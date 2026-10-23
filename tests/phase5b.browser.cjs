@@ -12,7 +12,7 @@ async function tap(p,selector,touch){const r=await p.locator(selector).boundingB
   const {startPagesServer}=await import('./pages-server.mjs'),engine=await import('../src/engine.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
   const {finalRegions,regionDescription,componentBoundary,componentSummary}=await import('../src/explorationData.mjs');
   const {contourFixture}=await import('./contour-fixtures.mjs');
-  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
   try{
     const fixture=resultFixture({pockets:true}),model=finalRegions(fixture.after);
     async function contour(p,region){
@@ -96,7 +96,14 @@ async function tap(p,selector,touch){const r=await p.locator(selector).boundingB
       await tap(p,`[data-explore-cell="${last.cells[0]}"]`,touch);await p.locator('#clearSelection').click();
       assert.equal(await p.evaluate(()=>document.activeElement.dataset.exploreCell),String(last.cells[0]));
       await tap(p,`[data-explore-cell="${last.cells[0]}"]`,touch);
-      await p.locator('.board-topline').click({position:{x:Math.floor((await p.locator('.board-topline').boundingBox()).width/2),y:22}});
+      // El renglón ahora también contiene Jugar de nuevo. Pulsar el fondo real,
+      // no una coordenada que puede caer sobre ese control o sobre la guía.
+      const free=await p.locator('.board-topline').evaluate(row=>{
+        const b=row.getBoundingClientRect();
+        for(let y=2;y<b.height-1;y+=2)for(let x=2;x<b.width-1;x+=2)
+          if(document.elementFromPoint(b.x+x,b.y+y)===row)return {x,y};
+      });
+      assert.ok(free,'Existe fondo libre para quitar la selección');await p.locator('.board-topline').click({position:free});
       assert.equal(await p.locator('[data-region-boundary]').count(),0);
       await tap(p,`[data-explore-cell="${last.cells[0]}"]`,touch);
       await p.locator('#board').click({position:{x:5,y:Math.round((await p.locator('#board').boundingBox()).height/2)}});

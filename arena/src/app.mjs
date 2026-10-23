@@ -122,9 +122,10 @@ function render(){
   inspection.update(view.components,9);
   if(selectedPower&&!legal.some(a=>a.power===selectedPower))selectedPower=null;
   renderScores(s,view);renderTurn(s,view);renderInventory(s,view,legal);renderBoard(s,view,legal);
+  $('arenaReplayActions').hidden=!s.over||loadBlocked;
   $('inspectToggle').disabled=loadBlocked;
   $('inspectToggle').setAttribute('aria-pressed',String(inspection.enabled));
-  $('inspectToggle').textContent=inspection.enabled?(s.over?'Volver al resultado':'Volver a jugar'):'Inspeccionar regiones';
+  $('inspectToggle').textContent=inspection.enabled?'Salir de inspección':'Inspeccionar regiones';
   $('inspectionInfo').hidden=!inspection.enabled;$('eventNotice').hidden=inspection.enabled;
   const description=regionDescription(inspection.selected);if($('inspectionInfo').textContent!==description)$('inspectionInfo').textContent=description;
   board.setAttribute('aria-label',inspection.enabled?'Inspección de regiones. Flechas para recorrer casillas; Enter o Espacio para seleccionar.': 'Tablero Arena de 9 por 9. Toca casillas para mover y bordes para construir.');
@@ -185,7 +186,8 @@ function showNew(opener){
   if(session){$('newForm').elements.mode.value=session.game.mode;$('newForm').elements.policy.value=session.game.policy;}
   $('policyField').hidden=$('newForm').elements.mode.value==='ffa';
   if(session)$('experimentJson').value=JSON.stringify(session.game.experiment,null,2);else resetExperiment();
-  $('replaceWarning').hidden=!hasSaved;$('startArena').textContent=hasSaved?'Reemplazar y comenzar':'Comenzar partida';$('setupError').hidden=true;
+  const replacing=hasSaved&&(loadBlocked||!session.game.over);
+  $('replaceWarning').hidden=!replacing;$('startArena').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';$('setupError').hidden=true;
   openDialog('newDialog',opener);
 }
 $('newForm').addEventListener('change',e=>{if(e.target.name==='mode'){$('policyField').hidden=e.target.value==='ffa';resetExperiment();}});
@@ -194,13 +196,23 @@ $('newOpen').addEventListener('click',()=>showNew($('newOpen')));
 $('guideOpen').addEventListener('click',()=>openDialog('guideDialog',$('guideOpen')));
 for(const node of document.querySelectorAll('[data-guide-icon]'))node.innerHTML=powerIcon(node.dataset.guideIcon);
 $('rulesOpen').addEventListener('click',()=>openDialog('rulesDialog',$('rulesOpen')));
+function startArena(setup){
+  // Guardar primero: si falla el almacenamiento, la partida anterior sigue intacta.
+  const next=new ArenaSession(storage,setup);next.save();
+  session=next;inspection.reset();selectedPower=null;hasSaved=true;loadBlocked=false;
+  setProblem('');$('eventNotice').textContent='Nueva partida.';render();
+}
+$('arenaReplay').addEventListener('click',()=>{
+  if(!session?.game.over||loadBlocked)return;
+  try{startArena(session.setup);$('turnBanner').focus({preventScroll:true});}
+  catch(error){setProblem(`No se reemplazó la partida. ${error.message}`);}
+});
 $('newForm').addEventListener('submit',e=>{
   e.preventDefault();
   try{
     const data=new FormData($('newForm')),mode=data.get('mode'),policy=mode==='ffa'?'piece':data.get('policy');
-    const next=new ArenaSession(storage,{mode,policy,experiment:JSON.parse($('experimentJson').value)});next.save();
-    session=next;inspection.reset();selectedPower=null;hasSaved=true;loadBlocked=false;setProblem('');$('eventNotice').textContent='Nueva partida.';
-    $('newDialog').close();render();
+    startArena({mode,policy,experiment:JSON.parse($('experimentJson').value)});
+    $('newDialog').close();
   }catch(error){$('setupError').textContent=error.message;$('setupError').hidden=false;}
 });
 try{
@@ -213,4 +225,8 @@ try{
 }catch(e){setProblem(`No se puede acceder al guardado de Arena: ${e.message}`);}
 if(!session)session=new ArenaSession(storage);
 render();
-if(!hasSaved)showNew($('newOpen'));
+const entryURL=new URL(location.href),freshEntry=entryURL.searchParams.get('new')==='1';
+if(entryURL.searchParams.has('new')||entryURL.searchParams.has('continue')){
+  entryURL.searchParams.delete('new');entryURL.searchParams.delete('continue');history.replaceState(null,'',entryURL);
+}
+if(!hasSaved||freshEntry)showNew($('newOpen'));

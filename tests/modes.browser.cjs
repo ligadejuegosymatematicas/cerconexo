@@ -20,7 +20,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
  const engine=await import('../src/engine.mjs'),{finishFixture}=await import('./territory-fixtures.mjs');
  const fixtures=await import('./participation-fixtures.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
  const {startPagesServer}=await import('./pages-server.mjs'),site=await startPagesServer();
- const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
+ const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
  const asTeam=g=>finishFixture({...structuredClone(g),turnMode:'team'});
  try{
   for(const [width,height] of [[1440,900],[1366,768],[1366,600],[390,844],[360,740],[740,360],[1440,700],[1366,650],[1280,560]]){

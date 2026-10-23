@@ -1,5 +1,22 @@
 # CERCONEXO
 
+## Aplicación integrada · candidata local
+
+La raíz ahora es la portada común. `clasico/` contiene el juego original 7×7 con CPU y las dos políticas de turnos; `arena/` contiene el prototipo experimental M3-B 9×9. Los motores, la puntuación y los formatos de guardado permanecen intactos.
+
+Consulta [INTEGRACION.md](INTEGRACION.md) para la arquitectura, las pruebas, las rutas y la propuesta de publicación. Los apartados históricos de este README describen las entregas anteriores; esta candidata todavía no se ha publicado.
+
+```sh
+python scripts/build_pages.py
+python scripts/build_pages.py --check
+python scripts/build_offline.py
+node scripts/check-integrity.mjs
+node --test tests/*.test.mjs arena/tests/*.test.mjs
+node tests/browser-runner.cjs
+```
+
+Para jugar sin servidor, abrir `offline/index.html`: enlaza los dos HTML autónomos. Para revisar el paquete que se publicaría, servir `docs/` desde una ruta equivalente a `/cerconexo/`. No copiar recursos a `docs/` manualmente. No hay publicación desde `desarrollo`.
+
 Juego de estrategia territorial local con dos equipos y cuatro fichas, de la Liga de Juegos y Matemáticas. Funciona en computadores y teléfonos. Los jugadores se organizan libremente para compartir un dispositivo; alojar el juego no añade partidas online.
 
 ## Sitio publicado y versión de trabajo

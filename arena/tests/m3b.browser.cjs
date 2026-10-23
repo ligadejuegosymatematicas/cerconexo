@@ -2,7 +2,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),http=require('nod
 const {pathToFileURL}=require('node:url');
 (async()=>{
   const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
-  const arena=path.resolve(__dirname,'..'),stage=path.join(arena,'staging/pages'),out=path.join(arena,'evidence/m3b');await fs.mkdir(out,{recursive:true});
+  const arena=path.resolve(__dirname,'..'),stage=path.join(arena,'staging/unified'),out=path.join(arena,'evidence/m3b');await fs.mkdir(out,{recursive:true});
   const saves=JSON.parse(await fs.readFile(path.join(__dirname,'m3a-saves.json'),'utf8'));
   const report={checks:[],screens:[],viewports:[],errors:[],resources:[]};
   const server=http.createServer(async(req,res)=>{
@@ -109,7 +109,7 @@ const {pathToFileURL}=require('node:url');
     }
     const ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true}),p=await ctx.newPage();attach(p);
     await p.goto(pathToFileURL(path.join(arena,'Cerconexo_Arena_M3B.html')).href);await p.click('#startArena');await p.click('#inspectToggle');await tap(p,'[data-inspect="0"]',true);assert.equal(await p.locator('.region-count text').textContent(),'81');await ctx.close();
-    report.checks.push('HTML autónomo file:// y 41 recursos HTTP idénticos; Premium comparte origen sin cambios de datos ni archivos');assert.deepEqual(report.errors,[]);report.ok=true;
+    report.checks.push('HTML autónomo file:// y recursos HTTP idénticos; las modalidades comparten origen sin cambios de guardado');assert.deepEqual(report.errors,[]);report.ok=true;
   }finally{await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));await browser.close();await new Promise(r=>server.close(r));}
   console.log(JSON.stringify({ok:report.ok,checks:report.checks.length,screens:report.screens.length,viewports:report.viewports},null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;});

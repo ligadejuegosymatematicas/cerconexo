@@ -18,7 +18,7 @@ const assert=require('node:assert/strict');
       page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>failed.push(r.url()));
       page.on('response',r=>requests.push({url:r.url(),status:r.status()}));
       await page.goto(site.url);await page.locator('.piece-token').first().waitFor();
-      assert.equal(await page.title(),'Cerconexo · Liga de Juegos y Matemáticas');
+      assert.equal(await page.title(),'Cerconexo Clásico');
       assert.equal(await page.locator('.piece-token').count(),4);
       assert.ok(await page.locator('.official-logo').evaluate(img=>img.complete&&img.naturalWidth>0));
       const reset=async()=>{await page.evaluate(()=>localStorage.clear());await page.reload();};
@@ -41,7 +41,8 @@ const assert=require('node:assert/strict');
       // El servidor comparativo se limita a los mismos archivos públicos originales.
       await source.route('**/*',async route=>{
         const url=new URL(route.request().url());
-        const name=url.pathname.slice('/cerconexo/'.length)||'index.html';
+        let name=url.pathname.slice('/cerconexo/'.length)||'index.html';
+        if(name.endsWith('/'))name+='index.html';
         if(!url.pathname.startsWith('/cerconexo/')||!(await publicFiles()).includes(name)){await route.abort();return;}
         const type=name.endsWith('.mjs')?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.png')?'image/png':'text/html';
         await route.fulfill({status:200,contentType:type,body:await fs.readFile(path.join(root,name))});
@@ -71,7 +72,7 @@ const assert=require('node:assert/strict');
       assert.ok(identical,`Fuentes frente a paquete: ${differingPixels} píxeles distintos; diferencia máxima ${maxChannelDelta}`);
       await isolatedContext.close();
       assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
-      assert.ok(requests.every(r=>r.status===200&&r.url.startsWith(site.url)),JSON.stringify(requests));
+      assert.ok(requests.every(r=>r.status===200&&r.url.startsWith(site.homeURL)),JSON.stringify(requests));
       report.screens.push({width,height,visuallyEquivalentToSource:true,differingPixels,maxChannelDelta});
       report.resources.push(...requests.filter((r,i,a)=>a.findIndex(other=>other.url===r.url)===i).map(r=>({path:new URL(r.url).pathname,status:r.status})));
       await context.close();

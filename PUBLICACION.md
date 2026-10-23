@@ -1,94 +1,45 @@
-# Publicar CERCONEXO en GitHub Pages
+# Publicación de Cerconexo · propuesta pendiente
 
-**Estado: revisión de M1 publicada en `b543efd8a5b14f2a54ae3e95c0e85d59534a72c9`. M2 se desarrolla localmente en `desarrollo`; no se autoriza subir, crear PR, fusionar ni publicar esta candidata.**
+Esta candidata se prepara únicamente en `desarrollo`. Durante su elaboración no se hace push, no se abre PR, no se fusiona `main` y no se publica Pages.
 
-## Destino previsto
+## Estructura propuesta
 
-- Cuenta: `ligadejuegosymatematicas`.
-- Repositorio: `https://github.com/ligadejuegosymatematicas/cerconexo`.
-- URL publicada: `https://ligadejuegosymatematicas.github.io/cerconexo/`.
-- Rama publicada: **main**, carpeta **/docs**.
-- Rama de trabajo: **desarrollo**.
+| URL | Contenido |
+|---|---|
+| `/cerconexo/` | Portada común |
+| `/cerconexo/clasico/` | Clásico 7×7, local y contra CPU |
+| `/cerconexo/arena/` | Arena M3-B 9×9, experimental |
 
-No se modifica el repositorio del sitio principal `ligadejuegosymatematicas.github.io`, ni otro repositorio de la cuenta. La ruta del juego es un proyecto independiente.
+Conservar el mismo origen `https://ligadejuegosymatematicas.github.io` mantiene accesibles las claves existentes de `localStorage`. No se renombran claves ni formatos. No trasladar a otro dominio como parte de esta publicación. Clásico y Arena recuperan sus propios guardados; la portada solo los consulta.
 
-## Qué se publica
-
-`index.html` de la raíz sigue siendo el archivo fuente de entrada. `python scripts/build_pages.py` copia sin modificar sus bytes los archivos de ejecución a `docs/`. Esa carpeta será la raíz del sitio: `docs/index.html` se sirve como `/cerconexo/`.
-
-La lista pública está en `scripts/pages-files.json`: HTML, los módulos/estilos de `src/` y el PNG usado por la cabecera. Se añade `.nojekyll`. El paquete local de M2 contiene treinta y dos archivos. No se publican pruebas, documentación, briefs, capturas ni versiones históricas del juego. El empaquetador rechaza archivos extra en `docs/` y no borra archivos automáticamente.
-
-La lista explícita de `.gitignore` excluye también del repositorio los documentos internos, `validation/`, capturas, herramientas específicas del entorno y HTML generados. Los originales de la marca se conservan intactos y el paquete de Fase 2B usa solo el wordmark transparente derivado; el derivado completo permanece como recurso fuente del repositorio.
-
-`.gitattributes` conserva los bytes originales, incluidos los finales de línea del motor. No se ha reescrito la interfaz ni el motor para preparar el alojamiento.
-
-## Comprobación local
-
-Requisitos de desarrollo: Python 3.9+ y Node 22+ (CI utiliza Node 24).
+## Preparar el candidato local
 
 ```sh
 python scripts/build_pages.py
 python scripts/build_pages.py --check
-node --test tests/*.test.mjs
+python scripts/build_offline.py
+node scripts/check-integrity.mjs
+node --test tests/*.test.mjs arena/tests/*.test.mjs
+node tests/browser-runner.cjs
+python scripts/package.py
+python scripts/check-package.py
 ```
 
-`--check` no modifica nada: falla si faltan recursos, si hay archivos ajenos al sitio o si `docs/` no coincide con las fuentes. Debe pasar antes de aprobar una versión.
+El manifiesto `scripts/pages-files.json` produce 45 recursos exactos en `docs/`, incluida `.nojekyll`. No copiar a `docs/` a mano. El ZIP de Pages contiene exclusivamente ese inventario; el ZIP completo incluye fuentes, pruebas y tres HTML autónomos enlazados. Consultar [INTEGRACION.md](INTEGRACION.md) para detalles y limitaciones.
 
-Para revisar visualmente el paquete:
+Para pruebas de navegador se necesita Playwright y un navegador instalado. El workflow usa Playwright 1.62.1 y Chromium; localmente se puede indicar `CERCONEXO_PLAYWRIGHT_PATH` y `CERCONEXO_BROWSER_CHANNEL=msedge`. No son dependencias del juego.
 
-```sh
-python -m http.server 8000 --bind 127.0.0.1
-```
+## Pasos después de una autorización nueva
 
-Abrir `http://127.0.0.1:8000/docs/`. La prueba `pages.test.mjs` monta además el paquete en la ruta exacta `/cerconexo/`, comprueba todas sus referencias y los tipos MIME. El navegador se comprueba opcionalmente con `node tests/pages.browser.cjs`; requiere Playwright disponible en desarrollo y Edge instalado. Puede indicarse la ruta del módulo mediante `CERCONEXO_PLAYWRIGHT_PATH` y otro navegador compatible mediante `CERCONEXO_BROWSER_CHANNEL`. No son dependencias del juego ni del despliegue.
+1. Confirmar el commit de `desarrollo`, el árbol limpio y las evidencias aprobadas.
+2. Subir exclusivamente esa candidata al repositorio `ligadejuegosymatematicas/cerconexo`.
+3. Abrir PR hacia `main`. Esperar el control obligatorio `verificar`, que comprueba integridad, pruebas, navegador y empaquetado. No activar auto-merge ni omitir protecciones.
+4. Fusionar únicamente la candidata aprobada. Conservar la configuración existente de Pages: rama `main`, carpeta `/docs`.
+5. Esperar Actions y Pages; comparar los 45 recursos públicos con las fuentes aprobadas.
+6. Verificar las tres URLs, Inicio/Continuar, ambas políticas de Clásico y la CPU, las tres configuraciones de Arena, repetición rápida, inspección, recarga y los guardados existentes. Probar también un Android físico.
 
-El guardado permanece bajo `wallgo-league-v2`. Recargar y abrir `index.html` dentro del mismo origen conserva la partida. La publicación usa un origen distinto de un archivo local o localhost: las partidas locales no se transfieren automáticamente a GitHub Pages. Cambiar de teléfono o navegador tampoco transfiere el guardado.
+La raíz dejará de abrir directamente el juego original y mostrará la portada. Los enlaces antiguos a la raíz seguirán funcionando. El juego original continuará en `/clasico/` sin perder el almacenamiento del mismo origen. Los enlaces directos a Arena seguirán disponibles.
 
-## Referencia histórica: primera publicación (ya completada)
+No se necesita otro repositorio, cambio de dominio ni un workflow de despliegue desde `desarrollo`. El workflow conserva permisos de lectura y no publica. La protección remota de `main` y la elección `main /docs` continúan siendo configuraciones de GitHub; esta entrega no las modifica.
 
-1. Revisar el estado de la versión candidata, sus pruebas y el manifiesto de archivos. **Solicitar aprobación expresa; no ejecutar push ni activar Pages todavía.**
-2. Confirmar que el propietario es `ligadejuegosymatematicas` y que `cerconexo` es el nombre correcto.
-3. El propietario puede crear un repositorio vacío desde **GitHub → + → New repository**: Owner `ligadejuegosymatematicas`, nombre `cerconexo`. No inicializar README, `.gitignore` ni licencia porque ya existe el historial local preparado. Si ese repositorio ya existe, detenerse y revisarlo antes de conectar o subir; no sobrescribirlo.
-4. Si se utiliza GitHub Free, elegir repositorio público para Pages. Para repositorios privados se necesita un plan compatible. Se requieren permisos de administración o mantenimiento para configurar Pages. [Disponibilidad y permisos de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
-
-Crear el repositorio vacío no publica el juego. No introducir credenciales en archivos del proyecto.
-
-## Primera publicación: solo después de la aprobación
-
-Desde la carpeta del proyecto, autenticado con la cuenta de la Liga mediante el gestor de credenciales de Git o GitHub Desktop:
-
-```sh
-git remote add origin https://github.com/ligadejuegosymatematicas/cerconexo.git
-git remote -v
-git push -u origin main
-git push -u origin desarrollo
-```
-
-Estos comandos se proporcionan para la fase autorizada; no se ejecutaron durante la preparación. Si ya existe `origin`, revisarlo antes de cambiarlo. No utilizar `--force` ni subir a otro repositorio.
-
-En GitHub:
-
-1. Abrir **ligadejuegosymatematicas/cerconexo**, comprobar que la rama predeterminada es `main` y que existen ambas ramas.
-2. En **Actions**, esperar a que **Comprobar Cerconexo / verificar** pase.
-3. Antes de activar Pages, proteger `main` en **Settings → Branches → Add branch protection rule** (o la opción de regla clásica): patrón `main`, exigir pull request, exigir el control de estado `verificar` y rama actualizada. No permitir force push ni borrado. Si se usa una única cuenta, no exigir revisiones de otra persona; la decisión de fusionar debe seguir siendo manual. La disponibilidad y nombres de estas opciones pueden depender de la configuración de GitHub.
-4. Abrir **Settings → Pages → Build and deployment**.
-5. Elegir **Source: Deploy from a branch**, **Branch: main**, **Folder: /docs**.
-6. Pulsar **Save**. **Este paso activa la publicación**, por lo que requiere la aprobación previa.
-7. Esperar a que la ejecución de Pages termine y comprobar `https://ligadejuegosymatematicas.github.io/cerconexo/` en un computador y un teléfono. No se da por publicada hasta comprobar la URL real.
-
-GitHub permite publicar desde una rama y su carpeta `/docs`, y actualiza el sitio cuando esa carpeta cambia en la rama elegida. [Configurar el origen de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
-
-## Versiones futuras
-
-1. Trabajar en `desarrollo`; nunca modificar `docs/` a mano.
-2. Editar las fuentes, ejecutar `python scripts/build_pages.py` y las pruebas. La copia pública forma parte del mismo commit que las fuentes.
-3. Subir solamente `desarrollo` y abrir un pull request con **base main ← compare desarrollo**. El workflow de verificación no tiene permiso para publicar ni fusionar.
-4. Mostrar los cambios, pruebas y una revisión local al propietario. **Esperar su aprobación expresa**; no activar auto-merge.
-5. Después de la aprobación y los controles verdes, fusionar manualmente el pull request en `main`. Ese cambio publica automáticamente la versión aprobada mediante Pages.
-6. Actualizar `desarrollo` desde `main` antes del próximo trabajo.
-
-No hay sitio público de pruebas desde `desarrollo`, ni workflows propios de despliegue alternativos. La selección remota `main /docs` es la que limita la publicación. Los controles de protección de rama deben configurarse en GitHub: la documentación y el YAML por sí solos no aplican esa protección.
-
-## Si hay que retirar una versión
-
-Con autorización del propietario, revertir el commit de publicación mediante un pull request y regenerar `docs/` desde las fuentes recuperadas. No reescribir el historial. Pages publicará la reversión aprobada al fusionarla en `main`.
+Si una validación requiere cambiar motores o reglas, detener la publicación y solicitar revisión. Para retirar una versión, usar una reversión aprobada mediante PR, sin reescribir el historial y sin `push --force`.

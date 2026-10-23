@@ -29,7 +29,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
 (async()=>{
   await fs.mkdir(out,{recursive:true});const {startPagesServer}=await import('./pages-server.mjs');
   const engine=await import('../src/engine.mjs'),fixtures=await import('./participation-fixtures.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
-  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),report={checks:[],screens:[]},errors=[];
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'})),report={checks:[],screens:[]},errors=[];
   async function create(width=390,height=844,{preference,api=true,motion='no-preference'}={}){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,deviceScaleFactor:1,reducedMotion:motion});
     await context.addInitScript(({preference,api})=>{

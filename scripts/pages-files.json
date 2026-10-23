@@ -29,5 +29,18 @@
   "src/cpuPlanner.mjs",
   "src/cpuController.mjs",
   "src/navigation.mjs",
-  "assets/Cerconexo_logo_v3_transparente.png"
+  "assets/Cerconexo_logo_v3_transparente.png",
+  "clasico/index.html",
+  "src/launchData.mjs",
+  "src/portal.mjs",
+  "src/portal.css",
+  "arena/index.html",
+  "arena/src/app.mjs",
+  "arena/src/styles.css",
+  "arena/src/geometry.mjs",
+  "arena/src/config.mjs",
+  "arena/src/engine.mjs",
+  "arena/src/session.mjs",
+  "arena/src/regionInspection.mjs",
+  "arena/src/powerIcons.mjs"
 ]

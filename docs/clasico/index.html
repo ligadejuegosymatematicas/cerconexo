@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071A2F">
+  <meta name="description" content="Cerconexo: estrategia territorial local, cuatro fichas y dos equipos en un dispositivo compartido.">
+  <title>Cerconexo Clásico</title>
+  <link rel="stylesheet" href="../src/styles.css">
+</head>
+<body>
+<main id="homeScreen" class="home-screen" aria-label="Cerconexo Clásico">
+  <div class="home-content">
+    <a class="home-return" href="../">⌂ Inicio</a>
+    <h1 class="home-brand"><img class="home-logo" src="../assets/Cerconexo_logo_v3_transparente.png" alt="CERCONEXO"></h1>
+    <h2 class="mode-name">CLÁSICO <span>7 × 7</span></h2>
+    <nav class="home-menu" aria-label="Menú principal">
+      <button type="button" id="play" class="play-button">Jugar</button>
+      <button type="button" id="continueGame" class="continue-button" hidden>Continuar partida</button>
+      <div class="home-secondary"><button type="button" id="homeRules">Reglas</button><button type="button" id="homeOptions">Opciones</button></div>
+      <p id="homeStatus" role="status"></p>
+    </nav>
+  </div>
+</main>
+<div class="app" hidden>
+  <header class="topbar">
+    <div class="branding">
+      <h1><img class="official-logo" src="../assets/Cerconexo_wordmark_transparente.png" alt="CERCONEXO"></h1>
+    </div>
+    <nav class="header-actions" aria-label="Opciones de partida">
+      <button type="button" id="home" class="icon-btn" data-home="../" aria-label="Volver al inicio" title="Inicio"><span class="button-icon" aria-hidden="true">⌂</span><span>Inicio</span></button>
+      <button type="button" id="help" class="icon-btn" aria-label="Reglas de Cerconexo"><span class="button-icon" aria-hidden="true">?</span><span>Reglas</span></button>
+      <button type="button" id="options" class="icon-btn" aria-label="Opciones" title="Opciones"><span class="button-icon" aria-hidden="true">⚙</span><span>Opciones</span></button>
+      <button type="button" id="new" class="icon-btn new-button" aria-label="Nueva partida"><span class="button-icon" aria-hidden="true">+</span><span>Nueva partida</span></button>
+    </nav>
+  </header>
+  <main class="layout">
+    <aside class="score-panel panel" aria-label="Marcadores y jugadores">
+      <div class="section-heading"><h2 class="micro" id="scoreHeading">CASILLAS ASEGURADAS</h2><span class="subtle" id="scoreTotal">49 en total</span></div>
+      <div class="scores">
+        <section class="team-score team-a" aria-label="Marcador equipo A"><div class="team-heading"><span class="team-badge">A</span><h3>Equipo A</h3><strong id="scoreA">0</strong></div><div class="team-roster" id="activeA"></div></section>
+        <section class="team-score team-b" aria-label="Marcador equipo B"><div class="team-heading"><span class="team-badge">B</span><h3>Equipo B</h3><strong id="scoreB">0</strong></div><div class="team-roster" id="activeB"></div></section>
+      </div>
+      <div class="territory-meter" id="meter" role="img" aria-label="Distribución de las 49 casillas"></div>
+      <div class="minor-stats"><span><i id="distributionSwatch" class="status-swatch disputed" aria-hidden="true"></i><span id="distributionLabel">En disputa</span><strong id="mixedCount">49</strong></span><span><i class="status-swatch empty" aria-hidden="true"></i>Vacías <strong id="emptyCount">0</strong></span></div>
+      <section id="componentInfo" class="component-info" aria-label="Componentes conexas de la partida" hidden>
+        <div data-component-general><h2 data-region-summary></h2><p>Toca una casilla para explorar su componente conexa.</p></div>
+        <div data-component-selection hidden>
+          <button type="button" id="clearSelection" aria-label="Quitar selección" title="Quitar selección">×</button>
+          <div class="region-core"><h2 data-region-title></h2><p class="region-facts"><span data-region-size></span><span aria-hidden="true"> · </span><span data-region-pieces></span></p></div>
+          <p class="component-explanation" data-region-explanation></p>
+        </div>
+      </section>
+    </aside>
+    <section class="arena" aria-label="Mesa de juego">
+      <div class="board-topline"><span id="boardLabel">Tablero</span><button id="replay" class="replay-button" type="button" hidden>Jugar de nuevo</button><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><span id="boardMeta">7 × 7</span></div>
+      <div class="board-wrap"><svg id="board" viewBox="28 20 624 624" role="group" aria-label="Tablero Cerconexo de siete por siete casillas"></svg></div>
+    </section>
+    <aside class="turn-panel" aria-label="Turno e indicaciones">
+      <section class="turn-card panel" id="turnBanner" aria-label="Turno actual">
+        <h2 class="micro">AHORA JUEGA</h2>
+        <p id="cpuIdentity" class="cpu-identity" hidden></p>
+        <div class="turn-identity"><span class="turn-disc" id="turnDisc">A1</span><strong id="turnName">Equipo A · Jugador 1</strong></div>
+        <div class="turn-meta"><span id="stepsPill">Sin desplazamiento</span><small id="moveCount">0 muros construidos</small></div>
+        <div class="matchup-state" id="matchup"><strong id="matchupLabel">2 vs. 2</strong><span id="matchupPlayers">A1 y A2 vs. B1 y B2</span></div>
+        <div class="context-slot"><p class="prompt" aria-live="polite" id="prompt">Construye un muro o toca un punto turquesa para avanzar.</p><p id="recentEvent" hidden></p></div>
+        <div id="territoryNotice" class="territory-notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <section id="endScreen" class="final-result" aria-labelledby="winnerTitle" hidden>
+          <h2 id="winnerTitle"></h2><p id="winnerDetails"></p><p id="winnerDifference"></p>
+        </section>
+
+      </section>
+      <details class="legend-panel panel" open>
+        <summary>Guía del tablero</summary>
+        <div class="legend-content"><div><span class="legend-dot" aria-hidden="true"></span><span>Punto turquesa <b>Dar un paso</b></span></div><div><span class="legend-gold" aria-hidden="true"></span><span>Borde dorado <b>Construir un muro</b></span></div><div><span class="legend-solid" aria-hidden="true"></span><span>Muro construido</span></div><div><span class="legend-dash" aria-hidden="true"></span><span>Lado abierto</span></div><div><span class="legend-cell" aria-hidden="true"></span><span>En disputa · sin puntos</span></div><div><span class="legend-cell empty" aria-hidden="true"></span><span>Región vacía · sin puntos</span></div>
+          <div data-team-guide hidden><span class="legend-piece available" aria-hidden="true">A1</span><span><b>Ficha disponible</b>Aro discontinuo: puedes elegirla antes de dar un paso.</span></div>
+          <div data-team-guide hidden><span class="legend-piece selected" aria-hidden="true">A1</span><span><b>Ficha seleccionada</b>Aro continuo: jugarás con ella. Tras el primer paso, queda fijada.</span></div>
+        </div>
+      </details>
+    </aside>
+  </main>
+</div>
+<dialog id="helpDialog" class="help-dialog" aria-labelledby="rulesTitle">
+  <form method="dialog"><button class="dialog-close" aria-label="Cerrar reglas" autofocus>×</button></form>
+  <h2 id="rulesTitle">Cómo jugar Cerconexo</h2>
+  <p>Dos equipos compiten por asegurar la mayor cantidad de casillas. Cada equipo tiene dos fichas.</p>
+  <ol class="quick-rules">
+    <li><h3>MUÉVETE</h3><p>En tu turno puedes avanzar 0, 1 o 2 casillas, en horizontal o vertical, sin atravesar muros ni otras fichas.</p></li>
+    <li><h3>CONSTRUYE</h3><p>Después, debes colocar un muro en uno de los lados libres de la casilla donde terminaste.</p></li>
+    <li><h3>ASEGURA TERRITORIO</h3><p>Cuando una región con fichas de tu equipo queda sin fichas rivales, pasa a pertenecer a tu equipo.</p></li>
+    <li><h3>GANA</h3><p>Cuando ya no quedan regiones con fichas de ambos equipos, gana el equipo que aseguró más casillas. En caso de igualdad, hay empate.</p></li>
+  </ol>
+  <form method="dialog"><button class="secondary dialog-ok">Entendido</button></form>
+</dialog>
+<dialog id="optionsDialog" class="help-dialog options-dialog" aria-labelledby="optionsTitle">
+  <form method="dialog"><button class="dialog-close" aria-label="Cerrar opciones" autofocus>×</button></form>
+  <h2 id="optionsTitle">Opciones</h2>
+  <section class="haptic-option" aria-label="Respuesta táctil">
+    <label class="haptic-label" for="vibration"><input id="vibration" type="checkbox" aria-describedby="vibrationDescription vibrationStatus">Vibración</label>
+    <p id="vibrationDescription">Respuesta táctil en dispositivos compatibles</p>
+    <p id="vibrationStatus">Pulsos breves, si el dispositivo lo permite.</p>
+  </section>
+</dialog>
+<dialog id="guideDialog" class="help-dialog guide-dialog" aria-labelledby="guideTitle">
+  <form method="dialog"><button class="dialog-close" aria-label="Cerrar guía" autofocus>×</button></form>
+  <h2 id="guideTitle">Guía del tablero</h2>
+</dialog>
+<dialog id="newDialog" class="help-dialog new-dialog" aria-labelledby="newTitle" aria-describedby="localDescription">
+  <form method="dialog"><button class="dialog-close" aria-label="Cerrar nueva partida" autofocus>×</button></form>
+  <h2 id="newTitle">Nueva partida</h2>
+  <p class="selector-intro">Elige cómo quieres jugar.</p>
+  <div class="selector-content" tabindex="0" role="region" aria-label="Configuración de la partida">
+  <div class="control-options" role="group" aria-label="Control de la partida">
+    <button type="button" data-control="local" aria-pressed="true"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8" cy="7" r="3"/><path d="M2 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M17 13a5 5 0 0 1 5 5v2"/></svg><span class="option-name">Local</span><small>Un dispositivo compartido</small><span class="option-check" aria-hidden="true">✓</span></button>
+    <button type="button" data-control="cpu" aria-pressed="false"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4M19 9h4m-4 6h4"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg><span class="option-name">Contra CPU</span><small>Un rival automático</small><span class="option-check" aria-hidden="true">✓</span></button>
+  </div>
+  <p id="localDescription">Dos equipos, cuatro fichas y un dispositivo compartido.</p>
+  <div class="selector-columns"><fieldset class="mode-options"><legend>Sistema de turnos</legend>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="piece" checked><span><strong>Turnos por ficha</strong><small>Cada ficha juega cuando le corresponde su turno</small></span></label>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="team"><span><strong>Turnos por equipo</strong><small>Cada equipo elige qué ficha activa utilizar en su turno</small></span></label>
+  </fieldset>
+  <div id="cpuOptions" hidden>
+    <fieldset class="compact-options difficulty-options" aria-describedby="difficultyDescription"><legend>Dificultad</legend>
+      <label><input type="radio" name="difficulty" value="beginner"><span class="level-bars" aria-hidden="true"><i></i></span><span>Principiante</span><span class="choice-check" aria-hidden="true">✓</span></label>
+      <label><input type="radio" name="difficulty" value="intermediate" checked><span class="level-bars" aria-hidden="true"><i></i><i></i></span><span>Intermedio</span><span class="choice-check" aria-hidden="true">✓</span></label>
+      <label><input type="radio" name="difficulty" value="advanced"><span class="level-bars" aria-hidden="true"><i></i><i></i><i></i></span><span>Avanzado</span><span class="choice-check" aria-hidden="true">✓</span></label>
+    </fieldset>
+    <p id="difficultyDescription" class="difficulty-description">Equilibrio entre territorio y anticipación.</p>
+    <fieldset class="compact-options team-options"><legend>¿Con qué equipo quieres jugar?</legend>
+      <label><input type="radio" name="humanTeam" value="A" checked><span class="selector-team team-a" aria-hidden="true">A</span><span>Equipo A · Naranja<small>Empiezas tú</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+      <label><input type="radio" name="humanTeam" value="B"><span class="selector-team team-b" aria-hidden="true">B</span><span>Equipo B · Celeste<small>Empieza la CPU</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+    </fieldset>
+  <p id="humanTeamDescription" class="human-team-description" aria-live="polite"></p>
+  </div></div>
+  <p id="replaceWarning" class="replace-warning" hidden>Al comenzar reemplazarás la partida guardada. Si cierras esta ventana, la conservarás.</p>
+  <p id="configurationStatus" role="status"></p>
+  </div>
+  <p class="selector-scroll-hint" hidden>Más opciones abajo ↓ · Desliza para verlas</p>
+  <button type="button" class="secondary dialog-ok" id="startLocal">Comenzar partida</button>
+</dialog>
+<div id="participationAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="resultAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="explorationAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script type="module" src="../src/app.mjs"></script>
+</body></html>

@@ -46,7 +46,7 @@ async function probe(context){await context.addInitScript(()=>document.addEventL
 (async()=>{
   await fs.mkdir(out,{recursive:true});
   const engine=await import('../src/engine.mjs'),{resultFixture}=await import('./result-fixtures.mjs'),{startPagesServer}=await import('./pages-server.mjs');
-  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],resolutions:[],sequences:[]};
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'})),errors=[],report={checks:[],resolutions:[],sequences:[]};
   async function create(width=390,height=844,motion='no-preference',vibrate=false){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,reducedMotion:motion});
     if(vibrate)await context.addInitScript(()=>{window.pulses=[];Object.defineProperty(navigator,'vibrate',{value:p=>{window.pulses.push(p);return true;},configurable:true});});

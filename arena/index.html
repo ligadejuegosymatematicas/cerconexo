@@ -10,7 +10,7 @@
 <body>
   <div class="arena-app">
     <header class="header">
-      <div class="brand"><img src="./assets/wordmark.png" alt="Cerconexo" width="176" height="45"><div><strong>ARENA</strong><span>Experimental M3-B</span></div></div>
+      <a class="brand" id="arenaHome" href="../" aria-label="Inicio · elegir modalidad"><img src="../assets/Cerconexo_wordmark_transparente.png" alt="Cerconexo" width="176" height="45"><div><strong>ARENA</strong><span>⌂ Inicio</span></div></a>
       <nav aria-label="Controles"><button id="rulesOpen" type="button">Reglas</button><button id="newOpen" type="button">Nueva partida</button></nav>
     </header>
     <section class="scoreboard" aria-label="Puntuación territorial"><div id="scores"></div><p id="distribution"></p></section>
@@ -24,6 +24,7 @@
       </section>
       <aside class="side-panel" aria-label="Poderes y participantes">
         <section id="decisionPanel" class="decision" hidden aria-labelledby="decisionTitle"><span class="eyebrow">Decisión pendiente</span><h2 id="decisionTitle"></h2><p id="decisionDescription"></p><div id="discardOptions" class="discard-options"></div></section>
+        <section id="arenaReplayActions" class="replay-actions" hidden><button id="arenaReplay" class="primary" type="button">Jugar de nuevo</button><span>Misma configuración</span></section>
         <section class="powers"><h2 id="inventoryTitle">Poderes disponibles</h2><div id="powerOptions" class="power-options"></div><p id="toolHelp" class="muted"></p><button id="cancelTool" type="button" hidden>Movimiento y muro</button></section>
 
       </aside>
@@ -49,7 +50,7 @@
       <li><strong>El territorio puede cambiar.</strong> Demolición puede unir regiones y reactivar fichas. Un Salto puede cambiar su ocupación sin cambiar los muros. Los puntos se recalculan después de cada acción; puedes perder territorio antes asegurado.</li>
       <li><strong>Resuelve el inventario.</strong> Por ficha y con cuatro equipos cabe un poder por ficha, conservado al asegurarse. Por equipo caben tantos poderes como fichas activas tenga. El dueño elige qué descartar si sobra capacidad, aunque se interrumpa un turno rival. El poder recién recogido también puede rechazarse.</li>
       <li><strong>Final.</strong> Al desaparecer la última región compartida termina la partida. Gana quien tiene más casillas exclusivas; puede haber empate. No se solicitan descartes después del final.</li></ol>
-    <p class="muted">Los parámetros de aparición son experimentales y se consultan en Nueva partida. Esta aplicación utiliza un motor y un guardado propios; no modifica Cerconexo Premium.</p>
+    <p class="muted">Los parámetros de aparición son experimentales y se consultan en Nueva partida. Esta aplicación utiliza un motor y un guardado propios; no modifica Cerconexo Clásico.</p>
   </div></dialog>
   <dialog id="guideDialog" aria-labelledby="guideTitle"><div class="dialog-heading"><h2 id="guideTitle">Guía del tablero y poderes</h2><button type="button" class="close" data-close aria-label="Cerrar">×</button></div><div class="dialog-body guide">        <ul>
           <li><span class="sample move-sample"></span> Punto turquesa: paso disponible.</li>
