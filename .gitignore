@@ -145,3 +145,6 @@
 !/tests/m2-review.browser.cjs
 
 !/tests/selector-final.browser.cjs
+
+# Arena experimental: módulo independiente, excluido del manifiesto de Pages.
+!/arena/
