@@ -159,6 +159,7 @@
   "tests/phase4.browser.cjs",
   "tests/phase5a.browser.cjs",
   "tests/phase5b.browser.cjs",
+  "tests/platform.browser.cjs",
   "tests/png.mjs",
   "tests/result-fixtures.mjs",
   "tests/result.test.mjs",

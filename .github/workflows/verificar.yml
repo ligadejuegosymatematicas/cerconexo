@@ -38,10 +38,26 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/cerconexo-browser" --no-save --package-lock=false playwright@1.62.1
           "$RUNNER_TEMP/cerconexo-browser/node_modules/.bin/playwright" install --with-deps chromium
       - name: Comprobar Clásico, Arena y navegación integrada en navegador
+        id: browser
         env:
           CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_BROWSER_CHANNEL: chromium
         run: node tests/browser-runner.cjs
+      - name: Diagnosticar diferencias entre plataformas si falla el navegador
+        if: failure() && steps.browser.outcome == 'failure'
+        env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
+          CERCONEXO_BROWSER_CHANNEL: chromium
+        run: node tests/platform.browser.cjs --diagnose
+      - name: Conservar registros, capturas y trazas del navegador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-navegador-${{ github.run_id }}
+          path: |
+            validation/
+            arena/evidence/
+          retention-days: 7
       - name: Verificar ZIP, extracción limpia y reconstrucción
         env:
           CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright

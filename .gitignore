@@ -162,6 +162,7 @@
 !/scripts/project-files.json
 !/tests/unified.test.mjs
 !/tests/unified.browser.cjs
+!/tests/platform.browser.cjs
 !/tests/browser-runner.cjs
 !/docs/clasico/
 !/docs/clasico/index.html
