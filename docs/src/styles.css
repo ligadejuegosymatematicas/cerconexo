@@ -1525,6 +1525,11 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 #guideDialog summary { display:none; }
 #guideDialog .legend-content { grid-template-columns:1fr; gap:14px; padding:6px 0 10px; }
 #guideDialog .legend-content>div,#guideDialog .legend-content b { font-size:14px; }
+/* Compensar la reserva del aviso sin recortar las ocho entradas de la guía por equipo. */
+@media(min-width:761px) and (max-height:800px) {
+  .turn-panel { gap:10px; }
+  .legend-content { row-gap:8px; }
+}
 @media(min-width:761px) and (max-height:760px) {
   .app { padding:10px 18px; gap:10px; }
   .score-panel { padding:12px; }
@@ -1597,6 +1602,11 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .component-info h2 { margin:0; font-size:12px; line-height:16px; font-weight:800; color:var(--text); letter-spacing:0; }
 .component-info p { margin:0; font-size:13px; line-height:18px; }
 .component-info [data-component-general] p { margin-top:6px; color:var(--muted); }
+@media(min-width:761px) and (max-height:650px) {
+  /* Mantener los 128px de consulta; recuperar margen y relleno en alturas útiles bajas. */
+  .has-final-board .score-panel { padding-bottom:8px; }
+  .has-final-board .component-info { margin-top:4px; }
+}
 .region-core { padding-right:40px; }
 .region-facts { font-weight:700; }
 .component-explanation { margin-top:4px!important; color:var(--muted); }
@@ -1652,12 +1662,12 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 #recentEvent[data-team="both"] .recent-heading { font-size:13px; letter-spacing:-.1px; }
 #recentEvent[data-team="both"] .recent-detail { font-size:12px; line-height:16px; }
 
-/* En horizontal el aviso doble puede necesitar dos líneas de título y dos de detalle.
-   La diferencia de 8px compensa exactamente disco y enfrentamiento compactados. */
+/* En horizontal se conserva el espacio existente (también con la identidad CPU).
+   Un aviso doble largo se puede leer completo con tacto, rueda o teclado. */
 @media(max-height:500px) and (min-width:600px) {
-  .context-slot,.context-slot .prompt { height:56px; }
-  .has-recent-event .context-slot,#recentEvent { height:64px; }
+  #recentEvent { overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; pointer-events:auto; }
 }
+#recentEvent:focus-visible { outline:2px solid var(--gold); outline-offset:1px; }
 
 /* M1: candidatas discontinuas; la elegida conserva el aro sólido existente. */
 .candidate-aura { display:none; fill:none; stroke:var(--piece-glow); stroke-width:3; stroke-dasharray:5 4; }

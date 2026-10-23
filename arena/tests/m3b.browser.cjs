@@ -17,7 +17,12 @@ const {pathToFileURL}=require('node:url');
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base=`http://127.0.0.1:${server.address().port}/cerconexo/`,url=base+'arena/';
   const browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
-  const shot=async(p,name)=>{await p.screenshot({path:path.join(out,name+'.png'),fullPage:true});report.screens.push(name+'.png');};
+  const shot=async(p,name)=>{
+    // La carga y las fuentes pueden terminar antes de que Chromium presente el
+    // primer frame tras una navegación/redirección. Esperar pintado, sin retardo fijo.
+    await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    await p.screenshot({path:path.join(out,name+'.png'),fullPage:true});report.screens.push(name+'.png');
+  };
   const attach=p=>{p.on('pageerror',e=>report.errors.push(e.message));p.on('response',r=>{if(r.status()>=400)report.errors.push(`${r.status()}: ${r.url()}`);});};
   const raw=p=>p.evaluate(()=>localStorage.getItem('cerconexo-arena-m3a-v1'));
   const tap=async(p,selector,touch)=>{const node=p.locator(selector).first();await node.scrollIntoViewIfNeeded();if(touch){const b=await node.boundingBox();await p.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);}else await node.click();};

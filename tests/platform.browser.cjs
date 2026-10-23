@@ -12,7 +12,7 @@ async function geometry(p){return p.evaluate(()=>{
     nodes:Object.fromEntries(['#board','.arena','.board-wrap','.score-panel','#turnBanner','.context-slot','#recentEvent','.recent-heading','.recent-detail','.team-heading','.team-roster','.player'].map(sel=>{
       const n=document.querySelector(sel);if(!n)return [sel,null];const s=getComputedStyle(n);
       return [sel,{box:box(n),scroll:[n.scrollWidth,n.scrollHeight],client:[n.clientWidth,n.clientHeight],font:s.font,lineHeight:s.lineHeight,
-        display:s.display,overflow:s.overflow,visibility:s.visibility,gridRows:s.gridTemplateRows,padding:s.padding,text:n.textContent,textBoxes:textBox(n)}];
+        display:s.display,overflow:s.overflow,overflowY:s.overflowY,tabIndex:n.tabIndex,visibility:s.visibility,gridRows:s.gridTemplateRows,padding:s.padding,text:n.textContent,textBoxes:textBox(n)}];
     }))};
 });}
 async function classicSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem('wallgo-league-v2'),active:{id:document.activeElement?.id,action:document.activeElement?.getAttribute('data-to')},
@@ -29,55 +29,42 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
   const {resultFixture}=await import('./result-fixtures.mjs'),{directDuelFixture}=await import('./participation-fixtures.mjs');
   const {ArenaSession,replayArenaSave}=await import('../arena/src/session.mjs');
   const site=await startPagesServer({entry:''}),browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
-  const report={platform:process.platform,browser:browser.version(),diagnostic,errors:[],geometry:[],restart:[],arena:[],monitor:[],fastArena:[]};
+  const report={platform:process.platform,browser:browser.version(),diagnostic,complete:false,errors:[],geometry:[],restart:[],arena:[]};
   const create=async(width,height,reducedMotion='reduce')=>{
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,reducedMotion});
     await context.tracing.start({screenshots:true,snapshots:true,sources:true});const p=await context.newPage();p.on('pageerror',e=>report.errors.push({message:e.message,stack:e.stack}));return {context,p};
   };
   const seedClassic=async(p,game)=>{await p.goto(site.url);await p.evaluate(({ck,game})=>localStorage.setItem(ck,JSON.stringify({game})),{ck,game});await p.goto(site.url+'clasico/?continue=1');await idle(p);};
   try{
-    if(diagnostic){
-      // Reproducir el monitor original en la portada: el fallo pertenece al callback del ensayo.
-      const c=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
-      await c.addInitScript(()=>document.addEventListener('DOMContentLoaded',()=>{
-        const frame=()=>{document.getElementById('board').getBoundingClientRect();requestAnimationFrame(frame);};requestAnimationFrame(frame);
-      }));
-      const p=await c.newPage();p.on('pageerror',e=>report.monitor.push({message:e.message,stack:e.stack}));
-      await seedClassic(p,engine.initialState());await p.click('#home');await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
-      await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-      await p.screenshot({path:path.join(out,'monitor-home.png')});await c.close();
-      // Reproducir la secuencia histórica sin añadir consultas que ralenticen el foco.
-      for(let trial=0;trial<10;trial++){
-        const {context,p}=await create(390,844,'no-preference');
-        await context.addInitScript(()=>{window.focusLog=[];for(const type of ['focusin','keydown','close'])document.addEventListener(type,e=>focusLog.push({type,key:e.key,id:e.target.id,kind:e.target.getAttribute?.('data-kind'),cell:e.target.getAttribute?.('data-cell'),at:performance.now()}),true);});
-        await p.goto(site.url+'arena/');await p.check('[name=mode][value=duo]');await p.check('[name=policy][value=piece]');
-        await p.locator('#experimentJson').evaluate(n=>n.value=JSON.stringify({initial:[{cell:11,type:'extraWall'},{cell:20,type:'jump'}],waves:[],symmetry:'vertical',placement:'center-first'}));
-        await p.click('#startArena');await p.waitForFunction(()=>!document.getElementById('newDialog').open);
-        await p.locator('[data-kind=move][data-cell="11"]').focus();await p.keyboard.press('Tab');await p.keyboard.press('Shift+Tab');
-        await p.locator('[data-kind=move][data-cell="11"]').evaluate(n=>getComputedStyle(n.querySelector('.focus-ring')).stroke);
-        await p.keyboard.press('Enter');
-        const observed=await p.evaluate(()=>({inventory:document.getElementById('inventoryTitle').textContent,raw:localStorage.getItem('cerconexo-arena-m3a-v1'),events:focusLog,active:document.activeElement?.outerHTML,dialog:document.getElementById('newDialog').open}));
-        report.fastArena.push(observed);
-        await context.tracing.stop({path:path.join(out,`inventory-fast-${trial}.zip`)});await context.close();
-      }
-    }
     for(const [width,height] of [[1440,900],[1366,768],[1366,600],[390,844],[360,740],[740,360],[1280,560]]){
       const {context,p}=await create(width,height),fixture=resultFixture();await seedClassic(p,fixture.before);
       const before=await geometry(p);await p.locator(`[data-wall="${fixture.to}"]`).click();await idle(p);const after=await geometry(p);
       await p.screenshot({path:path.join(out,`final-${width}x${height}.png`)});
       const direct=directDuelFixture();await seedClassic(p,direct.before);await p.locator(`[data-wall="${direct.to}"]`).click();await idle(p);
       const participation=await geometry(p);await p.screenshot({path:path.join(out,`participacion-${width}x${height}.png`)});
-      report.geometry.push({width,height,before,after,participation});
+      const notice=participation.nodes['#recentEvent'],scrollableNotice=notice.scroll[1]>notice.client[1]+1&&notice.overflowY==='auto'&&notice.tabIndex===0;
+      if(scrollableNotice){
+        const boardBefore=participation.nodes['#board'].box,rawBefore=await p.evaluate(()=>localStorage.getItem('wallgo-league-v2'));
+        await p.locator('#recentEvent').focus();await p.keyboard.press('End');
+        await p.waitForFunction(()=>{const n=document.getElementById('recentEvent');return n.scrollTop+n.clientHeight>=n.scrollHeight-1;});
+        assert.deepEqual((await geometry(p)).nodes['#board'].box,boardBefore);assert.equal(await p.evaluate(()=>localStorage.getItem('wallgo-league-v2')),rawBefore);
+        await p.screenshot({path:path.join(out,`aviso-completo-${width}x${height}.png`)});
+      }
+      await seedClassic(p,engine.initialState({turnMode:'team'}));const teamInitial=await geometry(p);
+      await p.screenshot({path:path.join(out,`equipo-${width}x${height}.png`)});
+      report.geometry.push({width,height,before,after,participation,teamInitial});
       if(!diagnostic){
         assert.deepEqual(after.nodes['#board'].box,before.nodes['#board'].box,`Tablero estable ${width}×${height}`);
         assert.deepEqual(after.page,[width,height]);assert.deepEqual(participation.page,[width,height]);
-        for(const key of ['.context-slot','#recentEvent']){
+        assert.deepEqual(teamInitial.page,[width,height],`Guía completa por equipo ${width}×${height}`);
+        assert.deepEqual(teamInitial.nodes['#board'].box,before.nodes['#board'].box);
+        for(const key of ['.context-slot',...(scrollableNotice?[]:['#recentEvent'])]){
           const n=participation.nodes[key];assert.ok(n.scroll[0]<=n.client[0]+1&&n.scroll[1]<=n.client[1]+1,`Texto completo ${key} ${width}×${height}`);
         }
         const slot=participation.nodes['.context-slot'].box;
         for(const key of ['.recent-heading','.recent-detail']){
           const n=participation.nodes[key];assert.ok(n.text.trim());
-          assert.ok(n.box[1]+n.box[3]<=slot[1]+slot[3]+1,`Aviso dentro de su reserva ${key} ${width}×${height}`);
+          if(!scrollableNotice)assert.ok(n.box[1]+n.box[3]<=slot[1]+slot[3]+1,`Aviso dentro de su reserva ${key} ${width}×${height}`);
         }
       }
       await context.tracing.stop({path:path.join(out,`layout-${width}x${height}.zip`)});await context.close();
@@ -139,9 +126,13 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
       }
       await p.screenshot({path:path.join(out,'inventory-verified-focus.png')});await context.tracing.stop({path:path.join(out,'inventory.zip')});await context.close();
     }
+    report.complete=true;
   }finally{
-    await fs.writeFile(path.join(out,'diagnosis.json'),JSON.stringify(report,null,2));await browser.close();await site.close();
+    report.ok=!diagnostic&&report.complete&&report.errors.length===0;
+    await fs.writeFile(path.join(out,diagnostic?'diagnosis-extra.json':'diagnosis.json'),JSON.stringify(report,null,2));await browser.close();await site.close();
   }
-  console.log(JSON.stringify({platform:report.platform,browser:report.browser,geometryCases:report.geometry.length,restart:report.restart,arena:report.arena.map(s=>({stage:s.stage,active:s.active,dialog:s.dialog,inventory:s.inventory,commands:JSON.parse(s.raw).commands,equalToEngine:s.equalToEngine})),fastArena:report.fastArena,errors:report.errors},null,2));
-  if(!diagnostic)assert.equal(report.errors.length,0);
+  console.log(JSON.stringify({ok:report.ok,platform:report.platform,browser:report.browser,geometryCases:report.geometry.length,
+    restart:report.restart.map(s=>({stage:s.stage,legal9:s.legal9,path:JSON.parse(s.raw).pendingTurn?.path})),
+    arena:report.arena.map(s=>({stage:s.stage,active:s.active,dialog:s.dialog,inventory:s.inventory,commands:JSON.parse(s.raw).commands})),errors:report.errors},null,2));
+  assert.deepEqual(report.errors,[]);
 })().catch(e=>{console.error(e);process.exitCode=1;});

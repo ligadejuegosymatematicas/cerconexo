@@ -42,9 +42,7 @@ jobs:
         env:
           CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_BROWSER_CHANNEL: chromium
-        run: |
-          node tests/platform.browser.cjs --diagnose
-          node tests/browser-runner.cjs
+        run: node tests/browser-runner.cjs
       - name: Diagnosticar diferencias entre plataformas si falla el navegador
         if: failure() && steps.browser.outcome == 'failure'
         env:
