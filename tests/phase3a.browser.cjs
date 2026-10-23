@@ -42,7 +42,7 @@ async function instrument(context){
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
   const fixtures=await import('./territory-fixtures.mjs');
   const {startPagesServer}=await import('./pages-server.mjs');
-  const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:'msedge'});
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'}));
   const report={checks:[],screens:[],timing:[]},errors=[];
   async function create(width=390,height=844,motion='no-preference'){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,reducedMotion:motion});
@@ -125,7 +125,7 @@ async function instrument(context){
     assert.deepEqual(await saved(page),fixture.after);assert.equal(await page.evaluate(()=>window.territorialProbes.length),0);
     assert.equal(await page.locator('#scoreA').innerText(),'12');assert.equal(await page.locator('#turnDisc').innerText(),'B1');
     await load(page,fixture.before);await choose(page,fixture.to);await page.waitForFunction(()=>!document.getElementById('territoryNotice').hidden);
-    page.once('dialog',d=>d.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);
+    await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);
     await page.waitForTimeout(1400);assert.equal((await saved(page)).moves,0);
     assert.equal(await page.locator('#scoreA').innerText(),'0');assert.equal(await page.locator('#turnDisc').innerText(),'A1');assert.ok(await page.locator('#territoryNotice').isHidden());
     // Cambiar a movimiento reducido termina efectos pendientes y deja los puntos oficiales.

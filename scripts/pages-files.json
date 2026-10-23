@@ -20,5 +20,14 @@
   "src/exploration.mjs",
   "src/turnPolicies.mjs",
   "src/turnDraft.mjs",
-  "src/gameSave.mjs"
+  "src/gameSave.mjs",
+  "src/cpuMoves.mjs",
+  "src/cpuEvaluate.mjs",
+  "src/cpuSearch.mjs",
+  "src/cpuSession.mjs",
+  "src/cpuWorker.mjs",
+  "src/cpuPlanner.mjs",
+  "src/cpuController.mjs",
+  "src/navigation.mjs",
+  "assets/Cerconexo_logo_v3_transparente.png"
 ]

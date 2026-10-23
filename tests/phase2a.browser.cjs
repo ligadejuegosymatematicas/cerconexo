@@ -38,7 +38,7 @@ async function layout(page){
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
   const {startPagesServer}=await import('./pages-server.mjs');
   const site=await startPagesServer();
-  const browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
+  const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}));
   const errors=[];
   const create=async(width,height,motion='no-preference')=>{
     const context=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:width<761,reducedMotion:motion});
@@ -122,13 +122,13 @@ async function layout(page){
     await activate(page,'[data-wall]',{wait:false});const committed=await saved(page);
     await page.reload();await idle(page);assert.deepEqual(await saved(page),committed);
     // Nueva partida durante el efecto cancela toda continuación pendiente.
-    await reset(page);await activate(page,'[data-to="9"]',{wait:false});page.once('dialog',d=>d.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await settle(page);await idle(page);
+    await reset(page);await activate(page,'[data-to="9"]',{wait:false});await page.locator('#new').click();await page.locator('#startLocal').click();await settle(page);await idle(page);
     assert.equal((await saved(page)).moves,0);assert.equal(await page.locator('#turnDisc').innerText(),'A1');
-    await activate(page,'[data-wall]',{wait:false});page.once('dialog',d=>d.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await settle(page);await idle(page);
+    await activate(page,'[data-wall]',{wait:false});await page.locator('#new').click();await page.locator('#startLocal').click();await settle(page);await idle(page);
     assert.equal((await saved(page)).moves,0);assert.equal(await page.locator('.wall-confirmation').count(),0);
     // Confirmación rechazada conserva la partida.
     await activate(page,'[data-wall]');const current=await saved(page);
-    page.once('dialog',d=>d.dismiss());await page.locator('#new').click();assert.deepEqual(await saved(page),current);
+    await page.locator('#new').click();assert.ok(await page.locator('#replaceWarning').isVisible());await page.locator('#newDialog .dialog-close').click();assert.deepEqual(await saved(page),current);
     // Escape no elimina pasos ejecutados; la partida oficial solo avanza con el muro.
     await reset(page);await activate(page,'[data-to="15"]');await activate(page,'[data-to="16"]');
     await page.keyboard.press('Escape');await idle(page);

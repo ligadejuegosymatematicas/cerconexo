@@ -18,7 +18,7 @@ async function enable(page,value){
   await fs.mkdir(out,{recursive:true});
   const {startPagesServer}=await import('./pages-server.mjs');
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
-  const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:'msedge'});
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'}));
   const errors=[],report={screens:[],checks:[]};
   async function create({mode='supported',width=390,height=844}={}){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761});
@@ -38,9 +38,9 @@ async function enable(page,value){
       const metrics=await page.evaluate(()=>{
         const css=selector=>getComputedStyle(document.querySelector(selector));
         const b=document.getElementById('board').getBoundingClientRect();
-        const h=document.querySelector('h1').getBoundingClientRect(),img=document.querySelector('.official-logo').getBoundingClientRect();
+        const h=document.querySelector('.branding h1').getBoundingClientRect(),img=document.querySelector('.official-logo').getBoundingClientRect();
         return {viewport:[innerWidth,innerHeight],page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],boardWidth:b.width,
-          colors:{a:css('[data-piece="A1"] .token-body').fill,b:css('[data-piece="B1"] .token-body').fill,move:css('.move-target').fill,wall:css('.wall-glow').stroke,neutral:css('[data-cell="0"]').fill,bg:css(':root').backgroundColor,logo:css('h1').backgroundColor},
+          colors:{a:css('[data-piece="A1"] .token-body').fill,b:css('[data-piece="B1"] .token-body').fill,move:css('.move-target').fill,wall:css('.wall-glow').stroke,neutral:css('[data-cell="0"]').fill,bg:css(':root').backgroundColor,logo:css('.branding h1').backgroundColor},
           logoInside:h.x<=img.x&&h.right>=img.right&&h.y<=img.y&&h.bottom>=img.bottom};
       });
       assert.deepEqual(metrics.page,[width,height]);assert.ok(metrics.logoInside);
@@ -62,7 +62,7 @@ async function enable(page,value){
     await page.screenshot({path:path.join(out,'opcion-vibracion.png')});await page.locator('#optionsDialog .dialog-close').click();
     await choose(page,'[data-wall]');assert.deepEqual(await positive(page),[12]);
     assert.equal((await saved(page)).moves,3);
-    page.once('dialog',dialog=>dialog.accept());await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);await settle(page);
+    await page.locator('#new').click();await page.locator('#startLocal').click();await idle(page);await settle(page);
     assert.deepEqual(await positive(page),[12,8]);assert.equal((await saved(page)).moves,0);
     // Estado de aislamiento real: una señal sustituye al muro y al cambio de turno.
     const isolated=engine.initialState();isolated.walls=[1,7,9].map(to=>engine.wallKey(8,to));isolated.moves=3;

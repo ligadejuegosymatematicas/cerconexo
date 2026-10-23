@@ -22,14 +22,14 @@ async function instrument(context){await context.addInitScript(()=>document.addE
   new MutationObserver(()=>{if(!document.getElementById('territoryNotice').hidden)window.usability.territory++;}).observe(document.getElementById('territoryNotice'),{attributes:true,attributeFilter:['hidden']});
   const frame=()=>{
     const r=document.getElementById('board').getBoundingClientRect();
-    window.usability.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[r.x,r.y,r.width,r.height]});
+    if(r.width)window.usability.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[r.x,r.y,r.width,r.height]});
     if(window.usability.frames.length<6000)requestAnimationFrame(frame);
   };requestAnimationFrame(frame);
 }));}
 (async()=>{
   await fs.mkdir(out,{recursive:true});const {startPagesServer}=await import('./pages-server.mjs');
   const engine=await import('../src/engine.mjs'),fixtures=await import('./participation-fixtures.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
-  const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:'msedge'}),report={checks:[],screens:[]},errors=[];
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),report={checks:[],screens:[]},errors=[];
   async function create(width=390,height=844,{preference,api=true,motion='no-preference'}={}){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,deviceScaleFactor:1,reducedMotion:motion});
     await context.addInitScript(({preference,api})=>{
@@ -120,7 +120,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       await page.waitForTimeout(350);assert.ok(await page.locator('#recentEvent').isVisible());assert.deepEqual((await metrics(page)).clipped,[]);
       await page.screenshot({path:path.join(out,`aviso-${actor}-${width}x${height}.png`)});
       await page.reload();await idle(page);assert.ok(await page.locator('#recentEvent').isHidden());assert.equal(await page.evaluate(()=>window.usability.attention.length),0);
-      await load(page,before);page.once('dialog',d=>d.accept());
+      await load(page,before);
       await page.evaluate(()=>{const n=document.getElementById('recentEvent'),observer=new MutationObserver(()=>{if(n.hidden)return;observer.disconnect();window.resetDuringAttention=n.getAnimations().length;document.getElementById('new').click();document.getElementById('startLocal').click();});observer.observe(n,{attributes:true,childList:true,subtree:true});});
       await choose(page,to);await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>window.resetDuringAttention),1);assert.deepEqual(await saved(page),engine.initialState());assert.ok(await page.locator('#recentEvent').isHidden());await context.close();
     }
