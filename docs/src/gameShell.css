@@ -107,3 +107,16 @@
   .app .score-panel { grid-column:2; grid-row:3; align-self:start; }
   .app .arena { grid-column:1; grid-row:1/4; }
 }
+
+/* M4: controles estables con fuentes de Windows y Linux. */
+@media(max-width:760px) {
+  .arena-app .discard-options button,.arena-app .header nav a,.arena-app .header nav button { line-height:16px; }
+}
+@media(max-height:480px) and (min-width:620px) {
+  .arena-app { height:100dvh; grid-template-rows:auto auto 68px 44px minmax(44px,1fr) 36px; row-gap:2px; align-content:stretch; }
+  .arena-app .side-panel { min-height:0; max-height:none; overflow-y:auto; }
+  .arena-app .scoreboard:has(#scores>:nth-child(4)) { display:block; }
+  .arena-app #scores:has(>:nth-child(4)) { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .arena-app #scores:has(>:nth-child(4)) .score-top { flex-direction:column; align-items:flex-start; gap:0; }
+  .arena-app .scoreboard:has(#scores>:nth-child(4)) #distribution { max-width:none; }
+}

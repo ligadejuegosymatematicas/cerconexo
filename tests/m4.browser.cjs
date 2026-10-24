@@ -30,7 +30,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   await p.click('#new');await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
   assert.equal(await p.evaluate(k=>localStorage.getItem(k),ck),raw);
   await p.goto(site.url+'arena/');assert.deepEqual(await p.locator('.header nav a,.header nav button').allInnerTexts(),['Inicio','Guía','Nueva partida']);const ab=await measure(p,'#arenaBoard');assert.equal(ab.board[2],({1440:778,1366:h===600?478:646,1280:438,390:358,360:328,740:338})[w]);await shot(p,`arena-${w}x${h}`);
-  assert.equal(await p.locator('#experimentDetails').isVisible(),false);
+  assert.equal(await p.locator('#experimentDetails').isVisible(),false);if(w<=760)assert.ok((await p.locator('.header nav a,.header nav button').evaluateAll(ns=>ns.map(n=>getComputedStyle(n).lineHeight))).every(x=>x==='16px'));
   await p.click('#guideOpen');assert.equal(await p.locator('#guideDialog .guide-steps li').count(),4);await shot(p,`guia-arena-${w}x${h}`);await p.keyboard.press('Escape');
   await p.click('#inspectToggle');await p.locator('[data-inspect="10"]').tap();assert.equal(await p.locator('.region-count text').textContent(),'81');assert.equal(await p.locator('[data-action]').count(),0);await shot(p,`inspeccion-${w}x${h}`);
   assert.deepEqual(await measure(p,'#arenaBoard'),ab);assert.equal(await p.evaluate(k=>localStorage.getItem(k),ak),arenaRaw);
@@ -53,7 +53,18 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
  }
  // Inventarios públicos completos, incluidos poderes retenidos y compartidos.
  for(const f of fixtures.saves)for(const [iw,ih] of [[360,740],[1366,600],[740,360]]){const c=await browser.newContext({viewport:{width:iw,height:ih}}),p=await c.newPage();await p.goto(site.url);await p.evaluate(({ak,raw})=>localStorage.setItem(ak,raw),{ak,raw:f.raw});await p.goto(site.url+'arena/');
-  const total=Object.values(f.game.inventories).flat().length;await shot(p,`inventarios-${f.name}-${iw}x${ih}`);assert.equal(await p.locator('#scores .public-power').count(),total,f.name);assert.equal(await p.evaluate(k=>localStorage.getItem(k),ak),f.raw);assert.deepEqual((await measure(p,'#arenaBoard')).page,[iw,ih]);await c.close();}
+  const total=Object.values(f.game.inventories).flat().length;await shot(p,`inventarios-${f.name}-${iw}x${ih}`);assert.equal(await p.locator('#scores .public-power').count(),total,f.name);assert.equal(await p.evaluate(k=>localStorage.getItem(k),ak),f.raw);assert.deepEqual((await measure(p,'#arenaBoard')).page,[iw,ih]);
+  if(f.name==='pending'&&iw===360){
+   const b=p.locator('#discardOptions button').first();await b.evaluate(n=>n.style.maxWidth='144px');
+   const wrapped=await b.evaluate(n=>{const r=n.getBoundingClientRect(),t=document.createRange();t.selectNodeContents(n);const text=t.getBoundingClientRect();return {height:r.height,lineHeight:getComputedStyle(n).lineHeight,lines:[...t.getClientRects()].length,fits:text.top>=r.top&&text.bottom<=r.bottom};});
+   assert.equal(wrapped.height,44);assert.equal(wrapped.lineHeight,'16px');assert.ok(wrapped.lines>=2);assert.ok(wrapped.fits);assert.deepEqual((await measure(p,'#arenaBoard')).page,[iw,ih]);
+  }
+  if(f.name==='ffa-piece'&&iw===740){
+   const boxes=await p.locator('#scores .score').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width};}));
+   assert.equal(boxes.length,4);assert.ok(boxes.every(b=>b.width>44&&b.right<=740));
+   assert.ok(await p.locator('#distribution').evaluate(n=>{const r=n.getBoundingClientRect(),scores=document.getElementById('scores').getBoundingClientRect();return r.y>=scores.bottom&&r.right<=innerWidth;}));
+  }
+  await c.close();}
  // El resultado conserva la exploración anterior y añade el tamaño dentro de la región.
  {
   const c=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'}),p=await c.newPage();await p.goto(site.url);
