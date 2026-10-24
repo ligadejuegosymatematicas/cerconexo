@@ -83,3 +83,27 @@
   .arena-app .side-panel { order:6; }
   .arena-app .problem { order:7; }
 }
+
+/* Cierre M4: aprovechar el ancho en escritorio y la altura en horizontal. */
+@media(min-width:761px) and (min-height:481px) {
+  .arena-app { display:grid; height:100dvh; grid-template-columns:minmax(0,1fr) 340px; grid-template-rows:auto auto auto auto minmax(0,1fr) 38px; gap:8px 20px; padding:8px 20px; }
+  .arena-app .workspace,.arena-app .play-area { display:contents; }
+  .arena-app .header { grid-column:1/3; grid-row:1; margin:0; }
+  .arena-app .scoreboard { grid-column:2; grid-row:2; display:block; margin:0; }
+  .arena-app #distribution { max-width:none; margin-top:4px; }
+  .arena-app #scores:has(>:nth-child(4)) { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .arena-app .turn-banner { grid-column:2; grid-row:3; margin:0; }
+  .arena-app .board-wrap { grid-column:1; grid-row:2/7; align-self:center; width:min(100%,calc(100dvh - 110px)); min-width:0; }
+  .arena-app .board-tools { grid-column:2; grid-row:4; margin:0; }
+  .arena-app .side-panel { grid-column:2; grid-row:5; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+  .arena-app .event-notice,.arena-app .inspection-info { grid-column:2; grid-row:6; margin:0; height:38px; min-height:38px; }
+  .arena-app #problem { grid-column:1/3; }
+}
+@media(max-height:500px) and (min-width:700px) {
+  .app { grid-template-columns:minmax(0,1fr) 360px; grid-template-rows:48px auto minmax(0,1fr); gap:6px; }
+  .app .topbar { grid-column:2; grid-row:1; }
+  .app .layout,.app .turn-panel { display:contents; }
+  .app .turn-card { grid-column:2; grid-row:2; }
+  .app .score-panel { grid-column:2; grid-row:3; align-self:start; }
+  .app .arena { grid-column:1; grid-row:1/4; }
+}

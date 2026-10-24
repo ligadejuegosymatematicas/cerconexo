@@ -13,7 +13,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/m2-review
  },options);const p=await context.newPage();p.on('pageerror',e=>report.errors.push(e.message));await p.goto(site.url);return {p,context};}
  async function capture(p,name){await p.waitForTimeout(180);await p.screenshot({path:path.join(out,name+'.png')});}
  try{
-  for(const [width,height,size] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,240],[1440,700,540],[1366,650,490],[1280,560,400]]){
+  for(const [width,height,size] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,294],[1440,700,540],[1366,650,490],[1280,560,400]]){
    const {p,context}=await page(width,height);await p.locator('#play').click();assert.equal(await p.locator('.control-icon').count(),2);await capture(p,`local-${width}x${height}`);
    await p.locator('[data-control=cpu]').click();assert.equal(await p.locator('[name=difficulty]:checked').inputValue(),'intermediate');await capture(p,`cpu-${width}x${height}`);
    await p.locator('.selector-content').evaluate(n=>n.scrollTop=n.scrollHeight);await capture(p,`cpu-opciones-${width}x${height}`);

@@ -15,7 +15,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   await p.evaluate(({ck,ak,raw,arenaRaw})=>{localStorage.setItem(ck,raw);localStorage.setItem(ak,arenaRaw);},{ck,ak,raw,arenaRaw});
   await p.goto(site.url+'clasico/?continue=1');await p.waitForFunction(()=>document.getElementById('board').getAttribute('aria-busy')==='false');
   assert.deepEqual(await p.locator('.header-actions button').allInnerTexts(),['Inicio','Guía','Nueva partida']);
-  const before=await measure(p,'#board');await shot(p,`clasico-${w}x${h}`);
+  const before=await measure(p,'#board');assert.equal(before.board[2],({1440:734,1366:h===600?440:602,1280:400,390:366,360:336,740:294})[w]);await shot(p,`clasico-${w}x${h}`);
   await p.click('#classicInspect');assert.equal(await p.locator('[data-inspect]').count(),49);
   await p.locator('[data-inspect="8"]').tap();assert.equal(await p.locator('.live-inspection .region-count text').textContent(),'49');
   assert.equal(await p.locator('[data-to],[data-wall],[data-actor]').count(),0);assert.equal(await p.evaluate(k=>localStorage.getItem(k),ck),raw);
@@ -29,7 +29,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   await p.click('#help');await p.locator('#helpDialog .full-rules summary').click();await shot(p,`guia-clasico-${w}x${h}`);await p.keyboard.press('Escape');
   await p.click('#new');await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
   assert.equal(await p.evaluate(k=>localStorage.getItem(k),ck),raw);
-  await p.goto(site.url+'arena/');assert.deepEqual(await p.locator('.header nav a,.header nav button').allInnerTexts(),['Inicio','Guía','Nueva partida']);const ab=await measure(p,'#arenaBoard');await shot(p,`arena-${w}x${h}`);
+  await p.goto(site.url+'arena/');assert.deepEqual(await p.locator('.header nav a,.header nav button').allInnerTexts(),['Inicio','Guía','Nueva partida']);const ab=await measure(p,'#arenaBoard');assert.equal(ab.board[2],({1440:778,1366:h===600?478:646,1280:438,390:358,360:328,740:338})[w]);await shot(p,`arena-${w}x${h}`);
   assert.equal(await p.locator('#experimentDetails').isVisible(),false);
   await p.click('#guideOpen');assert.equal(await p.locator('#guideDialog .guide-steps li').count(),4);await shot(p,`guia-arena-${w}x${h}`);await p.keyboard.press('Escape');
   await p.click('#inspectToggle');await p.locator('[data-inspect="10"]').tap();assert.equal(await p.locator('.region-count text').textContent(),'81');assert.equal(await p.locator('[data-action]').count(),0);await shot(p,`inspeccion-${w}x${h}`);
@@ -52,8 +52,8 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');assert.equal(await p.evaluate(k=>localStorage.getItem(k),key),value);await c.close();report.checks.push(`${mode}/${state}/${close}`);
  }
  // Inventarios públicos completos, incluidos poderes retenidos y compartidos.
- for(const f of fixtures.saves){const c=await browser.newContext({viewport:{width:360,height:740}}),p=await c.newPage();await p.goto(site.url);await p.evaluate(({ak,raw})=>localStorage.setItem(ak,raw),{ak,raw:f.raw});await p.goto(site.url+'arena/');
-  const total=Object.values(f.game.inventories).flat().length;await shot(p,`inventarios-${f.name}`);assert.equal(await p.locator('#scores .public-power').count(),total,f.name);assert.equal(await p.evaluate(k=>localStorage.getItem(k),ak),f.raw);assert.deepEqual((await measure(p,'#arenaBoard')).page,[360,740]);await c.close();}
+ for(const f of fixtures.saves)for(const [iw,ih] of [[360,740],[1366,600],[740,360]]){const c=await browser.newContext({viewport:{width:iw,height:ih}}),p=await c.newPage();await p.goto(site.url);await p.evaluate(({ak,raw})=>localStorage.setItem(ak,raw),{ak,raw:f.raw});await p.goto(site.url+'arena/');
+  const total=Object.values(f.game.inventories).flat().length;await shot(p,`inventarios-${f.name}-${iw}x${ih}`);assert.equal(await p.locator('#scores .public-power').count(),total,f.name);assert.equal(await p.evaluate(k=>localStorage.getItem(k),ak),f.raw);assert.deepEqual((await measure(p,'#arenaBoard')).page,[iw,ih]);await c.close();}
  // El resultado conserva la exploración anterior y añade el tamaño dentro de la región.
  {
   const c=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'}),p=await c.newPage();await p.goto(site.url);

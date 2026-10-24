@@ -58,7 +58,7 @@ async function instrument(context,{fake=false,noWorker=false}={}){
   report.frames+=frames.length;
  };
  try{
-  for(const [width,height,size] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,240],[1440,700,540],[1366,650,490],[1280,560,400]]){
+  for(const [width,height,size] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,294],[1440,700,540],[1366,650,490],[1280,560,400]]){
    const {p,context}=await create(width,height,{motion:'reduce'});assert.equal(await raw(p),null);assert.ok(await p.locator('.home-logo').evaluate(img=>img.complete&&img.naturalWidth>1000));assert.equal(await p.locator('#continueGame').isVisible(),false);
    assert.match(await p.locator('#homeScreen').innerText(),/CLÁSICO[\s\S]*Jugar[\s\S]*Reglas[\s\S]*Opciones/);assert.ok((await p.locator('.home-logo').boundingBox()).width>=280);await screenshot(p,`portada-${width}x${height}`);
    for(const [opener,dialog] of [['#homeRules','#helpDialog'],['#homeOptions','#optionsDialog']]){
@@ -173,7 +173,7 @@ async function instrument(context,{fake=false,noWorker=false}={}){
    await context.close();
   }
   {
-   const {p,context}=await create(740,360,{motion:'reduce'}),game=resultFixture().after;await fixture(p,encodeGameSave(game,beginDraft(game),{control:control('advanced')}),{enter:true});assert.deepEqual(await p.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.scrollHeight]),[740,360]);const layout=await p.evaluate(()=>{const guide=document.getElementById('guide').getBoundingClientRect(),meta=document.getElementById('boardMeta').getBoundingClientRect();return {guideRight:guide.right,metaLeft:meta.x,board:document.getElementById('board').getBoundingClientRect().width};});assert.ok(layout.guideRight<=layout.metaLeft);assert.equal(layout.board,240);await screenshot(p,'resultado-cpu-horizontal');await context.close();
+   const {p,context}=await create(740,360,{motion:'reduce'}),game=resultFixture().after;await fixture(p,encodeGameSave(game,beginDraft(game),{control:control('advanced')}),{enter:true});assert.deepEqual(await p.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.scrollHeight]),[740,360]);const layout=await p.evaluate(()=>{const guide=document.getElementById('guide').getBoundingClientRect(),meta=document.getElementById('boardMeta').getBoundingClientRect();return {guideRight:guide.right,metaLeft:meta.x,board:document.getElementById('board').getBoundingClientRect().width};});assert.ok(layout.guideRight<=layout.metaLeft);assert.equal(layout.board,294);await screenshot(p,'resultado-cpu-horizontal');await context.close();
   }
   // Autónomo: Worker Blob real sin servidor, decisión y recarga conservadas.
   {

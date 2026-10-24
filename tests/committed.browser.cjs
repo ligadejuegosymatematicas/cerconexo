@@ -29,7 +29,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
  const load=async(p,game,draft=beginDraft(game))=>{await p.evaluate(value=>localStorage.setItem('wallgo-league-v2',value),encodeGameSave(game,draft));await reload(p);};
  const screenshot=(p,name)=>p.screenshot({path:path.join(out,name+'.png')});
  try{
-  for(const [width,height,boardSize] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,240],[1440,700,540],[1366,650,490],[1280,560,400]]){
+  for(const [width,height,boardSize] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,294],[1440,700,540],[1366,650,490],[1280,560,400]]){
    const context=await browser.newContext({viewport:{width,height},hasTouch:true}),p=await context.newPage();await instrument(context);p.on('pageerror',e=>errors.push(e.message));tracked=p;collected=[];
    await p.goto(site.url);await idle(p);const initial=await p.locator('#board').boundingBox(),baseline=[initial.x,initial.y,initial.width,initial.height];assert.equal(initial.width,boardSize);
    for(const mode of ['piece','team']){

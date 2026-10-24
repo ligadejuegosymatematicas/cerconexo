@@ -55,6 +55,7 @@ jobs:
         with:
           name: evidencia-navegador-${{ github.run_id }}
           path: |
+            validation/m4/browser/
             validation/platform/
             validation/integration/suites/
             validation/integration/browser/results.json

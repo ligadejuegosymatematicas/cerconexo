@@ -22,7 +22,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   const enterClassic=async p=>{await p.goto(site.url+'clasico/?continue=1');await idle(p);};
   const home=async(p,button)=>{await p.locator(button).click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');};
   try{
-    for(const [width,height,classicSize] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,240],[1280,560,400]]){
+    for(const [width,height,classicSize] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,294],[1280,560,400]]){
       const context=await browser.newContext({viewport:{width,height},hasTouch:width<800,isMobile:width<800,reducedMotion:'reduce'});
       await context.addInitScript(({ck,ak,pk,classicRaw,arenaRaw})=>{
         if(!sessionStorage.getItem('unified-seeded')){localStorage.setItem(ck,classicRaw);localStorage.setItem(ak,arenaRaw);localStorage.setItem(pk,'{"vibration":false}');sessionStorage.setItem('unified-seeded','1');}

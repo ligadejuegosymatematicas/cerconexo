@@ -102,7 +102,7 @@ async function instrument(context){
     await landscape.page.waitForFunction(()=>!document.getElementById('territoryNotice').hidden);
     const rotated=await landscape.page.evaluate(()=>{
       const notice=document.getElementById('territoryNotice'),r=notice.getBoundingClientRect(),board=document.getElementById('board').getBoundingClientRect();
-      return {page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],clear:r.right<board.x,
+      return {page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],clear:r.right<=board.x||r.left>=board.right||r.bottom<=board.y||r.top>=board.bottom,
         clipped:[...notice.querySelectorAll('.conquest-heading,.conquest-gain')].some(node=>{const b=node.getBoundingClientRect();return b.right>r.right+1||b.bottom>r.bottom+1;})};
     });
     assert.deepEqual(rotated.page,[740,360]);assert.ok(rotated.clear);assert.equal(rotated.clipped,false);
