@@ -9,9 +9,19 @@ async function load(page,state){
   await page.reload();await idle(page);await page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{}))));
 }
 async function choose(page,to,{keyboard=false,wait=true}={}){
+  const moves=(await saved(page)).moves;
   const el=page.locator(`[data-wall="${to}"]`);
   if(keyboard){await el.focus();await page.keyboard.press('Enter');}
   else{const b=await el.boundingBox();assert.ok(b);await page.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);}
+  // touchscreen.tap puede terminar antes del clic sintetizado. aria-busy=false no
+  // distingue ese intervalo del estado anterior a la jugada. Esperar primero
+  // su confirmación oficial también protege la recarga inmediata en file://.
+  try{await page.waitForFunction(moves=>JSON.parse(localStorage.getItem('wallgo-league-v2'))?.game.moves===moves+1,moves);}
+  catch(error){
+    const snapshot=await page.evaluate(()=>({url:location.href,raw:localStorage.getItem('wallgo-league-v2'),busy:document.getElementById('board').getAttribute('aria-busy'),home:document.getElementById('homeScreen').hidden,app:document.querySelector('.app').hidden,focus:document.activeElement.outerHTML,dialogs:[...document.querySelectorAll('dialog[open]')].map(d=>d.id),walls:[...document.querySelectorAll('[data-wall]')].map(n=>n.dataset.wall)}));
+    console.error('CONFIRMACION NO RECIBIDA',JSON.stringify({moves,to,snapshot,errors:page.historicalErrors}));
+    await page.screenshot({path:path.join(out,'confirmation-failure.png')});throw error;
+  }
   if(wait)await idle(page);
 }
 async function roster(page){return page.evaluate(()=>[...document.querySelectorAll('.piece-token')].map(node=>({id:node.dataset.piece,transform:node.getAttribute('transform'),secured:node.classList.contains('token-isolated'),badge:getComputedStyle(node.querySelector('.marker-check')).display!=='none',body:getComputedStyle(node.querySelector('.token-body')).fill,label:node.querySelector('.token-label').textContent,active:node.querySelector('.token-body').classList.contains('token-active')})));}
