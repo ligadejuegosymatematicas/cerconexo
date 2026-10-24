@@ -21,7 +21,10 @@ const {pathToFileURL}=require('node:url');
     // La carga y las fuentes pueden terminar antes de que Chromium presente el
     // primer frame tras una navegación/redirección. Esperar pintado, sin retardo fijo.
     await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    await p.screenshot({path:path.join(out,name+'.png'),fullPage:true});report.screens.push(name+'.png');
+    // FullPage puede redimensionar temporalmente a 4x4 en emulación móvil.
+    // Durante el muestreo se captura el viewport real, sin filtrar ningún frame.
+    const sampling=await p.evaluate(()=>window.__sampling===true);
+    await p.screenshot({path:path.join(out,name+'.png'),fullPage:!sampling});report.screens.push(name+'.png');
   };
   const attach=p=>{p.on('pageerror',e=>report.errors.push(e.message));p.on('response',r=>{if(r.status()>=400)report.errors.push(`${r.status()}: ${r.url()}`);});};
   const raw=p=>p.evaluate(()=>localStorage.getItem('cerconexo-arena-m3a-v1'));

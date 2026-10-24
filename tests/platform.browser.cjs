@@ -80,7 +80,12 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
       const target=p.locator('[data-to="9"]');
       if(!diagnostic){assert.ok(report.restart.at(-1).legal9);await target.waitFor({state:'visible'});}
       if(await target.isVisible()){
-        await target.click();await idle(p);const after=await classicSnapshot(p);report.restart.push({stage:'step9',...after});
+        await p.locator('#help').click();
+        await p.locator('#helpDialog').evaluate(d=>{d.closeObserved=false;d.addEventListener('close',()=>{d.closeObserved=true;},{once:true});});
+        await require('./m4-navigation.cjs').escape(p);
+        assert.ok(await p.locator('#helpDialog').evaluate(d=>!d.open&&d.closeObserved),'Escape espera el evento close, no solo open=false');
+        assert.equal(await p.evaluate(()=>document.activeElement.id),'help','El foco se restauró antes de continuar el ensayo');
+        await target.focus();await p.keyboard.press('Enter');await idle(p);const after=await classicSnapshot(p);report.restart.push({stage:'step9-after-guide-close',...after});
         if(!diagnostic){const data=JSON.parse(after.raw);assert.deepEqual(data.pendingTurn.path,[8,9]);assert.equal(data.game.moves,0);}
       }
       await p.screenshot({path:path.join(out,'restart.png')});await context.tracing.stop({path:path.join(out,'restart.zip')});await context.close();

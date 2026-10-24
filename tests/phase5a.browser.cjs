@@ -1,3 +1,4 @@
+async function openOptions(p){await p.locator('#help').click();await p.locator('#options').click();}
 const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
 const {pathToFileURL}=require('node:url');
 const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
@@ -42,7 +43,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     await instrument(context);const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>errors.push(r.url()));await page.goto(site.url);await idle(page);await page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{}))));return {page,context};
   }
   async function checkDialog(page,opener,id){
-    const baseline=await metrics(page);await page.locator(opener).click();const dialog=page.locator(id);
+    const baseline=await metrics(page);const open=async()=>{if(opener==='#options')await openOptions(page);else await page.locator(opener).click();};await open();const dialog=page.locator(id);
     assert.ok(await dialog.isVisible());assert.equal(await page.evaluate(()=>document.activeElement?.className),'dialog-close');
     await dialog.locator('h2').first().click();assert.ok(await dialog.isVisible());
     const state=await saved(page);await page.evaluate(()=>document.querySelector('[data-wall]')?.dispatchEvent(new MouseEvent('click',{bubbles:true})));assert.deepEqual(await saved(page),state);
@@ -51,10 +52,10 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     await page.keyboard.press('Tab');assert.ok(await dialog.locator('.dialog-close').evaluate(n=>document.activeElement===n));
     assert.deepEqual((await metrics(page)).board,baseline.board);assert.deepEqual((await metrics(page)).page,baseline.page);
     await page.keyboard.press('Escape');await page.waitForFunction(id=>!document.querySelector(id).open,id);
-    assert.ok(await page.locator(opener).evaluate(n=>document.activeElement===n));
-    await page.locator(opener).click();await dialog.locator('.dialog-close').click();assert.ok(await dialog.isHidden());
-    await page.locator(opener).click();await page.touchscreen.tap(2,2);assert.ok(await dialog.isHidden());
-    assert.ok(await page.locator(opener).evaluate(n=>document.activeElement===n));assert.deepEqual((await metrics(page)).board,baseline.board);
+    assert.ok(await page.locator(opener==='#options'?'#help':opener).evaluate(n=>document.activeElement===n));
+    await open();await dialog.locator('.dialog-close').click();assert.ok(await dialog.isHidden());
+    await open();await page.touchscreen.tap(2,2);assert.ok(await dialog.isHidden());
+    assert.ok(await page.locator(opener==='#options'?'#help':opener).evaluate(n=>document.activeElement===n));assert.deepEqual((await metrics(page)).board,baseline.board);
   }
   try{
     for(const [width,height] of [[1440,900],[1366,768],[390,844],[360,740],[740,360],[1440,700],[1366,650],[1366,600],[1280,560]]){
@@ -72,18 +73,18 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       assert.equal(await page.locator('.brand-copy,.bottom-note').count(),0);assert.equal(await page.locator('#matchupLabel').innerText(),'2 vs. 2');
       await page.screenshot({path:path.join(out,`inicial-${width}x${height}.png`)});
       await checkDialog(page,'#help','#helpDialog');
-      await page.locator('#help').click();assert.equal(await page.locator('.quick-rules li').count(),4);assert.equal(await page.locator('#helpDialog #vibration,#helpDialog .legend-panel').count(),0);
+      await page.locator('#help').click();assert.equal(await page.locator('.quick-rules li').count(),4);assert.equal(await page.locator('#helpDialog #vibration').count(),0);
       await page.screenshot({path:path.join(out,`reglas-${width}x${height}.png`)});
-      assert.equal(await page.locator('.full-rules').count(),0,'Reglas completas retiradas según el ajuste aprobado');
+      assert.equal(await page.locator('.full-rules').count(),1,'M4 recupera las reglas completas en un segundo nivel');
       const closeBox=await page.locator('#helpDialog .dialog-close').boundingBox(),titleBox=await page.locator('#rulesTitle').boundingBox();
       assert.ok(closeBox.y>=0&&closeBox.y+closeBox.height<=height);assert.ok(titleBox.y>=0&&titleBox.y+titleBox.height<=height);
       assert.deepEqual((await metrics(page)).page,[width,height]);await page.screenshot({path:path.join(out,`reglas-breves-${width}x${height}.png`)});await page.keyboard.press('Escape');
       await checkDialog(page,'#options','#optionsDialog');
-      await page.locator('#options').click();assert.ok(await page.locator('#vibration').isChecked());await page.screenshot({path:path.join(out,`opciones-${width}x${height}.png`)});await page.keyboard.press('Escape');
+      await openOptions(page);assert.ok(await page.locator('#vibration').isChecked());await page.screenshot({path:path.join(out,`opciones-${width}x${height}.png`)});await page.keyboard.press('Escape');
       if(await page.locator('#guide').isVisible()){
         await checkDialog(page,'#guide','#guideDialog');await page.locator('#guide').click();
         assert.equal(await page.locator('#guideDialog .legend-content>div:visible').count(),6);await page.screenshot({path:path.join(out,`guia-${width}x${height}.png`)});await page.keyboard.press('Escape');
-      }else assert.ok(await page.locator('.turn-panel .legend-panel').isVisible());
+      }else {await page.click('#help');assert.equal(await page.locator('#helpDialog .legend-content>div:visible').count(),6);await page.keyboard.press('Escape');}
       await checkFrames('diálogos');
       const fixture=fixtures.participationFixture();await load(page,fixture.before);await choose(page,fixture.to);
       assert.deepEqual(await saved(page),fixture.after);assert.equal(await page.locator('#matchupLabel').innerText(),'1 vs. 2');assert.equal(await page.locator('#matchupPlayers').innerText(),'A2 vs. B1 y B2');
@@ -129,11 +130,11 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     }
     report.checks.push('Avisos de A1/A2/B1/B2: encabezado y redistribución separados; atención 280 ms sin bloquear ni duplicar; mensaje persistente, reinicio y ausencia de recortes en vertical/horizontal');
     for(const preference of [undefined,false,true]){
-      const {page,context}=await create(390,844,{preference});await page.locator('#options').click();assert.equal(await page.locator('#vibration').isChecked(),preference??true);
-      await page.locator('#vibration').setChecked(false);await page.keyboard.press('Escape');await page.reload();await idle(page);await page.locator('#options').click();assert.equal(await page.locator('#vibration').isChecked(),false);await page.keyboard.press('Escape');
+      const {page,context}=await create(390,844,{preference});await openOptions(page);assert.equal(await page.locator('#vibration').isChecked(),preference??true);
+      await page.locator('#vibration').setChecked(false);await page.keyboard.press('Escape');await page.reload();await idle(page);await openOptions(page);assert.equal(await page.locator('#vibration').isChecked(),false);await page.keyboard.press('Escape');
       await choose(page,9);const game=await saved(page);await page.reload();await idle(page);assert.deepEqual(await saved(page),game);await context.close();
     }
-    const absent=await create(360,740,{api:false});await absent.page.locator('#options').click();assert.ok(await absent.page.locator('#vibration').isDisabled());assert.match(await absent.page.locator('#vibrationStatus').innerText(),/no ofrece/);await absent.page.keyboard.press('Escape');await choose(absent.page,9);await absent.context.close();
+    const absent=await create(360,740,{api:false});await openOptions(absent.page);assert.ok(await absent.page.locator('#vibration').isDisabled());assert.match(await absent.page.locator('#vibrationStatus').innerText(),/no ofrece/);await absent.page.keyboard.press('Escape');await choose(absent.page,9);await absent.context.close();
     const reduced=await create(360,740,{motion:'reduce'}),b=fixtures.participationFixture({team:'B'});await load(reduced.page,b.before);await choose(reduced.page,b.to);assert.equal(await reduced.page.locator('#matchupLabel').innerText(),'2 vs. 1');assert.equal(await reduced.page.evaluate(()=>document.getAnimations().length),0);assert.ok(await reduced.page.locator('#recentEvent').isVisible());
     await load(reduced.page,engine.initialState());await reduced.page.locator('[data-to="9"]').focus();await reduced.page.keyboard.press('Enter');await idle(reduced.page);
     await reduced.page.locator('#help').click();await reduced.page.keyboard.press('Escape');assert.equal(await reduced.page.locator('#stepsPill').textContent(),'1 paso');

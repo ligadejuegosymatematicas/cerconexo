@@ -141,7 +141,7 @@ async function tap(p,selector,touch){await p.locator(selector).waitFor({state:'v
     report.checks.push('Nueve resoluciones a zoom 100%, sin scroll ni saltos durante consulta, diálogos, selección, retorno y reinicio; 49 casillas seleccionables con tacto, ratón y teclado');
     const rotating=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'}),rot=await rotating.newPage();
     await rot.goto(site.url);await load(rot,fixture.after);await tap(rot,'[data-explore-cell="8"]',true);const contourBeforeResize=await rot.locator('[data-region-boundary]').getAttribute('d');
-    for(const [w,h,size] of [[740,360,240],[360,740,336],[1366,600,440],[390,844,366]]){
+    for(const [w,h,size] of [[740,360,294],[360,740,336],[1366,600,440],[390,844,366]]){
       await rot.setViewportSize({width:w,height:h});
       // La orientación CSS puede cambiar antes del evento visualViewport.resize.
       // Esperar a que la aplicación haya ajustado su altura; después comprobar

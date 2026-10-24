@@ -22,7 +22,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   const enterClassic=async p=>{await p.goto(site.url+'clasico/?continue=1');await idle(p);};
   const home=async(p,button)=>{await p.locator(button).click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');};
   try{
-    for(const [width,height,classicSize] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,240],[1280,560,400]]){
+    for(const [width,height,classicSize] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,294],[1280,560,400]]){
       const context=await browser.newContext({viewport:{width,height},hasTouch:width<800,isMobile:width<800,reducedMotion:'reduce'});
       await context.addInitScript(({ck,ak,pk,classicRaw,arenaRaw})=>{
         if(!sessionStorage.getItem('unified-seeded')){localStorage.setItem(ck,classicRaw);localStorage.setItem(ak,arenaRaw);localStorage.setItem(pk,'{"vibration":false}');sessionStorage.setItem('unified-seeded','1');}
@@ -37,16 +37,16 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
       await p.locator('[data-mode=classic] [data-continue]').click();await idle(p);assert.equal(await raw(p,ck),classicRaw);assert.equal(await raw(p,ak),arenaRaw);
       const cb=(await metrics(p,'#board')).board;assert.equal(cb[2],classicSize);assert.equal(await p.locator('[data-actor]').count(),0);assert.equal(await p.locator('[data-to="8"]').count(),1);
       await shot(p,`clasico-${width}x${height}`);await watch(p,'#board');
-      await p.click('#new');assert.ok(await p.locator('#replaceWarning').isVisible());assert.equal(await raw(p,ck),classicRaw);await shot(p,`clasico-configuracion-${width}x${height}`);await p.keyboard.press('Escape');
-      await checkFrames(p,[width,height],cb);await home(p,'#home');assert.equal(await raw(p,ck),classicRaw);
+      await p.click('#new');assert.ok(await p.locator('#replaceWarning').isVisible());assert.equal(await raw(p,ck),classicRaw);await shot(p,`clasico-configuracion-${width}x${height}`);await checkFrames(p,[width,height],cb);await require('./m4-navigation.cjs').escape(p);await require('./m4-navigation.cjs').resumeClassic(p);
+      await home(p,'#home');assert.equal(await raw(p,ck),classicRaw);
       await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('[data-cell-bg]').first().waitFor();assert.equal(await raw(p,ak),arenaRaw);assert.equal(await raw(p,ck),classicRaw);
       const ab=(await metrics(p,'#arenaBoard')).board;if(width===390)assert.equal(ab[2],358);if(width===360)assert.equal(ab[2],328);
       await watch(p,'#arenaBoard');await p.click('#inspectToggle');assert.equal(await p.locator('#inspectToggle').innerText(),'Salir de inspección');
       await p.locator('[data-inspect="10"]').click();assert.equal(await p.locator('.region-count text').textContent(),'81');assert.equal(await raw(p,ak),arenaRaw);
       await shot(p,`arena-inspeccion-${width}x${height}`);await p.click('#inspectToggle');assert.equal(await p.locator('[data-inspect]').count(),0);assert.equal(await raw(p,ak),arenaRaw);
-      await p.click('#newOpen');assert.ok(await p.locator('#replaceWarning').isVisible());await shot(p,`arena-configuracion-${width}x${height}`);await p.keyboard.press('Escape');await checkFrames(p,[width,height],ab);
+      await p.click('#newOpen');assert.ok(await p.locator('#replaceWarning').isVisible());await shot(p,`arena-configuracion-${width}x${height}`);await checkFrames(p,[width,height],ab);await require('./m4-navigation.cjs').escape(p);await require('./m4-navigation.cjs').resumeArena(p);
       await home(p,'#arenaHome');await p.locator('[data-mode=classic] [data-new]').click();await p.locator('#newDialog').waitFor();assert.ok(await p.locator('#replaceWarning').isVisible());
-      assert.equal(await raw(p,ck),classicRaw);await p.keyboard.press('Escape');assert.equal(await raw(p,ck),classicRaw);
+      assert.equal(await raw(p,ck),classicRaw);await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ck),classicRaw);await require('./m4-navigation.cjs').resumeClassic(p);
       // Construcción y recarga de un paso recuperado de la URL antigua: un único turno.
       await p.locator('[data-wall]').first().click();await idle(p);assert.equal(JSON.parse(await raw(p,ck)).game.moves,1);await p.reload();await p.click('#continueGame');await idle(p);
       assert.equal(JSON.parse(await raw(p,ck)).game.moves,1);assert.equal(await raw(p,ak),arenaRaw);
@@ -83,14 +83,14 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
       assert.ok(await p.locator('#arenaReplay').isVisible());await shot(p,`arena-final-${setup.mode}-${setup.policy}`);await p.click('#arenaReplay');
       const stored=JSON.parse(await raw(p,ak));assert.deepEqual(stored.setup,s.setup);assert.deepEqual(stored.commands,[]);
       assert.equal(await p.locator('[data-cell-bg]').count(),81);assert.equal(await p.locator('[data-piece]').count(),4);assert.deepEqual((await metrics(p,'#arenaBoard')).board,before);
-      await p.click('#newOpen');assert.ok(await p.locator('#replaceWarning').isVisible());await p.keyboard.press('Escape');assert.equal(await raw(p,ak),JSON.stringify(stored));await c.close();report.checks.push(`Revancha Arena ${setup.mode}/${setup.policy}: conserva configuración experimental, limpia diario, no altera tablero`);
+      await p.click('#newOpen');assert.ok(await p.locator('#replaceWarning').isVisible());await require('./m4-navigation.cjs').escape(p);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');assert.equal(await raw(p,ak),JSON.stringify(stored));await c.close();report.checks.push(`Revancha Arena ${setup.mode}/${setup.policy}: conserva configuración experimental, limpia diario, no altera tablero`);
     }
     // Sin guardados: navegar y cancelar no crea nada. Teclado y ambas modalidades nuevas.
     {
       const c=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'}),p=await c.newPage();collect(p);await p.goto(site.url);
       await shot(p,'inicio-sin-partidas');assert.equal(await p.locator('[data-new]:visible').count(),0);await p.locator('[data-mode=classic] [data-continue]').focus();await p.keyboard.press('Enter');
-      await p.locator('#newDialog').waitFor();assert.equal(await raw(p,ck),null);await p.keyboard.press('Escape');assert.equal(await raw(p,ck),null);await p.locator('.home-return').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
-      await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#newDialog').waitFor();await p.keyboard.press('Escape');assert.equal(await raw(p,ak),null);await home(p,'#arenaHome');
+      await p.locator('#newDialog').waitFor();assert.equal(await raw(p,ck),null);await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ck),null);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
+      await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#newDialog').waitFor();await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ak),null);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
       await p.locator('[data-mode=classic] [data-continue]').click();await p.check('[name=turnMode][value=team]');await p.click('#startLocal');await idle(p);await p.locator('[data-actor=A2]').focus();await p.keyboard.press('Enter');
       await p.locator('[data-to]').first().focus();await p.keyboard.press('Enter');await idle(p);assert.equal(JSON.parse(await raw(p,ck)).pendingTurn.actor,'A2');
       await home(p,'#home');await p.locator('[data-mode=arena] [data-continue]').click();await p.check('[name=mode][value=ffa]');await p.click('#startArena');
@@ -112,16 +112,16 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
       const final=resultFixture().after,classicFinal=encodeGameSave(final,beginDraft(final)),arenaFinal=arenaFixtures.saves.find(f=>f.game.over).raw;
       await c.addInitScript(()=>{const put=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(window.blockReplay)throw Error('Almacenamiento lleno');return put.call(this,k,v);};});
       await p.evaluate(({ck,ak,classicFinal,arenaFinal})=>{localStorage.setItem(ck,classicFinal);localStorage.setItem(ak,arenaFinal);},{ck,ak,classicFinal,arenaFinal});
-      await enterClassic(p);await p.evaluate(()=>window.blockReplay=true);await p.click('#replay');assert.equal(await raw(p,ck),classicFinal);assert.match(await p.locator('#configurationStatus').innerText(),/No se reemplazó/);await p.keyboard.press('Escape');
-      await home(p,'#home');await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#arenaReplay').waitFor();await p.evaluate(()=>window.blockReplay=true);await p.click('#arenaReplay');assert.equal(await raw(p,ak),arenaFinal);assert.match(await p.locator('#problem').innerText(),/No se reemplazó/);
+      await enterClassic(p);await p.evaluate(()=>window.blockReplay=true);await p.click('#replay');assert.equal(await raw(p,ck),classicFinal);assert.match(await p.locator('#configurationStatus').innerText(),/No se reemplazó/);await require('./m4-navigation.cjs').escape(p);
+      await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#arenaReplay').waitFor();await p.evaluate(()=>window.blockReplay=true);await p.click('#arenaReplay');assert.equal(await raw(p,ak),arenaFinal);assert.match(await p.locator('#problem').innerText(),/No se reemplazó/);
       await c.close();report.checks.push('Almacenamiento lleno: la repetición en ambas modalidades conserva íntegros el final y el guardado, con aviso visible');
     }
     {
       const c=await browser.newContext({viewport:{width:360,height:740},reducedMotion:'reduce'}),p=await c.newPage();collect(p);await p.goto(site.url);
       await p.evaluate(({ck,ak})=>{localStorage.setItem(ck,'guardado-daño-clasico');localStorage.setItem(ak,'guardado-daño-arena');},{ck,ak});await p.reload();
-      await p.locator('[data-mode=classic] [data-continue]').click();await p.locator('#newDialog').waitFor();assert.ok(await p.locator('#replaceWarning').isVisible());await p.keyboard.press('Escape');assert.equal(await raw(p,ck),'guardado-daño-clasico');
-      await p.locator('.home-return').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#problem').waitFor();assert.equal(await raw(p,ak),'guardado-daño-arena');
-      await p.click('#newOpen');assert.ok(await p.locator('#replaceWarning').isVisible());await p.keyboard.press('Escape');assert.equal(await raw(p,ak),'guardado-daño-arena');await c.close();report.checks.push('Guardados dañados: no se borran al entrar; recuperación o reemplazo explícitos e independientes');
+      await p.locator('[data-mode=classic] [data-continue]').click();await p.locator('#newDialog').waitFor();assert.ok(await p.locator('#replaceWarning').isVisible());await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ck),'guardado-daño-clasico');
+      await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#problem').waitFor();assert.equal(await raw(p,ak),'guardado-daño-arena');
+      await p.click('#newOpen');assert.ok(await p.locator('#replaceWarning').isVisible());await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ak),'guardado-daño-arena');await c.close();report.checks.push('Guardados dañados: no se borran al entrar; recuperación o reemplazo explícitos e independientes');
     }
     // Entrega offline enlazada: tres HTML autocontenidos, sin módulos externos.
     {

@@ -7,6 +7,7 @@
   <meta name="description" content="Cerconexo: estrategia territorial local, cuatro fichas y dos equipos en un dispositivo compartido.">
   <title>Cerconexo Clásico</title>
   <link rel="stylesheet" href="../src/styles.css">
+  <link rel="stylesheet" href="../src/gameShell.css">
 </head>
 <body>
 <main id="homeScreen" class="home-screen" aria-label="Cerconexo Clásico">
@@ -29,8 +30,7 @@
     </div>
     <nav class="header-actions" aria-label="Opciones de partida">
       <button type="button" id="home" class="icon-btn" data-home="../" aria-label="Volver al inicio" title="Inicio"><span class="button-icon" aria-hidden="true">⌂</span><span>Inicio</span></button>
-      <button type="button" id="help" class="icon-btn" aria-label="Reglas de Cerconexo"><span class="button-icon" aria-hidden="true">?</span><span>Reglas</span></button>
-      <button type="button" id="options" class="icon-btn" aria-label="Opciones" title="Opciones"><span class="button-icon" aria-hidden="true">⚙</span><span>Opciones</span></button>
+      <button type="button" id="help" class="icon-btn" aria-label="Reglas de Cerconexo"><span class="button-icon" aria-hidden="true">?</span><span>Guía</span></button>
       <button type="button" id="new" class="icon-btn new-button" aria-label="Nueva partida"><span class="button-icon" aria-hidden="true">+</span><span>Nueva partida</span></button>
     </nav>
   </header>
@@ -53,7 +53,7 @@
       </section>
     </aside>
     <section class="arena" aria-label="Mesa de juego">
-      <div class="board-topline"><span id="boardLabel">Tablero</span><button id="replay" class="replay-button" type="button" hidden>Jugar de nuevo</button><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><span id="boardMeta">7 × 7</span></div>
+      <div class="board-topline"><span id="boardLabel">Tablero</span><button id="replay" class="replay-button" type="button" hidden>Jugar de nuevo</button><button type="button" id="guide" class="guide-button" hidden>Guía del tablero</button><button id="classicInspect" type="button" aria-pressed="false" aria-controls="board">Inspeccionar</button><span id="boardMeta">7 × 7</span></div>
       <div class="board-wrap"><svg id="board" viewBox="28 20 624 624" role="group" aria-label="Tablero Cerconexo de siete por siete casillas"></svg></div>
     </section>
     <aside class="turn-panel" aria-label="Turno e indicaciones">
@@ -63,7 +63,7 @@
         <div class="turn-identity"><span class="turn-disc" id="turnDisc">A1</span><strong id="turnName">Equipo A · Jugador 1</strong></div>
         <div class="turn-meta"><span id="stepsPill">Sin desplazamiento</span><small id="moveCount">0 muros construidos</small></div>
         <div class="matchup-state" id="matchup"><strong id="matchupLabel">2 vs. 2</strong><span id="matchupPlayers">A1 y A2 vs. B1 y B2</span></div>
-        <div class="context-slot"><p class="prompt" aria-live="polite" id="prompt">Construye un muro o toca un punto turquesa para avanzar.</p><p id="recentEvent" tabindex="0" role="region" aria-label="Información de participación" hidden></p></div>
+        <div class="context-slot"><p id="classicInspectionInfo" role="status" aria-live="polite" tabindex="0" hidden></p><p class="prompt" aria-live="polite" id="prompt">Construye un muro o toca un punto turquesa para avanzar.</p><p id="recentEvent" tabindex="0" role="region" aria-label="Información de participación" hidden></p></div>
         <div id="territoryNotice" class="territory-notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
         <section id="endScreen" class="final-result" aria-labelledby="winnerTitle" hidden>
           <h2 id="winnerTitle"></h2><p id="winnerDetails"></p><p id="winnerDifference"></p>
@@ -82,14 +82,25 @@
 </div>
 <dialog id="helpDialog" class="help-dialog" aria-labelledby="rulesTitle">
   <form method="dialog"><button class="dialog-close" aria-label="Cerrar reglas" autofocus>×</button></form>
-  <h2 id="rulesTitle">Cómo jugar Cerconexo</h2>
+  <h2 id="rulesTitle">Guía · Cerconexo Clásico</h2>
+  <button type="button" id="options">⚙ Opciones</button>
   <p>Dos equipos compiten por asegurar la mayor cantidad de casillas. Cada equipo tiene dos fichas.</p>
-  <ol class="quick-rules">
+  <ol class="quick-rules guide-steps">
     <li><h3>MUÉVETE</h3><p>En tu turno puedes avanzar 0, 1 o 2 casillas, en horizontal o vertical, sin atravesar muros ni otras fichas.</p></li>
     <li><h3>CONSTRUYE</h3><p>Después, debes colocar un muro en uno de los lados libres de la casilla donde terminaste.</p></li>
     <li><h3>ASEGURA TERRITORIO</h3><p>Cuando una región con fichas de tu equipo queda sin fichas rivales, pasa a pertenecer a tu equipo.</p></li>
     <li><h3>GANA</h3><p>Cuando ya no quedan regiones con fichas de ambos equipos, gana el equipo que aseguró más casillas. En caso de igualdad, hay empate.</p></li>
   </ol>
+<details class="full-rules"><summary>Ver reglas completas</summary><ol>
+<li>Tablero 7 × 7, con A1 en (2,2), B1 en (2,6), A2 en (6,6) y B2 en (6,2). Inicialmente no hay muros interiores.</li>
+<li>Por ficha: A1 → B1 → A2 → B2. Se alternan fichas activas dentro de cada equipo. Si una se asegura, su compañera ocupa los turnos del equipo.</li>
+<li>Por equipo: A y B alternan; cada equipo elige una ficha activa, que puede repetirse en sus turnos. Antes de mover puede cambiar su elección; después del primer paso queda fijada.</li>
+<li>Se permiten 0, 1 o 2 pasos ortogonales, sin atravesar muros ni fichas. Se puede girar o regresar al origen con el segundo paso: ambos pasos quedan consumidos. Cada paso es definitivo, también al recargar.</li>
+<li>El turno termina construyendo exactamente un muro en un lado interior libre de la casilla final. Se puede construir entre casillas ocupadas. No se puede deshacer un paso ni el muro.</li>
+<li>Una región con fichas de un solo equipo puntúa todas sus casillas una única vez, aunque contenga sus dos fichas. Una región sin fichas no puntúa. Las regiones con ambos equipos siguen en disputa.</li>
+<li>Las fichas en regiones exclusivas quedan aseguradas y no vuelven a participar en Clásico. Permanecen en el tablero.</li>
+<li>La partida termina cuando no hay regiones con ambos equipos. Gana quien aseguró más casillas; si hay igualdad, hay empate. La CPU respeta las mismas reglas.</li>
+</ol></details>
   <form method="dialog"><button class="secondary dialog-ok">Entendido</button></form>
 </dialog>
 <dialog id="optionsDialog" class="help-dialog options-dialog" aria-labelledby="optionsTitle">
