@@ -29,9 +29,9 @@ const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
 const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('recentEvent'),prompt:$('prompt'),announcement:$('participationAnnouncement')});
 const resultFeedback=createResultFeedback({banner:$('turnBanner'),result:$('endScreen'),title:$('winnerTitle'),subtitle:$('winnerDetails'),detail:$('winnerDifference'),announcement:$('resultAnnouncement'),scores:{A:$('scoreA'),B:$('scoreB')}});
-let game=initialState(),draft=beginDraft(game),control=null,cpuPlan=null,saved=false,cpuPhase='idle',pausing=false,boardKeyboard=false,recoveryMessage='';
+let game=initialState(),draft=beginDraft(game),control=null,cpuPlan=null,saved=false,stored=false,cpuPhase='idle',pausing=false,boardKeyboard=false,recoveryMessage='';
 function safeStore(nextGame=game,nextDraft=draft,session={control,cpuPlan}){
-  try{writeGameSave(localStorage,nextGame,nextDraft,session);saved=true;return true;}
+  try{writeGameSave(localStorage,nextGame,nextDraft,session);saved=true;stored=true;return true;}
   catch{
     if(isCpuTurn(game,control)){cpuPhase='blocked';feedback.message('No se pudo guardar. Vuelve a Inicio y continúa para reintentar.');}
     else feedback.notice('No se pudo guardar. La acción no se realizó; vuelve a intentarlo.');
@@ -41,7 +41,8 @@ function safeStore(nextGame=game,nextDraft=draft,session={control,cpuPlan}){
 
 function loadGame(){
   try{
-    const restored=decodeGameSave(localStorage.getItem(GAME_SAVE_KEY));
+    const raw=localStorage.getItem(GAME_SAVE_KEY);stored=raw!==null;
+    const restored=decodeGameSave(raw);
     if(restored.game){
       game=restored.game;draft=restored.draft;control=restored.control??null;cpuPlan=restored.cpuPlan??null;saved=true;
       if(cpuPlan&&!committedDraft(draft))draft=selectDraft(game,draft,cpuPlan.turn.actor);
@@ -50,7 +51,7 @@ function loadGame(){
         recoveryMessage='El turno guardado estaba dañado. Se recuperó la última posición confirmada.';
         return recoveryMessage;
       }
-    }
+    }else if(stored)recoveryMessage='No se pudo validar la partida de Clásico. Se conserva sin sobrescribir. Puedes reemplazarla desde Nueva partida.';
   }catch{}
   return '';
 }
@@ -171,7 +172,7 @@ function resumeGame(){
   if(recoveryMessage){feedback.notice(recoveryMessage);recoveryMessage='';$('homeStatus').textContent='';}
   queueMicrotask(()=>cpu.resume());
 }
-const navigation=createNavigation({read:()=>({game,control,saved,notice:recoveryMessage}),start:newGame,pause:pauseGame,resume:resumeGame,feedback:()=>haptics.pulse('turn')});
+const navigation=createNavigation({read:()=>({game,control,saved,stored,notice:recoveryMessage}),start:newGame,pause:pauseGame,resume:resumeGame,feedback:()=>haptics.pulse('turn')});
 function renderDistribution(score){
   $('mixedCount').textContent=score.mixed;
   $('emptyCount').textContent=score.empty;
@@ -195,6 +196,7 @@ function renderRoster(actor,active){
   }
 }
 function renderPlayers(actor,active,score){
+  $('replay').hidden=!game.over||gate.busy;
   // La retícula conserva la misma altura bajo el resultado integrado.
   $('turnBanner').querySelector('h2').textContent='AHORA JUEGA';
   renderRoster(actor,active);
@@ -295,4 +297,4 @@ function fitViewport(){
 window.visualViewport?.addEventListener('resize',fitViewport);
 window.addEventListener('resize',fitViewport);
 fitViewport();
-loadGame();render();navigation.showHome({focus:false});
+loadGame();render();navigation.enter();

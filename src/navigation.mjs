@@ -23,6 +23,7 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
     // al abandonar una partida evita reiniciar efectos o vibración al cargar.
     if(wasPlaying)pause();
     get('continueGame').hidden=!read().saved;
+    get('continueGame').textContent=read().game.over?'Ver resultado':'Continuar partida';
     get('homeStatus').textContent=read().notice??'';
     if(focus)get(read().saved?'continueGame':'play').focus({preventScroll:true});
   }
@@ -42,7 +43,7 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
     // Restablecerlo con el diálogo visible, antes del siguiente pintado.
     queueMicrotask(()=>{if(dialog.open)dialog.querySelector('.selector-content').scrollTop=0;});
     get('configurationStatus').textContent='';
-    const replacing=s.saved&&!s.game.over;
+    const replacing=(s.stored??s.saved)&&!s.game.over;
     get('replaceWarning').hidden=!replacing;
     get('startLocal').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';
   }});
@@ -61,6 +62,27 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
   });
   dialog.addEventListener('close',()=>{if(playing)resume();});
   get('continueGame').addEventListener('click',()=>showGame());
-  get('home').addEventListener('click',()=>showHome());
-  return {showHome,showGame,get playing(){return playing;}};
+  get('home').addEventListener('click',()=>{
+    // Los pasos y los planes CPU ya están guardados por el controlador normal.
+    // Cancelar antes de navegar impide que una respuesta atrasada actúe al salir.
+    playing=false;pause();location.assign(get('home').dataset.home);
+  });
+  get('replay').addEventListener('click',()=>{
+    const s=read();
+    if(!s.game.over)return; // Nunca reemplazar una partida pendiente sin confirmarla.
+    feedback();
+    let control=s.control?{...s.control}:null;
+    if(control){const seed=new Uint32Array(1);crypto.getRandomValues(seed);control.seed=seed[0];}
+    if(start(turnMode(s.game),control))showGame();
+    else{get('new').click();get('configurationStatus').textContent='No se pudo guardar. No se reemplazó la partida. Vuelve a intentarlo.';}
+  });
+  function enter(){
+    showHome({focus:false});
+    const url=new URL(location.href),fresh=url.searchParams.get('new')==='1',direct=url.searchParams.get('continue')==='1';
+    if(!fresh&&!direct)return;
+    url.searchParams.delete('new');url.searchParams.delete('continue');history.replaceState(null,'',url);
+    if(read().saved)showGame();
+    if(fresh||!read().saved)get(read().saved?'new':'play').click();
+  }
+  return {showHome,showGame,enter,get playing(){return playing;}};
 }

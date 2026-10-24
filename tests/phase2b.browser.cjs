@@ -18,7 +18,7 @@ async function enable(page,value){
   await fs.mkdir(out,{recursive:true});
   const {startPagesServer}=await import('./pages-server.mjs');
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
-  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'}));
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}));
   const errors=[],report={screens:[],checks:[]};
   async function create({mode='supported',width=390,height=844}={}){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761});

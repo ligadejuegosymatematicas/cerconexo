@@ -14,6 +14,7 @@ jobs:
   verificar:
     name: verificar
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
         with:
@@ -24,5 +25,49 @@ jobs:
           package-manager-cache: false
       - name: Comprobar paquete público sin modificarlo
         run: python3 scripts/build_pages.py --check
+      - name: Comprobar motores, CPU, persistencia y animaciones congelados
+        run: node scripts/check-integrity.mjs
       - name: Comprobar motor, interacción geométrica y ruta de Pages
-        run: node --test tests/engine.test.mjs tests/targets.test.mjs tests/pages.test.mjs tests/feedback.test.mjs tests/haptics.test.mjs tests/logo.test.mjs tests/territory.test.mjs tests/participation.test.mjs tests/result.test.mjs tests/usability.test.mjs tests/exploration.test.mjs tests/experience.test.mjs tests/modes.test.mjs tests/committed.test.mjs tests/cpu.test.mjs tests/cpu.review.test.mjs
+        run: node --test tests/*.test.mjs arena/tests/*.test.mjs
+      - name: Reconstruir HTML autónomos y ensayo de rutas
+        run: |
+          python3 scripts/build_offline.py
+          python3 arena/scripts/build_pages.py
+      - name: Preparar navegador de pruebas (sin dependencias de ejecución del juego)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/cerconexo-browser" --no-save --package-lock=false playwright@1.62.1
+          "$RUNNER_TEMP/cerconexo-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Comprobar Clásico, Arena y navegación integrada en navegador
+        id: browser
+        env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
+          CERCONEXO_BROWSER_CHANNEL: chromium
+        run: node tests/browser-runner.cjs
+      - name: Diagnosticar diferencias entre plataformas si falla el navegador
+        if: failure() && steps.browser.outcome == 'failure'
+        env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
+          CERCONEXO_BROWSER_CHANNEL: chromium
+        run: node tests/platform.browser.cjs --diagnose
+      - name: Conservar registros, capturas y trazas del navegador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-navegador-${{ github.run_id }}
+          path: |
+            validation/platform/
+            validation/integration/suites/
+            validation/integration/browser/results.json
+            validation/phase2a/missing-target*
+            validation/phase4/*.png
+            validation/phase4/results.json
+            validation/phase5a/results.json
+            arena/evidence/m3b-regression/results.json
+          retention-days: 7
+      - name: Verificar ZIP, extracción limpia y reconstrucción
+        env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
+          CERCONEXO_BROWSER_CHANNEL: chromium
+        run: |
+          python3 scripts/package.py
+          python3 scripts/check-package.py

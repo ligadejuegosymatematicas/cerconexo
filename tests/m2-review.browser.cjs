@@ -3,13 +3,13 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/m2-review/browser');
 (async()=>{
  const {startPagesServer}=await import('./pages-server.mjs'),engine=await import('../src/engine.mjs'),{beginDraft,advanceDraft}=await import('../src/turnDraft.mjs'),{encodeGameSave}=await import('../src/gameSave.mjs');
- const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:'msedge'}),report={viewports:[],haptics:[],errors:[],checks:[]};await fs.mkdir(out,{recursive:true});
+ const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}),report={viewports:[],haptics:[],errors:[],checks:[]};await fs.mkdir(out,{recursive:true});
  const idle=p=>p.waitForFunction(()=>document.getElementById('board').getAttribute('aria-busy')==='false'),raw=p=>p.evaluate(()=>localStorage.getItem('wallgo-league-v2'));
  async function page(width=390,height=844,options={}){const context=await browser.newContext({viewport:{width,height},hasTouch:true,reducedMotion:options.reduce?'reduce':'no-preference'});await context.addInitScript(options=>{
   window.selectorAudit={pulses:[],frames:[]};
   Object.defineProperty(navigator,'vibrate',{configurable:true,value:options.api==='absent'?undefined:pattern=>{selectorAudit.pulses.push(pattern);if(options.api==='throw')throw Error('API rechazada');return true;}});
   if(options.disabled)localStorage.setItem('cerconexo-preferences-v1',JSON.stringify({vibration:false}));
-  document.addEventListener('DOMContentLoaded',()=>{const frame=()=>{const b=document.getElementById('board').getBoundingClientRect();selectorAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:b.width?[b.x,b.y,b.width,b.height]:null});if(selectorAudit.frames.length<4000)requestAnimationFrame(frame);};requestAnimationFrame(frame);});
+  document.addEventListener('DOMContentLoaded',()=>{const frame=()=>{const board=document.getElementById('board');if(!board){if(document.querySelector('.portal'))return;throw Error('Tablero ausente fuera de la portada');}const b=board.getBoundingClientRect();selectorAudit.frames.push({page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:b.width?[b.x,b.y,b.width,b.height]:null});if(selectorAudit.frames.length<4000)requestAnimationFrame(frame);};requestAnimationFrame(frame);});
  },options);const p=await context.newPage();p.on('pageerror',e=>report.errors.push(e.message));await p.goto(site.url);return {p,context};}
  async function capture(p,name){await p.waitForTimeout(180);await p.screenshot({path:path.join(out,name+'.png')});}
  try{
@@ -31,7 +31,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/m2-review
    const expected=options.disabled||options.reduce||options.api==='absent'?[]:[8,8,8];assert.deepEqual(await p.evaluate(()=>selectorAudit.pulses.filter(p=>p!==0)),expected);
    if(options.reduce)assert.equal(await p.locator('#startLocal').evaluate(n=>getComputedStyle(n).transitionDuration),'0s');
    await p.locator('#startLocal').click();await p.waitForFunction(()=>{const s=JSON.parse(localStorage.getItem('wallgo-league-v2'));return s.game.moves===1&&document.getElementById('board').getAttribute('aria-busy')==='false';});const saved=JSON.parse(await raw(p));assert.equal(saved.control.difficulty,'beginner');assert.equal(saved.control.humanTeam,'B');assert.equal(saved.game.turnTeam,'B');
-   await p.locator('#new').click();assert.equal(await p.locator('[data-control=cpu]').getAttribute('aria-pressed'),'true');assert.equal(await p.locator('[name=humanTeam]:checked').inputValue(),'B');await p.keyboard.press('Escape');await p.locator('#home').click();await p.locator('#continueGame').click();await idle(p);assert.deepEqual(JSON.parse(await raw(p)),saved);report.haptics.push({options,selectorPulses:expected,configurationPreserved:true});await context.close();
+   await p.locator('#new').click();assert.equal(await p.locator('[data-control=cpu]').getAttribute('aria-pressed'),'true');assert.equal(await p.locator('[name=humanTeam]:checked').inputValue(),'B');await p.keyboard.press('Escape');await p.locator('#home').click();await p.locator('[data-mode=classic] [data-continue]').click();await idle(p);assert.deepEqual(JSON.parse(await raw(p)),saved);report.haptics.push({options,selectorPulses:expected,configurationPreserved:true});await context.close();
   }
   report.checks.push('Feedback reutilizado de 8ms, preferencia desactivada, API ausente/rechazada y movimiento reducido; configuración CPU conservada en reinicio cancelado e Inicio/Continuar');
   {

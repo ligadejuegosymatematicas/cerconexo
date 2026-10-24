@@ -28,7 +28,7 @@ async function metric(page){return page.evaluate(()=>{
   const fixtures=await import('./participation-fixtures.mjs'),territorial=await import('./territory-fixtures.mjs');
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
   const {startPagesServer}=await import('./pages-server.mjs');
-  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'}));
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}));
   const report={checks:[],screens:[],events:[]},errors=[];
   async function create(width=390,height=844,motion='no-preference'){
     const context=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:true,reducedMotion:motion});

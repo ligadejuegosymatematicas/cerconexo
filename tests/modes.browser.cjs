@@ -10,8 +10,13 @@ async function reload(p){if(p===trackedPage)collectedFrames.push(...await p.eval
 const frame=p=>p.evaluate(()=>{const b=document.getElementById('board').getBoundingClientRect();return {page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],board:[b.x,b.y,b.width,b.height],scale:visualViewport.scale};});
 async function hit(p,selector,{keyboard=false,touch=false}={}){
  const node=p.locator(selector).first();
+ await node.waitFor({state:'visible'});
+ assert.ok(await node.isVisible(),selector);
  if(keyboard){await node.focus();await p.keyboard.press('Enter');}
- else{const box=await node.boundingBox();assert.ok(box,selector);if(touch)await p.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);else await p.mouse.click(box.x+box.width/2,box.y+box.height/2);}
+ // Visible no garantiza que CDP ya pueda calcular la caja de un grupo SVG.
+ // Las acciones reales esperan además estabilidad y recepción de eventos.
+ else if(touch)await node.tap();
+ else await node.click();
  await idle(p);
 }
 async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallgo-league-v2',JSON.stringify({game:state})),state);await reload(p);}
@@ -20,7 +25,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
  const engine=await import('../src/engine.mjs'),{finishFixture}=await import('./territory-fixtures.mjs');
  const fixtures=await import('./participation-fixtures.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
  const {startPagesServer}=await import('./pages-server.mjs'),site=await startPagesServer();
- const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
+ const browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'})),errors=[],report={checks:[],screens:[],frames:0};
  const asTeam=g=>finishFixture({...structuredClone(g),turnMode:'team'});
  try{
   for(const [width,height] of [[1440,900],[1366,768],[1366,600],[390,844],[360,740],[740,360],[1440,700],[1366,650],[1280,560]]){

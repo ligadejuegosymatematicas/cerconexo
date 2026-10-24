@@ -9,9 +9,12 @@ async function choose(page,to){const b=await page.locator(`[data-wall="${to}"]`)
 async function metrics(page){return page.evaluate(()=>{
   const box=n=>{const r=n.getBoundingClientRect();return [r.x,r.y,r.width,r.height];};
   const visible=n=>n.getClientRects().length&&getComputedStyle(n).visibility!=='hidden';
+  // El aviso horizontal dispone de desplazamiento nativo y foco explícito.
+  // No confundir ese contenido accesible con texto desbordado sin acceso.
+  const scrollable=n=>n.id==='recentEvent'&&getComputedStyle(n).overflowY==='auto'&&n.tabIndex===0&&n.scrollWidth<=n.clientWidth+1;
   return {viewport:[innerWidth,innerHeight],page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],scale:visualViewport.scale,
     board:box(document.getElementById('board')),banner:box(document.getElementById('turnBanner')),
-    clipped:[...document.querySelectorAll('.header-actions,.team-heading,.team-roster,.matchup-state,.context-slot,#recentEvent')].filter(n=>visible(n)&&(n.scrollWidth>n.clientWidth+1||n.scrollHeight>n.clientHeight+1)).map(n=>n.id||n.className),
+    clipped:[...document.querySelectorAll('.header-actions,.team-heading,.team-roster,.matchup-state,.context-slot,#recentEvent')].filter(n=>visible(n)&&!scrollable(n)&&(n.scrollWidth>n.clientWidth+1||n.scrollHeight>n.clientHeight+1)).map(n=>n.id||n.className),
     controls:[...document.querySelectorAll('.header-actions button,#guide')].filter(visible).map(n=>({id:n.id,box:box(n)})),
     logo:{loaded:document.querySelector('.official-logo').complete,width:document.querySelector('.official-logo').naturalWidth,box:box(document.querySelector('.official-logo'))}};
 });}
@@ -29,7 +32,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
 (async()=>{
   await fs.mkdir(out,{recursive:true});const {startPagesServer}=await import('./pages-server.mjs');
   const engine=await import('../src/engine.mjs'),fixtures=await import('./participation-fixtures.mjs'),{resultFixture}=await import('./result-fixtures.mjs');
-  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:'msedge'})),report={checks:[],screens:[]},errors=[];
+  const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'})),report={checks:[],screens:[]},errors=[];
   async function create(width=390,height=844,{preference,api=true,motion='no-preference'}={}){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761,deviceScaleFactor:1,reducedMotion:motion});
     await context.addInitScript(({preference,api})=>{

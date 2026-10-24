@@ -1502,7 +1502,7 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .matchup-state { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:24px; font-size:12px; line-height:16px; color:var(--text); }
 .matchup-state strong { white-space:nowrap; font-weight:700; }
 .matchup-state span { color:var(--muted); text-align:right; }
-.context-slot { position:relative; height:64px; margin-top:8px; border-top:1px solid #35567480; }
+.context-slot { position:relative; height:80px; margin-top:8px; border-top:1px solid #35567480; }
 .context-slot .prompt,#recentEvent { position:absolute; inset:0; margin:0; padding:6px 0 0; min-height:0; border:0; font-size:13px; line-height:18px; }
 #recentEvent { font-size:12px; line-height:17px; color:var(--text); pointer-events:none; }
 .has-recent-event .context-slot .prompt { opacity:0; }
@@ -1525,6 +1525,11 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 #guideDialog summary { display:none; }
 #guideDialog .legend-content { grid-template-columns:1fr; gap:14px; padding:6px 0 10px; }
 #guideDialog .legend-content>div,#guideDialog .legend-content b { font-size:14px; }
+/* Compensar la reserva del aviso sin recortar las ocho entradas de la guía por equipo. */
+@media(min-width:761px) and (max-height:800px) {
+  .turn-panel { gap:10px; }
+  .legend-content { row-gap:8px; }
+}
 @media(min-width:761px) and (max-height:760px) {
   .app { padding:10px 18px; gap:10px; }
   .score-panel { padding:12px; }
@@ -1558,7 +1563,8 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
   .context-slot .prompt,#recentEvent { grid-row:auto; height:40px; padding-top:2px; line-height:16px; }
   .context-slot .prompt { font-size:13px; }
   #recentEvent { font-size:12px; }
-  .score-panel { padding:7px 8px; gap:3px 8px; }
+  /* Reservar la misma altura que el marcador final, también con fuentes Linux. */
+  .score-panel { padding:7px 8px; gap:3px 8px; min-height:139.5px; }
   .player { min-height:32px; }
   .help-dialog { padding:16px; }
   .help-dialog h2 { font-size:21px; }
@@ -1596,6 +1602,11 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 .component-info h2 { margin:0; font-size:12px; line-height:16px; font-weight:800; color:var(--text); letter-spacing:0; }
 .component-info p { margin:0; font-size:13px; line-height:18px; }
 .component-info [data-component-general] p { margin-top:6px; color:var(--muted); }
+@media(min-width:761px) and (max-height:650px) {
+  /* Mantener los 128px de consulta; recuperar margen y relleno en alturas útiles bajas. */
+  .has-final-board .score-panel { padding-bottom:8px; }
+  .has-final-board .component-info { margin-top:4px; }
+}
 .region-core { padding-right:40px; }
 .region-facts { font-weight:700; }
 .component-explanation { margin-top:4px!important; color:var(--muted); }
@@ -1650,6 +1661,13 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
 
 #recentEvent[data-team="both"] .recent-heading { font-size:13px; letter-spacing:-.1px; }
 #recentEvent[data-team="both"] .recent-detail { font-size:12px; line-height:16px; }
+
+/* En horizontal se conserva el espacio existente (también con la identidad CPU).
+   Un aviso doble largo se puede leer completo con tacto, rueda o teclado. */
+@media(max-height:500px) and (min-width:600px) {
+  #recentEvent { overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; pointer-events:auto; }
+}
+#recentEvent:focus-visible { outline:2px solid var(--gold); outline-offset:1px; }
 
 /* M1: candidatas discontinuas; la elegida conserva el aro sólido existente. */
 .candidate-aura { display:none; fill:none; stroke:var(--piece-glow); stroke-width:3; stroke-dasharray:5 4; }
@@ -1807,4 +1825,26 @@ h1 { background:var(--board); border-radius:11px; margin-left:8px; padding:8px 1
  .new-dialog .replace-warning { margin:6px 0 0; line-height:17px; }
  .new-dialog .selector-scroll-hint { margin-top:2px; }
  .new-dialog #startLocal { margin-top:10px; }
+}
+
+/* Navegación común. Ocupa el renglón existente, sin cambiar la mesa de juego. */
+.home-return { color:var(--muted); font-size:14px; padding:10px 14px; min-height:44px; border-radius:8px; text-decoration:none; display:flex; align-items:center; }
+.home-return:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
+.mode-name { color:var(--gold); font-size:17px; letter-spacing:.12em; }
+.mode-name span { color:var(--muted); font-size:12px; letter-spacing:0; margin-left:8px; }
+.home-content { gap:16px; }
+.board-topline:has(#replay:not([hidden])) #boardLabel { display:none; }
+.replay-button { pointer-events:auto; min-height:44px; padding:6px 10px; border:1px solid var(--frame); border-radius:8px; background:var(--gold); color:var(--bg); font-size:13px; font-weight:800; }
+@media(max-width:760px), (max-height:500px) {
+  #home { display:flex; flex-direction:column; justify-content:center; gap:0; padding:3px; }
+  #home .button-icon { font-size:16px; line-height:16px; }
+  #home>span:last-child { position:static; width:auto; height:auto; overflow:visible; clip-path:none; font-size:12px; line-height:14px; }
+}
+@media(max-height:500px) and (min-width:600px) {
+  .home-return { grid-column:1/-1; justify-self:start; }
+  .home-content { position:relative; }
+  .mode-name { position:absolute; left:0; bottom:0; font-size:13px; }
+  .has-final-board #guide { font-size:0; width:44px; min-width:44px; }
+  .has-final-board #guide::after { content:'?'; font-size:17px; }
+  .has-final-board .replay-button { font-size:12px; padding-inline:6px; }
 }

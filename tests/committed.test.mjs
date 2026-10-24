@@ -98,7 +98,7 @@ test('Matemática: todos los prefijos legales de partidas completas pueden cerra
   }
 });
 test('Interfaz: sin cancelación ordinaria, guía contextual y motor M1 intacto',async()=>{
-  const html=await readFile(new URL('../index.html',import.meta.url),'utf8'),app=await readFile(new URL('../src/app.mjs',import.meta.url),'utf8');
+  const html=await readFile(new URL('../clasico/index.html',import.meta.url),'utf8'),app=await readFile(new URL('../src/app.mjs',import.meta.url),'utf8');
   assert.doesNotMatch(html,/id="cancel"|Cambiar recorrido|Deshacer/);assert.doesNotMatch(app,/function cancel|addEventListener\('click',cancel/);
   assert.match(html,/Ficha disponible/);assert.match(html,/Ficha seleccionada/);assert.match(html,/Tras el primer paso, queda fijada/);
   const engine=await readFile(new URL('../src/engine.mjs',import.meta.url));assert.equal(createHash('sha256').update(engine).digest('hex'),'ee7982394c38dbdee738f04bb7811590e70dc4d9d6e3b39bea44aac8844b3a90');

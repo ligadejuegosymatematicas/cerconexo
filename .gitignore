@@ -145,3 +145,35 @@
 !/tests/m2-review.browser.cjs
 
 !/tests/selector-final.browser.cjs
+
+# Arena experimental: motor y guardado independientes.
+!/arena/
+
+# Aplicación común: fuentes y paquete reproducible de las dos modalidades.
+!/clasico/
+!/clasico/index.html
+!/src/launchData.mjs
+!/src/portal.mjs
+!/src/portal.css
+!/scripts/package.py
+!/scripts/check-integrity.mjs
+!/scripts/frozen-files.json
+!/scripts/check-package.py
+!/scripts/project-files.json
+!/tests/unified.test.mjs
+!/tests/unified.browser.cjs
+!/tests/platform.browser.cjs
+!/tests/browser-runner.cjs
+!/docs/clasico/
+!/docs/clasico/index.html
+!/docs/src/launchData.mjs
+!/docs/src/portal.mjs
+!/docs/src/portal.css
+!/docs/arena/
+!/docs/arena/index.html
+!/docs/arena/src/
+!/docs/arena/src/*.mjs
+!/docs/arena/src/styles.css
+!/INTEGRACION.md
+
+!/scripts/build_offline.py

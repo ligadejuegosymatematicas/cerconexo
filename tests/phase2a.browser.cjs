@@ -10,7 +10,17 @@ const idle=page=>page.waitForFunction(()=>document.getElementById('board').getAt
 const settle=page=>page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{}))));
 const saved=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('wallgo-league-v2'))?.game);
 async function activate(page,selector,{touch=false,wait=true}={}){
+  // Una caja consultada durante el cierre del diálogo puede ser nula aunque el
+  // objetivo legal ya exista en el DOM. Esperar visibilidad, no un retardo fijo.
+  await page.locator(selector).first().waitFor({state:'visible'});
   const box=await page.locator(selector).first().boundingBox();
+  if(!box){
+    const snapshot=await page.evaluate(()=>({url:location.href,raw:localStorage.getItem('wallgo-league-v2'),busy:document.getElementById('board')?.getAttribute('aria-busy'),
+      dialog:document.getElementById('newDialog')?.open,active:document.activeElement?.outerHTML,board:document.getElementById('board')?.outerHTML}));
+    await fs.writeFile(path.join(out,'missing-target.json'),JSON.stringify({selector,...snapshot},null,2));
+    await page.screenshot({path:path.join(out,'missing-target.png'),fullPage:true});
+    console.error('OBJETIVO AUSENTE',JSON.stringify({selector,...snapshot,board:undefined}));
+  }
   assert.ok(box,selector);
   if(touch)await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
   else await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
