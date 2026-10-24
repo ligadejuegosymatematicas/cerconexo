@@ -2,15 +2,18 @@
 // un fixture inicial válido mediante Continuar, sin añadir un pulso de nueva
 // partida a pruebas que históricamente medían únicamente la carga del juego.
 async function continueHistorical(page){
- if(await page.locator('#homeScreen').isVisible()){
+ // Esperar el primer render y consultar el estado de navegación, no una
+ // medida instantánea de visibilidad que puede saltarse una portada en carga.
+ await page.waitForFunction(()=>document.getElementById('board')?.hasAttribute('aria-busy'));
+ if(!await page.locator('#homeScreen').evaluate(n=>n.hidden)){
   if(await page.locator('#continueGame').isHidden()){
    const snapshot=await page.evaluate(()=>({url:location.href,ready:document.readyState,raw:localStorage.getItem('wallgo-league-v2'),home:document.getElementById('homeStatus').textContent,scripts:[...document.scripts].map(n=>n.src)}));
    const {decodeGameSave}=await import('../src/gameSave.mjs');snapshot.decoded=decodeGameSave(snapshot.raw);snapshot.errors=page.historicalErrors;
    console.error('DIAGNOSTICO DE NAVEGACION',JSON.stringify(snapshot));
   }
   await page.locator('#continueGame').click();
-  await page.waitForFunction(()=>document.getElementById('homeScreen').hidden);
  }
+ await page.waitForFunction(()=>document.getElementById('homeScreen').hidden&&!document.querySelector('.app').hidden&&document.getElementById('board').getAttribute('aria-busy')==='false');
 }
 exports.continueHistorical=continueHistorical;
 exports.historicalBrowser=async browser=>{
