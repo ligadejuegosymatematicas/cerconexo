@@ -5,9 +5,9 @@ import re
 
 root = Path(__file__).resolve().parent
 html = (root / 'index.html').read_text(encoding='utf-8')
-css = (root / 'src/styles.css').read_text(encoding='utf-8')+'\n'+(root.parent/'src/gameShell.css').read_text(encoding='utf-8')
-html=html.replace('<link rel="stylesheet" href="../src/gameShell.css">','')
-modules = []
+css = (root / 'src/styles.css').read_text(encoding='utf-8')+'\n'+(root.parent/'src/gameShell.css').read_text(encoding='utf-8')+'\n'+(root.parent/'src/experience.css').read_text(encoding='utf-8')
+html=html.replace('<link rel="stylesheet" href="../src/gameShell.css">','').replace('<link rel="stylesheet" href="../src/experience.css">','')
+modules = [(root.parent/'src/contextHelp.mjs').read_text(encoding='utf-8').replace('export function ', 'function ')]
 for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'app']:
     source = (root / f'src/{name}.mjs').read_text(encoding='utf-8')
     source = '\n'.join(line for line in source.splitlines() if not line.startswith('import '))
@@ -19,5 +19,8 @@ logo = base64.b64encode((root.parent / 'assets/Cerconexo_wordmark_transparente.p
 html = html.replace('../assets/Cerconexo_wordmark_transparente.png', f'data:image/png;base64,{logo}')
 out = root / 'Cerconexo_Arena_M3B.html'
 html = html.replace('href="../"', 'href="index.html"')
+home_logo = base64.b64encode((root.parent / 'assets/Cerconexo_logo_v3_transparente.png').read_bytes()).decode('ascii')
+html = html.replace('../assets/Cerconexo_logo_v3_transparente.png', f'data:image/png;base64,{home_logo}')
+html = html.replace('href="../clasico/?continue=1"', 'href="Cerconexo_Clasico.html?continue=1"').replace('href="../clasico/?new=1"', 'href="Cerconexo_Clasico.html?new=1"').replace('href="../arena/?continue=1"', 'href="Cerconexo_Arena.html?continue=1"').replace('href="../arena/?new=1"', 'href="Cerconexo_Arena.html?new=1"')
 out.write_bytes(html.encode('utf-8'))
 print(f'HTML independiente: {out.name} ({out.stat().st_size:,} bytes)')

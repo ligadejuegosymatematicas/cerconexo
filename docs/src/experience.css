@@ -1,0 +1,177 @@
+/* M4.1: portada y controles de consulta; geometría de juego intacta. */
+@scope (#homeScreen) {
+[hidden] { display:none!important; }
+h1,h2,p { margin:0; }
+a { color:inherit; text-decoration:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+a:focus-visible { outline:3px solid var(--gold); outline-offset:4px; }
+:scope { min-height:100dvh; width:min(100%,1120px); margin:auto; padding:clamp(16px,3dvh,32px) 28px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(18px,3dvh,28px); }
+.portal-brand { width:min(46vw,420px); padding:4px 16px; background:#F6EEDB; border:1px solid #D4A64A; border-radius:20px; box-shadow:0 16px 50px #0003; }
+.portal-brand img { display:block; width:100%; height:clamp(120px,25dvh,220px); object-fit:contain; }
+.mode-grid { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
+.mode-card { min-width:0; position:relative; background:linear-gradient(130deg,#17334B70,#0D223A); border:1px solid #42607A; border-radius:20px; padding:22px; display:flex; gap:22px; align-items:center; box-shadow:0 14px 40px #0002; }
+.mode-card::before { content:""; position:absolute; top:0; left:24px; right:24px; height:2px; background:linear-gradient(90deg,transparent,#D4A64A,transparent); }
+.card-visual { position:relative; flex:0 0 38%; max-width:180px; }
+.board-mini { display:block; width:100%; filter:drop-shadow(0 5px 10px #0003); }
+.board-size { position:absolute; right:-7px; bottom:-8px; border:1px solid #D4A64A; border-radius:7px; background:#102A43; color:var(--gold); font-size:12px; font-weight:750; padding:4px 8px; }
+.card-copy { flex:1; min-width:0; }
+.card-heading { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; }
+h2 { font-size:24px; letter-spacing:.07em; line-height:1.2; }
+.mode-tag { display:block; color:var(--muted); font-size:11px; line-height:17px; }
+.experimental { color:var(--gold); border:1px solid #D4A64A70; border-radius:5px; padding:1px 6px; letter-spacing:0; }
+.mode-description { margin-top:12px; font-size:16px; line-height:1.45; text-wrap:balance; }
+.save-status { min-height:34px; margin:10px 0; color:var(--muted); font-size:12px; line-height:17px; }
+.save-status.pending { color:#FCE7B2; }
+.card-actions { display:flex; flex-direction:column; gap:4px; min-height:94px; }
+.enter-mode { min-height:46px; padding:10px 14px; border:1px solid #D4A64A; border-radius:9px; background:var(--gold); color:#071A2F; font-size:15px; font-weight:800; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.new-mode { min-height:44px; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--muted); border-radius:7px; }
+.new-mode:hover { color:var(--gold); background:#FFD1660A; }
+.portal-notice { max-width:620px; font-size:13px; color:var(--gold); line-height:1.5; }
+@media(hover:hover) { .mode-card:has(a:hover) { border-color:#D4A64A; } .enter-mode:hover { filter:brightness(1.06); } }
+@media(prefers-reduced-motion:no-preference) { .enter-mode,.new-mode { transition:background-color 140ms,transform 120ms; } .enter-mode:active,.new-mode:active { transform:scale(.98); } }
+@media(max-width:760px) {
+  :scope { padding:16px; gap:18px; }
+  .portal-brand { width:min(84%,350px); padding:0 12px; border-radius:16px; }
+  .portal-brand img { height:clamp(100px,22dvh,180px); }
+  .mode-grid { grid-template-columns:1fr; gap:14px; max-width:460px; }
+  .mode-card { gap:18px; padding:18px; border-radius:16px; }
+  .card-visual { flex-basis:33%; }
+  h2 { font-size:21px; }
+  .mode-description { margin-top:6px; font-size:14px; }
+  .save-status { margin:6px 0; min-height:17px; font-size:12px; }
+  .enter-mode { min-height:44px; padding:8px 12px; font-size:14px; }
+}
+@media(max-width:760px) and (max-height:760px) {
+  :scope { padding-block:10px; gap:12px; }
+  .portal-brand img { height:118px; }
+  .mode-grid { gap:12px; }
+  .mode-card { padding:14px 16px; gap:16px; }
+  .card-visual { flex-basis:30%; }
+}
+@media(max-height:500px) and (min-width:620px) {
+  :scope { padding:12px 18px; gap:12px; }
+  .portal-brand { width:210px; padding:0 8px; border-radius:12px; }
+  .portal-brand img { height:82px; }
+  .mode-grid { grid-template-columns:1fr 1fr; gap:14px; }
+  .mode-card { padding:12px; gap:12px; }
+  .card-visual { flex-basis:29%; }
+  h2 { font-size:18px; }
+  .mode-description { font-size:13px; margin-top:4px; }
+  .save-status { font-size:11px; min-height:17px; margin:5px 0; }
+  .card-heading { gap:4px 8px; }
+  .mode-tag { font-size:10px; }
+  .new-mode { font-size:12px; }
+}
+}
+
+/* Fondo común del selector. Los controles actuales siguen siendo los mismos. */
+#homeScreen button { font:inherit; cursor:pointer; }
+#homeScreen .portal-brand h1 { margin:0; padding:0; background:transparent; box-shadow:none; }
+#homeScreen .enter-mode { font-weight:800; }
+#homeScreen .new-mode { background:transparent; border:0; }
+#homeScreen .portal-utilities { display:flex; gap:12px; justify-content:center; }
+#homeScreen .portal-utilities button { min-height:44px; border:0; background:transparent; color:#b4c4d5; font-size:13px; padding:8px 16px; }
+#homeScreen button:focus-visible { outline:3px solid #ffd166; outline-offset:3px; }
+.help-dot { display:inline-grid; place-items:center; width:44px; height:44px; min-height:44px; padding:0; border:1px solid #47617a; background:#102a43; border-radius:50%; color:#ffd166; font-size:17px; vertical-align:middle; cursor:pointer; }
+.control-help { position:absolute; right:66px; top:16px; z-index:3; }
+#newDialog #newTitle { padding-right:96px; }
+.context-help { width:min(420px,calc(100vw - 32px)); padding:22px; border:1px solid #d4a64a; border-radius:16px; color:#fbf7ef; background:#102a43; max-height:calc(100dvh - 32px); overflow:auto; }
+.context-help h2 { font-size:20px; margin:0 44px 14px 0; padding:0; }
+.context-help p { font-size:15px; line-height:1.55; margin:0; }
+.context-help .dialog-close { position:absolute; right:8px; top:8px; width:44px; height:44px; }
+.context-help::backdrop { background:#020c18b8; }
+#newDialog { max-height:calc(100dvh - 24px); }
+#newDialog fieldset legend { letter-spacing:0; margin:0 0 6px; font-size:13px; }
+#newDialog .mode-options { margin:0; gap:8px; }
+#newDialog .mode-choice { min-height:52px; padding:8px 12px; }
+#newDialog .control-options { margin:12px 0 10px; gap:8px; }
+#newDialog .control-options button { min-height:64px; padding:10px; grid-template-columns:28px 1fr; }
+#newDialog .compact-options { margin:0 0 8px; }
+#newDialog .difficulty-options label { min-height:60px; gap:5px; font-size:12px; }
+#newDialog .team-options label { min-height:64px; padding:8px; }
+#newDialog .replace-warning { margin:12px 0 0; line-height:18px; font-size:13px; }
+#newDialog #startLocal { margin-top:12px; min-height:48px; }
+#newDialog #configurationStatus:empty { margin:0; }
+#newDialog .selector-scroll-hint[hidden] { display:none; }
+/* Las descripciones de selección se consultan con ?; los nombres accesibles permanecen. */
+#newDialog .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip-path:inset(50%)!important; white-space:nowrap!important; min-height:0!important; }
+#newDialog .selector-content { padding:4px; }
+html[data-game="arena"] #newDialog { width:min(600px,calc(100vw - 24px)); }
+html[data-game="arena"] #newDialog fieldset { margin:4px 0 14px; }
+html[data-game="arena"] #newDialog .setup-options { grid-template-columns:1fr 1fr; }
+html[data-game="arena"] #newDialog .setup-options label { min-height:56px; padding:9px; }
+.visual-guide .guide-tabs { display:flex; gap:8px; margin:0 0 12px; }
+.guide-tabs button { flex:1; min-height:44px; font-size:14px; border:1px solid #47617a; border-radius:10px; padding:8px; color:#fbf7ef; background:#071a2f; cursor:pointer; }
+.guide-tabs button[aria-pressed="true"] { border-color:#ffd166; color:#ffd166; background:#ffd1660d; }
+.visual-guide .guide-steps { margin:0; gap:10px; padding:0; }
+.visual-guide .guide-steps li { margin:0; padding:12px; text-align:left; }
+.visual-guide .guide-steps li::before { content:none; }
+.visual-guide .guide-steps svg { width:42px; height:42px; fill:none; stroke:#b5c6d6; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; margin-bottom:6px; }
+.visual-guide .guide-steps svg .gold { stroke:#ffd166; }
+.visual-guide .guide-steps h3 { font-size:13px; letter-spacing:.04em; }
+.visual-guide .guide-steps p { font-size:14px; line-height:1.4; margin:0; }
+.visual-guide .rules-link { display:block; width:100%; min-height:44px; padding:8px; margin-top:12px; color:#b5c6d6; background:transparent; border:1px solid #355674; border-radius:10px; cursor:pointer; font-size:13px; }
+.visual-guide .legend-panel { border:0; padding:0; background:transparent; }
+.visual-guide .legend-panel summary { display:none; }
+.visual-guide .legend-content { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:0; }
+.visual-guide .legend-content>div { border:1px solid #355674; border-radius:10px; padding:10px; min-height:66px; font-size:13px; }
+.visual-legend,.power-guide { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.visual-legend li,.power-guide li { border:1px solid #355674; border-radius:10px; padding:12px; font-size:14px; line-height:1.45; }
+.visual-legend .sample { display:block; margin:6px 0 10px; }
+.visual-legend .guide-tile { display:inline-block; width:28px; height:28px; vertical-align:middle; margin-right:6px; }
+.power-guide { grid-template-columns:1fr; }
+.power-guide [data-guide-icon] { display:inline-flex; vertical-align:middle; margin-right:8px; }
+.power-guide svg { width:32px; height:32px; }
+.guide-footnote { margin:10px 0 0!important; color:#b5c6d6; font-size:13px; }
+.guide-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; }
+.guide-footer form { margin:0; }
+.guide-footer button { min-height:44px; min-width:100px; padding:8px 12px; border:1px solid #47617a; border-radius:10px; background:#102a43; color:#fbf7ef; font-size:13px; cursor:pointer; }
+.guide-footer .dialog-ok { margin:0; }
+.complete-rules ol { padding-left:22px; }
+.complete-rules li { margin:12px 0; line-height:1.5; }
+/* Solo se retiran duplicaciones; puntuaciones, estados y mensajes de error no cambian. */
+.app .section-heading { display:none; }
+.arena-app #inventoryTitle { font-size:12px; }
+@media(min-width:761px) {
+ #homeScreen .portal-utilities { position:absolute; right:16px; top:12px; }
+ #newDialog[data-selector-control="cpu"] .control-options { grid-row:1; }
+ #newDialog[data-selector-control="cpu"] .mode-options { grid-row:2; }
+ #newDialog[data-selector-control="cpu"] #cpuOptions { grid-row:1 / span 2; }
+}
+@media(max-width:760px) {
+ #newDialog .mode-options { margin:0 0 8px; }
+ #newDialog .control-options button { min-height:56px; }
+ #newDialog .option-name { font-size:15px; }
+ #newDialog .control-help { top:12px; }
+ #newDialog .team-options label { font-size:12px; min-height:60px; }
+ .visual-guide .guide-steps li { padding:10px; }
+ .visual-guide .guide-steps p { font-size:13px; }
+ .visual-guide .legend-content>div { padding:8px; min-height:62px; }
+}
+@media(max-height:480px) and (min-width:620px) {
+ #homeScreen .mode-grid { max-width:none; }
+ #homeScreen .portal-utilities { position:absolute; right:16px; top:8px; }
+ #newDialog.new-dialog { width:min(720px,calc(100vw - 24px)); max-width:720px; padding:12px 16px; }
+ #newDialog[data-selector-control="cpu"] .selector-content { display:grid; grid-template-columns:1fr 1.1fr; gap:8px 16px; align-content:start; }
+ #newDialog[data-selector-control="cpu"] .selector-columns { display:contents; }
+ #newDialog[data-selector-control="cpu"] .control-options { grid-column:1; grid-row:1; margin-top:4px; }
+ #newDialog[data-selector-control="cpu"] .mode-options { grid-column:1; grid-row:2; }
+ #newDialog[data-selector-control="cpu"] #cpuOptions { grid-column:2; grid-row:1/3; }
+ #newDialog[data-selector-control="cpu"] #replaceWarning,#newDialog[data-selector-control="cpu"] #configurationStatus { grid-column:1/-1; }
+ #newDialog fieldset legend { margin:0 0 2px; }
+ #newDialog .help-dot { width:44px; height:44px; }
+ #newDialog .difficulty-options label { min-height:48px; padding:4px 3px; gap:3px; }
+ #newDialog .control-options button { min-height:48px; }
+ #newDialog .team-options label { min-height:52px; padding:6px; }
+ #newDialog .mode-choice { min-height:44px; }
+ #newDialog #startLocal { margin-top:8px; }
+ .visual-guide { width:calc(100vw - 24px); max-width:820px; padding:12px 16px; }
+ html[data-game="arena"] .visual-guide { padding:0; }
+ .visual-guide .guide-steps { grid-template-columns:repeat(4,1fr); }
+ .visual-guide .guide-steps li { padding:8px; }
+ .visual-guide .guide-steps svg { width:32px; height:32px; margin-bottom:2px; }
+ .visual-guide .guide-steps p { font-size:13px; }
+ .visual-guide .guide-tabs,.visual-guide .rules-link { margin-bottom:6px; margin-top:6px; }
+ .visual-guide .legend-content,.visual-legend { grid-template-columns:repeat(4,1fr); }
+ .power-guide { grid-template-columns:repeat(3,1fr); }
+ .context-help { padding:18px; }
+}

@@ -2,12 +2,16 @@
 import argparse
 import json
 from pathlib import Path
+from runpy import run_path
+
+check_portal = run_path(str(Path(__file__).with_name('sync_portal.py')))['sync']
 
 ROOT = Path(__file__).resolve().parents[1]
 DESTINATION = ROOT / "docs"
 
 
 def payload():
+    check_portal(check=True)
     files = json.loads((ROOT / "scripts/pages-files.json").read_text(encoding="utf-8"))
     if len(files) != len(set(files)):
         raise SystemExit("El manifiesto contiene archivos repetidos.")

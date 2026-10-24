@@ -48,7 +48,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
       await home(p,'#arenaHome');await p.locator('[data-mode=classic] [data-new]').click();await p.locator('#newDialog').waitFor();assert.ok(await p.locator('#replaceWarning').isVisible());
       assert.equal(await raw(p,ck),classicRaw);await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ck),classicRaw);await require('./m4-navigation.cjs').resumeClassic(p);
       // Construcción y recarga de un paso recuperado de la URL antigua: un único turno.
-      await p.locator('[data-wall]').first().click();await idle(p);assert.equal(JSON.parse(await raw(p,ck)).game.moves,1);await p.reload();await p.click('#continueGame');await idle(p);
+      await p.locator('[data-wall]').first().click();await idle(p);assert.equal(JSON.parse(await raw(p,ck)).game.moves,1);await p.reload();await p.waitForFunction(()=>document.documentElement.dataset.entry==='game');await idle(p);
       assert.equal(JSON.parse(await raw(p,ck)).game.moves,1);assert.equal(await raw(p,ak),arenaRaw);
       // Resultado real del motor, repetición directa y opción de cambiar configuración.
       const final=resultFixture().after,control={version:1,type:'cpu',humanTeam:'A',difficulty:'advanced',seed:812};
@@ -134,7 +134,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
       await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#newDialog').waitFor();await p.click('#startArena');await p.locator('[data-cell-bg]').first().waitFor();
       await p.locator('[data-kind=move]').first().click();const arenaSaved=await raw(p,ak);await home(p,'#arenaHome');
       assert.equal(await raw(p,ck),saved);assert.equal(await raw(p,ak),arenaSaved);await p.locator('[data-mode=classic] [data-continue]').click();await idle(p);assert.equal(await raw(p,ck),saved);
-      await p.reload();await p.click('#continueGame');await idle(p);assert.equal(await raw(p,ck),saved);await c.close();
+      await p.reload();await p.waitForFunction(()=>document.documentElement.dataset.entry==='game');await idle(p);assert.equal(await raw(p,ck),saved);await c.close();
       report.checks.push('Offline file://: portada y dos HTML autónomos, Inicio/Continuar entre modalidades, pasos y recarga conservados sin recursos externos');
     }
     for(const name of await publicFiles()){

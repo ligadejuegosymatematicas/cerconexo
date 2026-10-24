@@ -23,12 +23,16 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
     // al abandonar una partida evita reiniciar efectos o vibración al cargar.
     if(wasPlaying)pause();
     get('continueGame').hidden=!read().saved;
+    get('play').className=read().saved?'new-mode':'enter-mode';
+    get('play').textContent=read().saved?'Nueva partida':'Jugar';
     get('continueGame').textContent=read().game.over?'Ver resultado':'Continuar partida';
     get('homeStatus').textContent=read().notice??'';
+    get('homeStatus').hidden=!get('homeStatus').textContent;
     if(focus)get(read().saved?'continueGame':'play').focus({preventScroll:true});
   }
   function showGame(){
-    playing=true;home.hidden=true;app.hidden=false;resume();
+    playing=true;home.hidden=true;resume();app.hidden=false;document.documentElement.dataset.entry='game';
+    history.replaceState({...history.state,cerconexoScene:'game'},'',location.href);
     get('home').focus({preventScroll:true});
   }
   bindDialog(dialog,get('new'),{extraOpeners:[get('play')],fallback:get('play'),onOpen:opener=>{
@@ -58,14 +62,15 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
       control={version:1,type:'cpu',humanTeam:dialog.querySelector('input[name="humanTeam"]:checked').value,difficulty:dialog.querySelector('input[name="difficulty"]:checked').value,seed:seed[0]};
     }
     if(!start(mode,control)){get('configurationStatus').textContent='No se pudo guardar. No se reemplazó la partida. Vuelve a intentarlo.';return;}
-    get('configurationStatus').textContent='';confirmedNew=true;dialog.close();showGame();
+    get('configurationStatus').textContent='';confirmedNew=true;dialog.close();
+    const url=new URL(location.href);url.searchParams.delete('new');url.searchParams.delete('continue');history.replaceState(null,'',url);showGame();
   });
-  dialog.addEventListener('close',()=>{if(!confirmedNew){playing=false;pause();location.assign(get('home').dataset.home);}else if(playing)resume();});
+  dialog.addEventListener('close',()=>{if(!confirmedNew){showHome({focus:false});document.documentElement.dataset.entry='portal';location.assign(get('home').dataset.home);}else if(playing)resume();});
   get('continueGame').addEventListener('click',()=>showGame());
   get('home').addEventListener('click',()=>{
     // Los pasos y los planes CPU ya están guardados por el controlador normal.
     // Cancelar antes de navegar impide que una respuesta atrasada actúe al salir.
-    playing=false;pause();location.assign(get('home').dataset.home);
+    showHome({focus:false});document.documentElement.dataset.entry='portal';location.assign(get('home').dataset.home);
   });
   get('replay').addEventListener('click',()=>{
     const s=read();
@@ -79,10 +84,12 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
   function enter(){
     showHome({focus:false});
     const url=new URL(location.href),fresh=url.searchParams.get('new')==='1',direct=url.searchParams.get('continue')==='1';
-    if(!fresh&&!direct)return;
-    url.searchParams.delete('new');url.searchParams.delete('continue');history.replaceState(null,'',url);
-    if(read().saved)showGame();
-    if(fresh||!read().saved)get(read().saved?'new':'play').click();
+    if(!fresh&&!direct){if(history.state?.cerconexoScene==='game'&&read().saved)showGame();else document.documentElement.dataset.entry='portal';return;}
+    // Nueva partida es una consulta del selector, nunca una continuación implícita.
+    if(fresh){document.documentElement.dataset.entry='portal';get('play').click();return;}
+    if(read().saved){showGame();return;}
+    document.documentElement.dataset.entry='portal';get('play').click();
   }
+  window.addEventListener('pageshow',event=>{if(event.persisted){pause();enter();}});
   return {showHome,showGame,enter,get playing(){return playing;}};
 }

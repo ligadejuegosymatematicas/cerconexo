@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),{spawn}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/integration/suites');fs.mkdirSync(out,{recursive:true});
-const all=['pages','phase2a','phase2b','phase3a','phase3b','phase4','phase5a','phase5b','modes','committed','m2','m2-review','selector-final'].map(n=>'tests/'+n+'.browser.cjs').concat(['arena/tests/browser.cjs','arena/tests/m3b.browser.cjs','tests/unified.browser.cjs','tests/platform.browser.cjs','tests/m4.browser.cjs']);
+const all=['pages','phase2a','phase2b','phase3a','phase3b','phase4','phase5a','phase5b','modes','committed','m2','m2-review','selector-final'].map(n=>'tests/'+n+'.browser.cjs').concat(['arena/tests/browser.cjs','arena/tests/m3b.browser.cjs','tests/unified.browser.cjs','tests/platform.browser.cjs','tests/m4.browser.cjs','tests/m41.browser.cjs']);
 const files=process.argv.slice(2).length?process.argv.slice(2):all;
 (async()=>{const summary=path.join(out,'summary.json');
  const previous=fs.existsSync(summary)?JSON.parse(fs.readFileSync(summary,'utf8')):[];

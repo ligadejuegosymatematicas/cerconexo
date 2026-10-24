@@ -75,7 +75,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       await checkDialog(page,'#help','#helpDialog');
       await page.locator('#help').click();assert.equal(await page.locator('.quick-rules li').count(),4);assert.equal(await page.locator('#helpDialog #vibration').count(),0);
       await page.screenshot({path:path.join(out,`reglas-${width}x${height}.png`)});
-      assert.equal(await page.locator('.full-rules').count(),1,'M4 recupera las reglas completas en un segundo nivel');
+      assert.equal(await page.locator('#helpDialog [data-full-rules]').count(),1,'M4.1 conserva reglas completas en un documento opcional');
       const closeBox=await page.locator('#helpDialog .dialog-close').boundingBox(),titleBox=await page.locator('#rulesTitle').boundingBox();
       assert.ok(closeBox.y>=0&&closeBox.y+closeBox.height<=height);assert.ok(titleBox.y>=0&&titleBox.y+titleBox.height<=height);
       assert.deepEqual((await metrics(page)).page,[width,height]);await page.screenshot({path:path.join(out,`reglas-breves-${width}x${height}.png`)});await page.keyboard.press('Escape');
@@ -84,7 +84,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
       if(await page.locator('#guide').isVisible()){
         await checkDialog(page,'#guide','#guideDialog');await page.locator('#guide').click();
         assert.equal(await page.locator('#guideDialog .legend-content>div:visible').count(),6);await page.screenshot({path:path.join(out,`guia-${width}x${height}.png`)});await page.keyboard.press('Escape');
-      }else {await page.click('#help');assert.equal(await page.locator('#helpDialog .legend-content>div:visible').count(),6);await page.keyboard.press('Escape');}
+      }else {await page.click('#help');await page.click('#helpDialog [data-guide-tab=board]');assert.equal(await page.locator('#helpDialog .legend-content>div:visible').count(),6);await page.keyboard.press('Escape');}
       await checkFrames('diálogos');
       const fixture=fixtures.participationFixture();await load(page,fixture.before);await choose(page,fixture.to);
       assert.deepEqual(await saved(page),fixture.after);assert.equal(await page.locator('#matchupLabel').innerText(),'1 vs. 2');assert.equal(await page.locator('#matchupPlayers').innerText(),'A2 vs. B1 y B2');

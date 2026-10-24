@@ -45,8 +45,8 @@ test('UX: textos contextuales aprobados, plural y ausencia de puntos en vacías'
 test('UX: solo cuatro pasos, sin modo separado ni teoría; controles accesibles',async()=>{
   const html=await readFile(new URL('../clasico/index.html',import.meta.url),'utf8');
   assert.doesNotMatch(html,/id="explore"|exploration-tabs|explorationPanel|¿Qué matemática hay detrás\?/);
-  assert.equal((html.match(/<li><h3>/g)||[]).length,4);
-  assert.match(html,/región con fichas de tu equipo queda sin fichas rivales/);assert.match(html,/En caso de igualdad, hay empate/);
+  assert.equal((html.match(/<li><svg viewBox="0 0 44 44"/g)||[]).length,4);
+  assert.match(html,/Sin rivales en tu región/);assert.match(html,/si hay igualdad, hay empate/);
   assert.match(html,/aria-label="Quitar selección"/);
   const panel=html.slice(html.indexOf('<aside class="score-panel'),html.indexOf('<section class="arena'));
   for(const id of ['componentInfo','scoreA','scoreB','activeA','activeB','meter','emptyCount'])assert.ok(panel.includes(`id="${id}"`));

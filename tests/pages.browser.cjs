@@ -35,6 +35,9 @@ const assert=require('node:assert/strict');
       // Comparación visual: misma posición y navegador, paquete frente a fuentes.
       await reset();
       await page.mouse.move(0,0);
+      // La recarga restaura la vista; la primera entrada usa Continuar. Comparar
+      // el mismo estado de foco, sin confundir :focus-visible con el empaquetado.
+      await page.evaluate(()=>document.activeElement?.blur());
       const packaged=await page.screenshot();
       const isolatedContext=await browser.newContext({viewport:{width,height},isMobile:width<761,hasTouch:width<761,reducedMotion:'reduce'});
       const source=await isolatedContext.newPage();
@@ -49,6 +52,7 @@ const assert=require('node:assert/strict');
       });
       await source.goto(site.url);await source.locator('.piece-token').first().waitFor();
       await source.mouse.move(0,0);
+      await source.evaluate(()=>document.activeElement?.blur());
       const original=await source.screenshot(),left=decodePNG(packaged),right=decodePNG(original);
       assert.deepEqual([left.width,left.height,left.channels],[right.width,right.height,right.channels]);
       let differingPixels=0,maxChannelDelta=0;

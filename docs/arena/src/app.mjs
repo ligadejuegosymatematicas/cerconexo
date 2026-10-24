@@ -4,6 +4,7 @@ import {arenaCoords,arenaWall,analyzeArena} from './geometry.mjs';
 import {ARENA_MODES,DEFAULT_EXPERIMENT,POWER_LABELS} from './config.mjs';
 import {createArena,legalArenaActions,arenaPiece,inventoryOwner,inventoryCapacity,eligibleActors} from './engine.mjs';
 import {ArenaSession,ARENA_SAVE_KEY} from './session.mjs';
+import {setupContextHelp} from '../../src/contextHelp.mjs';
 
 const $=id=>document.getElementById(id),board=$('arenaBoard');
 const TEAM_COLORS={A:'#F59E0B',B:'#38BDF8',C:'#B79AFF',D:'#59D6A4'};
@@ -17,7 +18,7 @@ function edgePoints(cell,to){
   const x=(a.x+b.x)/2,y=(a.y+b.y)/2;
   return vertical?{x1:x,y1:y-39,x2:x,y2:y+39,x:x-14,y:y-34,width:28,height:68}:{x1:x-39,y1:y,x2:x+39,y2:y,x:x-34,y:y-14,width:68,height:28};
 }
-function setProblem(text){$('problem').textContent=text;$('problem').hidden=!text;}
+function setProblem(text){$('problem').textContent=text;$('problem').hidden=!text;$('portalNotice').textContent=text;$('portalNotice').hidden=!text;}
 function actionLabel(action,s){
   if(action.type==='select')return `Elegir ${action.actor}`;
   const p=arenaCoords(action.to),location=`fila ${p.row}, columna ${p.col}`;
@@ -77,12 +78,12 @@ function renderScores(s,view){
     const label=`${p.id}: ${status}. ${items.length?items.map(i=>POWER_LABELS[i.type]).join(', '):'Sin poderes'}`;
     return `<span role="listitem" tabindex="0" title="${label}" aria-label="${label}" class="roster-piece ${current?'current':''}">${p.id} ${active?'●':'✓'}${s.policy!=='team'?publicItems(items):''}</span>`;
   }).join('')}${s.policy==='team'?`<span class="public-inventory" aria-label="Inventario compartido del equipo ${t}">${s.inventories[t].length}${s.over?'':`/${inventoryCapacity(s,t,view)}`} ${publicItems(s.inventories[t])}</span>`:''}</div></div>`).join('');
-  $('distribution').textContent=`${view.score.shared} en disputa · ${view.score.empty} vacías · 81 casillas`;
+  $('distribution').textContent=`${view.score.shared} en disputa · ${view.score.empty} vacías`;
 }
 function renderTurn(s,view){
   $('turnBanner').classList.toggle('wide-title',s.over||!!s.pending);
   $('turnBanner').style.setProperty('--team',s.over?'#ffd166':TEAM_COLORS[s.pending?.team??s.turn.team]);
-  $('turnKicker').textContent=s.over?'Resultado definitivo':s.pending?'Turno en pausa · el dueño decide':`${ARENA_MODES[s.mode].label} · Turno ${s.completedTurns+1} · ${s.policy==='team'?'Por equipo':'Por ficha'}`;
+  $('turnKicker').textContent=s.over?'Resultado definitivo':s.pending?'Turno en pausa · el dueño decide':`Turno ${s.completedTurns+1}`;
   if(s.over){
     $('turnTitle').textContent=s.winners.length===1?`¡Victoria del equipo ${s.winners[0]}!`:`¡Empate entre ${s.winners.join(', ')}!`;
     $('turnHint').textContent=`No quedan regiones compartidas. ${s.teams.map(t=>`${t}: ${view.score[t]}`).join(' · ')} · Vacías: ${view.score.empty}.`;
@@ -177,11 +178,15 @@ board.addEventListener('keydown',e=>{
 });
 $('cancelTool').addEventListener('click',()=>{selectedPower=null;render();});
 
-function openDialog(id,opener){dialogOpener=opener;$(id).showModal();$(id).querySelector('[data-close]')?.focus();}
+const dialogOpeners=new WeakMap();
+function openDialog(id,opener){dialogOpeners.set($(id),opener);$(id).showModal();$(id).querySelector('[data-close]')?.focus();}
 for(const dialog of document.querySelectorAll('dialog')){
   dialog.querySelector('[data-close]').addEventListener('click',()=>dialog.close());
-  dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();});
-  dialog.addEventListener('close',()=>{if(dialog.id==='newDialog'&&!newConfirmed)location.assign($('arenaHome').href);else dialogOpener?.focus();});
+  let startedOutside=false;
+  const outside=e=>{const r=dialog.getBoundingClientRect();return e.target===dialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom);};
+  dialog.addEventListener('pointerdown',e=>{startedOutside=outside(e);});
+  dialog.addEventListener('click',e=>{if(startedOutside&&outside(e))dialog.close();startedOutside=false;});
+  dialog.addEventListener('close',()=>{if(dialog.id==='newDialog'&&!newConfirmed){showArenaPortal();location.assign($('arenaHome').href);}else dialogOpeners.get(dialog)?.focus({preventScroll:true});});
 }
 function resetExperiment(){const mode=new FormData($('newForm')).get('mode');$('experimentJson').value=JSON.stringify(DEFAULT_EXPERIMENT[mode],null,2);}
 function showNew(opener){
@@ -190,7 +195,7 @@ function showNew(opener){
   $('policyField').hidden=$('newForm').elements.mode.value==='ffa';
   if(session)$('experimentJson').value=JSON.stringify(session.game.experiment,null,2);else resetExperiment();
   const replacing=hasSaved&&(loadBlocked||!session.game.over);
-  $('replaceWarning').hidden=!replacing;$('startArena').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';$('setupError').hidden=true;
+  $('replaceWarning').hidden=!replacing;$('startArena').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';$('setupError').textContent=$('problem').textContent;$('setupError').hidden=!$('setupError').textContent;
   openDialog('newDialog',opener);
 }
 $('newForm').addEventListener('change',e=>{if(e.target.name==='mode'){$('policyField').hidden=e.target.value==='ffa';resetExperiment();}});
@@ -198,7 +203,7 @@ $('restorePreset').addEventListener('click',resetExperiment);
 $('newOpen').addEventListener('click',()=>showNew($('newOpen')));
 $('guideOpen').addEventListener('click',()=>openDialog('guideDialog',$('guideOpen')));
 for(const node of document.querySelectorAll('[data-guide-icon]'))node.innerHTML=powerIcon(node.dataset.guideIcon);
-$('arenaFullRules').innerHTML=$('rulesDialog').querySelector('.rules-content').innerHTML;
+setupContextHelp();
 $('experimentDetails').hidden=new URL(location.href).searchParams.get('diagnostico')!=='1';
 function startArena(setup){
   // Guardar primero: si falla el almacenamiento, la partida anterior sigue intacta.
@@ -216,7 +221,8 @@ $('newForm').addEventListener('submit',e=>{
   try{
     const data=new FormData($('newForm')),mode=data.get('mode'),policy=mode==='ffa'?'piece':data.get('policy');
     startArena({mode,policy,experiment:JSON.parse($('experimentJson').value)});
-    newConfirmed=true;$('newDialog').close();
+    newConfirmed=true;$('newDialog').close();showArenaGame();
+    const url=new URL(location.href);url.searchParams.delete('new');url.searchParams.delete('continue');history.replaceState(null,'',url);
   }catch(error){$('setupError').textContent=error.message;$('setupError').hidden=false;}
 });
 try{
@@ -229,8 +235,21 @@ try{
 }catch(e){setProblem(`No se puede acceder al guardado de Arena: ${e.message}`);}
 if(!session)session=new ArenaSession(storage);
 render();
-const entryURL=new URL(location.href),freshEntry=entryURL.searchParams.get('new')==='1';
-if(entryURL.searchParams.has('new')||entryURL.searchParams.has('continue')){
-  entryURL.searchParams.delete('new');entryURL.searchParams.delete('continue');history.replaceState(null,'',entryURL);
+function showArenaGame(){
+  $('homeScreen').hidden=true;document.querySelector('.arena-app').hidden=false;document.documentElement.dataset.entry='game';
 }
-if(!hasSaved||freshEntry)showNew($('newOpen'));
+function showArenaPortal(){
+  $('homeScreen').hidden=false;document.querySelector('.arena-app').hidden=true;document.documentElement.dataset.entry='portal';
+}
+for(const link of [$('arenaHome'),$('homeLink')])link.addEventListener('click',e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey)showArenaPortal();});
+function enterArena(){
+  const freshEntry=new URL(location.href).searchParams.get('new')==='1';
+  if(!hasSaved||freshEntry){showArenaPortal();if(!$('newDialog').open)showNew($('newOpen'));}
+  else showArenaGame();
+}
+window.addEventListener('pageshow',event=>{
+  if(!event.persisted)return;
+  try{const raw=localStorage.getItem(ARENA_SAVE_KEY);if(raw){const restored=ArenaSession.restore(storage,raw);if(restored.ok){session=restored.session;hasSaved=true;loadBlocked=false;inspection.reset();selectedPower=null;render();}else{loadBlocked=true;setProblem(restored.error);render();}}else{session=new ArenaSession(storage);hasSaved=false;loadBlocked=false;inspection.reset();selectedPower=null;render();}}catch(e){setProblem(`No se puede recuperar el guardado: ${e.message}`);}
+  enterArena();
+});
+enterArena();

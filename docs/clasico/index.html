@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-game="classic">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,21 +8,67 @@
   <title>Cerconexo Clásico</title>
   <link rel="stylesheet" href="../src/styles.css">
   <link rel="stylesheet" href="../src/gameShell.css">
+  <script>
+  // La escena se decide durante el parseo, antes del primer pintado.
+  (()=>{const q=new URLSearchParams(location.search);let saved=false;
+    try{saved=!!localStorage.getItem(document.documentElement.dataset.game==='arena'?'cerconexo-arena-m3a-v1':'wallgo-league-v2');}catch{}
+    document.documentElement.dataset.entry=q.get('new')==='1'?'portal':q.get('continue')==='1'||(saved&&(document.documentElement.dataset.game==='arena'||history.state?.cerconexoScene==='game'))?'loading':'portal';
+  })();
+  </script>
+  <style>html[data-entry="loading"] #homeScreen{display:none} [hidden]{display:none!important}</style>
+  <link rel="stylesheet" href="../src/experience.css">
 </head>
 <body>
-<main id="homeScreen" class="home-screen" aria-label="Cerconexo Clásico">
-  <div class="home-content">
-    <a class="home-return" href="../">⌂ Inicio</a>
-    <h1 class="home-brand"><img class="home-logo" src="../assets/Cerconexo_logo_v3_transparente.png" alt="CERCONEXO"></h1>
-    <h2 class="mode-name">CLÁSICO <span>7 × 7</span></h2>
-    <nav class="home-menu" aria-label="Menú principal">
-      <button type="button" id="play" class="play-button">Jugar</button>
-      <button type="button" id="continueGame" class="continue-button" hidden>Continuar partida</button>
-      <div class="home-secondary"><button type="button" id="homeRules">Reglas</button><button type="button" id="homeOptions">Opciones</button></div>
-      <p id="homeStatus" role="status"></p>
-    </nav>
-  </div>
-</main>
+<!-- shared-portal:start -->
+<main id="homeScreen" class="portal" aria-label="Inicio de Cerconexo">
+  <header class="portal-brand"><h1><img src="../assets/Cerconexo_logo_v3_transparente.png" class="home-logo" alt="CERCONEXO" width="1224" height="1024"></h1></header>
+  <section class="mode-grid" aria-label="Elige tu modalidad">
+    <article class="mode-card" aria-labelledby="classicTitle" data-mode="classic">
+      <div class="card-visual">
+        <svg class="board-mini" viewBox="0 0 224 224" aria-hidden="true" focusable="false">
+          <rect x="1" y="1" width="222" height="222" rx="8" fill="#F6EEDB" stroke="#D4A64A" stroke-width="2"/>
+          <path d="M32 2v220m32-220v220m32-220v220m32-220v220m32-220v220m32-220v220M2 32h220M2 64h220M2 96h220M2 128h220M2 160h220M2 192h220" stroke="#CBBEAA" fill="none"/>
+          <path d="M65 2v62h63v64h64M2 160h62v62" stroke="#475569" stroke-width="5" stroke-linejoin="round" fill="none"/>
+          <g fill="#F59E0B" stroke="#102A43" stroke-width="2"><circle cx="48" cy="48" r="11"/><circle cx="176" cy="176" r="11"/></g>
+          <g fill="#38BDF8" stroke="#102A43" stroke-width="2"><circle cx="176" cy="48" r="11"/><circle cx="48" cy="176" r="11"/></g>
+        </svg>
+        <span class="board-size">7 × 7</span>
+      </div>
+      <div class="card-copy"><div class="card-heading"><h2 id="classicTitle">CLÁSICO</h2><span class="mode-tag">El original</span></div>
+        <p class="mode-description">Muros y estrategia territorial</p>
+        <p class="save-status" data-save-status>Juego local o contra CPU</p>
+        <nav class="card-actions" aria-label="Cerconexo Clásico">
+          <button class="enter-mode" type="button" id="continueGame" data-continue hidden>Continuar partida</button>
+          <button class="enter-mode" type="button" id="play">Jugar</button>
+        </nav>
+      </div>
+    </article>
+    <article class="mode-card arena-card" aria-labelledby="arenaTitle" data-mode="arena">
+      <div class="card-visual">
+        <svg class="board-mini" viewBox="0 0 252 252" aria-hidden="true" focusable="false">
+          <rect x="1" y="1" width="250" height="250" rx="8" fill="#F6EEDB" stroke="#D4A64A" stroke-width="2"/>
+          <path d="M28 2v248m28-248v248m28-248v248m28-248v248m28-248v248m28-248v248m28-248v248m28-248v248M2 28h248M2 56h248M2 84h248M2 112h248M2 140h248M2 168h248M2 196h248M2 224h248" stroke="#CBBEAA" fill="none"/>
+          <path d="M84 2v82h56m0 0v56h56v84M2 168h82v82" fill="none" stroke="#475569" stroke-width="5" stroke-linejoin="round"/>
+          <g fill="#F59E0B" stroke="#102A43" stroke-width="2"><circle cx="42" cy="42" r="10"/><circle cx="210" cy="210" r="10"/></g>
+          <g fill="#38BDF8" stroke="#102A43" stroke-width="2"><circle cx="210" cy="42" r="10"/><circle cx="42" cy="210" r="10"/></g>
+          <g fill="#102A43" stroke="#D4A64A"><rect x="60" y="60" width="20" height="20" rx="4"/><rect x="172" y="172" width="20" height="20" rx="4"/></g>
+          <path d="M66 66h4v4h5m-8 5h7m103 102h9m-5-4v9m-4 3h9" fill="none" stroke="#FFD166" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="board-size">9 × 9</span>
+      </div>
+      <div class="card-copy"><div class="card-heading"><h2 id="arenaTitle">ARENA</h2><span class="mode-tag experimental">Experimental</span></div>
+        <p class="mode-description">Poderes, conquista y reconquista</p>
+        <p class="save-status" data-save-status>2 vs. 2 o cuatro equipos</p>
+        <nav class="card-actions" aria-label="Cerconexo Arena">
+          <a class="enter-mode" data-continue href="../arena/?continue=1">Jugar <span aria-hidden="true">→</span></a>
+          <a class="new-mode" data-new href="../arena/?new=1" hidden>Nueva partida</a>
+        </nav>
+      </div>
+    </article>
+  </section>
+  <p class="portal-notice" id="homeStatus" role="status" hidden></p>
+<nav class="portal-utilities" aria-label="Ayuda"><button id="homeRules" type="button">Guía</button><button id="homeOptions" type="button">Opciones</button></nav></main>
+<!-- shared-portal:end -->
 <div class="app" hidden>
   <header class="topbar">
     <div class="branding">
@@ -80,18 +126,15 @@
     </aside>
   </main>
 </div>
-<dialog id="helpDialog" class="help-dialog" aria-labelledby="rulesTitle">
+<dialog id="helpDialog" data-visual-guide data-rules="completeRules" class="help-dialog visual-guide" aria-labelledby="rulesTitle">
   <form method="dialog"><button class="dialog-close" aria-label="Cerrar reglas" autofocus>×</button></form>
   <h2 id="rulesTitle">Guía · Cerconexo Clásico</h2>
-  <button type="button" id="options">⚙ Opciones</button>
-  <p>Dos equipos compiten por asegurar la mayor cantidad de casillas. Cada equipo tiene dos fichas.</p>
-  <ol class="quick-rules guide-steps">
-    <li><h3>MUÉVETE</h3><p>En tu turno puedes avanzar 0, 1 o 2 casillas, en horizontal o vertical, sin atravesar muros ni otras fichas.</p></li>
-    <li><h3>CONSTRUYE</h3><p>Después, debes colocar un muro en uno de los lados libres de la casilla donde terminaste.</p></li>
-    <li><h3>ASEGURA TERRITORIO</h3><p>Cuando una región con fichas de tu equipo queda sin fichas rivales, pasa a pertenecer a tu equipo.</p></li>
-    <li><h3>GANA</h3><p>Cuando ya no quedan regiones con fichas de ambos equipos, gana el equipo que aseguró más casillas. En caso de igualdad, hay empate.</p></li>
-  </ol>
-<details class="full-rules"><summary>Ver reglas completas</summary><ol>
+
+  <nav class="guide-tabs" aria-label="Temas de la guía"><button type="button" data-guide-tab="play" aria-pressed="true">Jugar</button><button type="button" data-guide-tab="board" aria-pressed="false">Tablero</button></nav><section data-guide-pane="play"><ol class="quick-rules guide-steps"><li><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M5 24h22m-7-7 7 7-7 7M7 10v28M17 10v28M27 10v28M37 10v28M7 10h30M7 38h30"/></svg><h3>MUÉVETE</h3><p>0, 1 o 2 pasos. Sin cruzar muros ni fichas.</p></li><li><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M7 10h30M7 38h30M7 10v28M37 10v28M17 10v28"/><path class="gold" d="M27 10v28"/></svg><h3>CONSTRUYE</h3><p>Un muro al final de tu turno.</p></li><li><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M7 7h30v30H7zM17 7v30M27 7v30M7 17h30M7 27h30"/><circle cx="12" cy="12" r="3" class="gold"/><path class="gold" d="m21 22 3 3 7-8"/></svg><h3>ASEGURA TERRITORIO</h3><p>Sin rivales en tu región, sus casillas puntúan.</p></li><li><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M14 9h16v10a8 8 0 0 1-16 0zM14 12H8v5a7 7 0 0 0 7 7M30 12h6v5a7 7 0 0 1-7 7M22 27v9m-8 0h16"/></svg><h3>GANA</h3><p>Sin regiones compartidas, gana quien suma más casillas.</p></li></ol></section><section data-guide-pane="board" hidden></section>
+<button type="button" class="rules-link" data-full-rules>Ver reglas completas ↗</button>
+  <div class="guide-footer"><button type="button" id="options">⚙ Opciones</button><form method="dialog"><button class="secondary dialog-ok">Entendido</button></form></div>
+</dialog>
+<dialog id="completeRules" class="help-dialog complete-rules" aria-labelledby="completeRulesTitle"><form method="dialog"><button class="dialog-close" aria-label="Cerrar reglas completas">×</button></form><h2 id="completeRulesTitle">Reglas completas · Clásico</h2><ol>
 <li>Tablero 7 × 7, con A1 en (2,2), B1 en (2,6), A2 en (6,6) y B2 en (6,2). Inicialmente no hay muros interiores.</li>
 <li>Por ficha: A1 → B1 → A2 → B2. Se alternan fichas activas dentro de cada equipo. Si una se asegura, su compañera ocupa los turnos del equipo.</li>
 <li>Por equipo: A y B alternan; cada equipo elige una ficha activa, que puede repetirse en sus turnos. Antes de mover puede cambiar su elección; después del primer paso queda fijada.</li>
@@ -100,9 +143,7 @@
 <li>Una región con fichas de un solo equipo puntúa todas sus casillas una única vez, aunque contenga sus dos fichas. Una región sin fichas no puntúa. Las regiones con ambos equipos siguen en disputa.</li>
 <li>Las fichas en regiones exclusivas quedan aseguradas y no vuelven a participar en Clásico. Permanecen en el tablero.</li>
 <li>La partida termina cuando no hay regiones con ambos equipos. Gana quien aseguró más casillas; si hay igualdad, hay empate. La CPU respeta las mismas reglas.</li>
-</ol></details>
-  <form method="dialog"><button class="secondary dialog-ok">Entendido</button></form>
-</dialog>
+</ol></dialog>
 <dialog id="optionsDialog" class="help-dialog options-dialog" aria-labelledby="optionsTitle">
   <form method="dialog"><button class="dialog-close" aria-label="Cerrar opciones" autofocus>×</button></form>
   <h2 id="optionsTitle">Opciones</h2>
@@ -119,31 +160,31 @@
 <dialog id="newDialog" class="help-dialog new-dialog" aria-labelledby="newTitle" aria-describedby="localDescription">
   <form method="dialog"><button class="dialog-close" aria-label="Cerrar nueva partida" autofocus>×</button></form>
   <h2 id="newTitle">Nueva partida</h2>
-  <p class="selector-intro">Elige cómo quieres jugar.</p>
+  <button type="button" class="help-dot control-help" data-context-help="control" aria-label="Ayuda sobre Local y CPU">?</button>
   <div class="selector-content" tabindex="0" role="region" aria-label="Configuración de la partida">
   <div class="control-options" role="group" aria-label="Control de la partida">
-    <button type="button" data-control="local" aria-pressed="true"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8" cy="7" r="3"/><path d="M2 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M17 13a5 5 0 0 1 5 5v2"/></svg><span class="option-name">Local</span><small>Un dispositivo compartido</small><span class="option-check" aria-hidden="true">✓</span></button>
-    <button type="button" data-control="cpu" aria-pressed="false"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4M19 9h4m-4 6h4"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg><span class="option-name">Contra CPU</span><small>Un rival automático</small><span class="option-check" aria-hidden="true">✓</span></button>
+    <button type="button" data-control="local" aria-pressed="true"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="8" cy="7" r="3"/><path d="M2 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M17 13a5 5 0 0 1 5 5v2"/></svg><span class="option-name">Local</span><span class="option-check" aria-hidden="true">✓</span></button>
+    <button type="button" data-control="cpu" aria-pressed="false"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4M19 9h4m-4 6h4"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg><span class="option-name">Contra CPU</span><span class="option-check" aria-hidden="true">✓</span></button>
   </div>
-  <p id="localDescription">Dos equipos, cuatro fichas y un dispositivo compartido.</p>
-  <div class="selector-columns"><fieldset class="mode-options"><legend>Sistema de turnos</legend>
-    <label class="mode-choice"><input type="radio" name="turnMode" value="piece" checked><span><strong>Turnos por ficha</strong><small>Cada ficha juega cuando le corresponde su turno</small></span></label>
-    <label class="mode-choice"><input type="radio" name="turnMode" value="team"><span><strong>Turnos por equipo</strong><small>Cada equipo elige qué ficha activa utilizar en su turno</small></span></label>
+  <p id="localDescription" class="sr-only">Dos equipos, cuatro fichas y un dispositivo compartido.</p>
+  <div class="selector-columns"><fieldset class="mode-options"><legend>Sistema de turnos <button type="button" class="help-dot" data-context-help="turns" aria-label="Ayuda sobre turnos">?</button></legend>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="piece" checked><span><strong>Turnos por ficha</strong></span></label>
+    <label class="mode-choice"><input type="radio" name="turnMode" value="team"><span><strong>Turnos por equipo</strong></span></label>
   </fieldset>
   <div id="cpuOptions" hidden>
-    <fieldset class="compact-options difficulty-options" aria-describedby="difficultyDescription"><legend>Dificultad</legend>
+    <fieldset class="compact-options difficulty-options" aria-describedby="difficultyDescription"><legend>Dificultad <button type="button" class="help-dot" data-context-help="difficulty" aria-label="Ayuda sobre dificultad">?</button></legend>
       <label><input type="radio" name="difficulty" value="beginner"><span class="level-bars" aria-hidden="true"><i></i></span><span>Principiante</span><span class="choice-check" aria-hidden="true">✓</span></label>
       <label><input type="radio" name="difficulty" value="intermediate" checked><span class="level-bars" aria-hidden="true"><i></i><i></i></span><span>Intermedio</span><span class="choice-check" aria-hidden="true">✓</span></label>
       <label><input type="radio" name="difficulty" value="advanced"><span class="level-bars" aria-hidden="true"><i></i><i></i><i></i></span><span>Avanzado</span><span class="choice-check" aria-hidden="true">✓</span></label>
     </fieldset>
-    <p id="difficultyDescription" class="difficulty-description">Equilibrio entre territorio y anticipación.</p>
-    <fieldset class="compact-options team-options"><legend>¿Con qué equipo quieres jugar?</legend>
+    <p id="difficultyDescription" class="difficulty-description sr-only">Equilibrio entre territorio y anticipación.</p>
+    <fieldset class="compact-options team-options"><legend>Tu equipo <button type="button" class="help-dot" data-context-help="team" aria-label="Ayuda sobre equipo inicial">?</button></legend>
       <label><input type="radio" name="humanTeam" value="A" checked><span class="selector-team team-a" aria-hidden="true">A</span><span>Equipo A · Naranja<small>Empiezas tú</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
       <label><input type="radio" name="humanTeam" value="B"><span class="selector-team team-b" aria-hidden="true">B</span><span>Equipo B · Celeste<small>Empieza la CPU</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
     </fieldset>
-  <p id="humanTeamDescription" class="human-team-description" aria-live="polite"></p>
+  <p id="humanTeamDescription" class="human-team-description sr-only" aria-live="polite"></p>
   </div></div>
-  <p id="replaceWarning" class="replace-warning" hidden>Al comenzar reemplazarás la partida guardada. Si cierras esta ventana, la conservarás.</p>
+  <p id="replaceWarning" class="replace-warning" hidden>Comenzar reemplazará tu partida guardada.</p>
   <p id="configurationStatus" role="status"></p>
   </div>
   <p class="selector-scroll-hint" hidden>Más opciones abajo ↓ · Desliza para verlas</p>

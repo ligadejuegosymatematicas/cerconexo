@@ -189,5 +189,5 @@ test('M2: respuesta Worker vacía o ilegal usa respaldo legal sin aceptar la res
 test('M2: motor y políticas conservan sus hashes; marca y cuatro reglas breves permanecen',async()=>{
  for(const [name,sha] of [['engine','ee7982394c38dbdee738f04bb7811590e70dc4d9d6e3b39bea44aac8844b3a90'],['turnPolicies','0a06a01c51c25065f5e40564a655986d5e417e22be8dc42a99633178db74b5b0']])assert.equal(createHash('sha256').update(await readFile(new URL(`../src/${name}.mjs`,import.meta.url))).digest('hex'),sha);
  const html=await readFile(new URL('../clasico/index.html',import.meta.url),'utf8'),home=html.slice(html.indexOf('<main id="homeScreen"'),html.indexOf('<div class="app"'));
- assert.match(home,/Cerconexo_logo_v3_transparente.png/);assert.doesNotMatch(home,/<p(?! id="homeStatus")|Cada muro|subtítulo|eslogan/);assert.equal((html.match(/<li><h3>/g)||[]).length,4);assert.doesNotMatch(html,/Cambiar recorrido|Deshacer/);
+ assert.match(home,/Cerconexo_logo_v3_transparente.png/);assert.match(home,/data-mode="classic"/);assert.match(home,/data-mode="arena"/);assert.doesNotMatch(home,/Cada muro|subtítulo|eslogan|class="mode-name"/);assert.equal((html.match(/<li><svg viewBox="0 0 44 44"/g)||[]).length,4);assert.doesNotMatch(html,/Cambiar recorrido|Deshacer/);
 });

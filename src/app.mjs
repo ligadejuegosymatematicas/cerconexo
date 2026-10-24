@@ -11,6 +11,7 @@ import {createParticipationFeedback} from './participationFeedback.mjs';
 import {finalPresentation} from './resultEvents.mjs';
 import {createResultFeedback} from './resultFeedback.mjs';
 import {bindDialog} from './dialogs.mjs';
+import {setupContextHelp} from './contextHelp.mjs';
 import {matchupPresentation} from './matchup.mjs';
 import {createExploration} from './exploration.mjs';
 import {createLiveInspection} from './liveInspection.mjs';
@@ -227,7 +228,7 @@ function renderPlayers(actor,active,score){
     $('prompt').setAttribute('aria-live','polite');
     $('turnBanner').classList.toggle('team-b',team==='B');
     $('turnDisc').textContent=actor??team;
-    $('turnName').textContent=byTeam?actor?`${TEAM_NAME[team]} · Ficha ${actor}`:`${TEAM_NAME[team]} · Elige ficha`:`${TEAM_NAME[team]} · Jugador\u00a0${actor[1]}`;
+    $('turnName').textContent=byTeam?actor?`${TEAM_NAME[team]} · Ficha ${actor}`:`${TEAM_NAME[team]} · Elige ficha`:`${TEAM_NAME[team]} · Ficha ${actor}`;
     if(byTeam&&steps===0)$('turnBanner').querySelector('h2').textContent=actor?`FICHA ${actor}`:'AHORA JUEGA';
     $('stepsPill').textContent=steps===0?'Elige casilla o borde':`${steps} ${steps===1?'paso':'pasos'}`;
     feedback.message(!actor?`Elige ${legalActors(game).join(' o ')} · Toca una ficha`:steps===0?`Turno de ${actor} · Mueve o construye`:steps===1?'1 paso · Puedes continuar o construir':'2 pasos · Construye tu muro');
@@ -247,7 +248,7 @@ $('board').addEventListener('pointerdown',event=>{
   const preview=event.target.closest?.('.wall-pick');
   if(!gate.busy&&preview)preview.classList.add('is-pressed');
 });
-$('classicInspect').addEventListener('click',()=>{if(gate.busy)return;cpu.cancel();if(game.over)finalInspect=!finalInspect;else inspecting=!inspecting;render();if(!inspecting)queueMicrotask(()=>cpu.resume());});
+$('classicInspect').addEventListener('click',()=>{if(gate.busy)return;cpu.cancel();if(game.over){finalInspect=!finalInspect;if(!finalInspect)exploration.reset();}else inspecting=!inspecting;render();if(!inspecting)queueMicrotask(()=>cpu.resume());});
 function clearPreview(){document.querySelectorAll('.wall-pick.is-pressed').forEach(node=>node.classList.remove('is-pressed'));}
 $('board').addEventListener('pointercancel',()=>{pointerOrigin=null;clearPreview();});
 $('board').addEventListener('pointerup',clearPreview);
@@ -273,7 +274,7 @@ $('board').addEventListener('click',event=>{
 $('board').addEventListener('keydown',event=>{
   if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;boardKeyboard=true;if(!event.repeat)activateBoard(event.target);}
 });
-bindDialog($('helpDialog'),$('help'),{extraOpeners:[$('homeRules')],fallback:$('homeRules'),onOpen:()=>{cpu.cancel();$('helpDialog').querySelector('.full-rules').open=false;}});
+bindDialog($('helpDialog'),$('help'),{extraOpeners:[$('homeRules')],fallback:$('homeRules'),onOpen:()=>{cpu.cancel();}});
 bindDialog($('optionsDialog'),$('options'),{extraOpeners:[$('homeOptions')],fallback:$('help'),onOpen:()=>{cpu.cancel();if($('helpDialog').open)$('helpDialog').close();}});
 bindDialog($('guideDialog'),$('guide'),{fallback:$('help'),onOpen:()=>{cpu.cancel();document.querySelector('.legend-panel').open=true;}});
 for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('close',()=>{if(navigation.playing)queueMicrotask(()=>cpu.resume());});
@@ -286,17 +287,18 @@ $('vibration').addEventListener('change',()=>{haptics.setEnabled($('vibration').
 matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',()=>{haptics.stop();updateHapticOption();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){haptics.stop();cpu.cancel();}else if(navigation.playing)cpu.resume();});
 window.addEventListener('focus',()=>{if(navigation.playing)cpu.resume();});
-window.addEventListener('pagehide',()=>haptics.stop());
+window.addEventListener('pagehide',()=>{haptics.stop();cpu.cancel();});
 updateHapticOption();
 // Una sola guía; en ventanas compactas se consulta sin cambiar la retícula del juego.
 const compactLayout=matchMedia('(max-width:1199px), (max-height:650px)');
 const legendPanel=document.querySelector('.legend-panel');
 function placeLegend(){
-  $('helpDialog').insertBefore(legendPanel,$('helpDialog').querySelector('.full-rules'));
+  $('helpDialog').querySelector('[data-guide-pane="board"]').append(legendPanel);
   legendPanel.open=true;$('guide').hidden=true;
 }
 compactLayout.addEventListener('change',placeLegend);
 placeLegend();
+setupContextHelp();
 // visualViewport incluye la altura realmente visible al cambiar las barras del navegador.
 function fitViewport(){
   document.documentElement.style.setProperty('--viewport-height',`${window.visualViewport?.height??window.innerHeight}px`);
