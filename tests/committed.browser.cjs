@@ -39,8 +39,8 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     if(mode==='team'){
      const saved=await raw(p);await hit(p,'[data-actor=A1]',input);await screenshot(p,`seleccion-A1-${width}x${height}`);await hit(p,'[data-actor=A2]',input);assert.equal(await raw(p),saved);await screenshot(p,`cambio-A2-${width}x${height}`);
      const available=await p.locator('[data-actor=A1]').evaluate(n=>({outline:getComputedStyle(n).outlineStyle,stroke:getComputedStyle(n.querySelector('.actor-hit')).stroke}));assert.equal(available.outline,'none');assert.equal(available.stroke,'none');
-     if(await p.locator('#guide').isVisible())await p.locator('#guide').click();
-     assert.equal(await p.locator('.legend-content > div:visible').count(),8);assert.ok(await p.locator('[data-team-guide]').first().isVisible());await screenshot(p,`guia-${width}x${height}`);if(await p.locator('#guideDialog').isVisible()){await p.keyboard.press('Escape');await p.waitForFunction(()=>!document.getElementById('guideDialog').open&&document.getElementById('guide').getAttribute('aria-expanded')==='false');}
+     await p.locator('#help').click();
+     assert.equal(await p.locator('.legend-content > div:visible').count(),8);assert.ok(await p.locator('[data-team-guide]').first().isVisible());await screenshot(p,`guia-${width}x${height}`);await require('./m4-navigation.cjs').escape(p);await p.waitForFunction(()=>!document.getElementById('helpDialog').open);
     }
     await hit(p,`[data-to="${first}"]`,{...input,wait:false});
     let saved=await envelope(p);assert.deepEqual(saved.game,game);assert.deepEqual(saved.pendingTurn.path,[start,first]);assert.equal(saved.pendingTurn.steps,1);
@@ -48,7 +48,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     assert.ok(await p.evaluate(()=>stepAudit.blocked.length>0&&stepAudit.blocked.every(Boolean)));assert.deepEqual((await envelope(p)).pendingTurn.path,[start,first]);
     await reload(p);assert.equal(await p.locator(`[data-piece=${actor}]`).getAttribute('transform'),transform(first));assert.equal(await p.locator('[data-actor]').count(),0);assert.equal(await p.locator('.token-candidate').count(),0);assert.equal(await p.evaluate(()=>document.getAnimations().length),0);
     const expectedMoves=engine.availableMoves(game,actor,first);assert.deepEqual((await p.locator('[data-to]').evaluateAll(ns=>ns.map(n=>Number(n.dataset.to)))).sort((a,b)=>a-b),expectedMoves.sort((a,b)=>a-b));
-    const one=await raw(p);await p.keyboard.press('Escape');assert.equal(await raw(p),one);await screenshot(p,`primer-paso-recargado-${mode}-${width}x${height}`);
+    const one=await raw(p);await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p),one);await screenshot(p,`primer-paso-recargado-${mode}-${width}x${height}`);
     // Un evento atrasado sobre una ficha ya no disponible tampoco altera el turno.
     await p.evaluate(()=>{const n=document.createElementNS('http://www.w3.org/2000/svg','g');n.dataset.actor='A1';document.getElementById('interactionLayer').append(n);n.dispatchEvent(new MouseEvent('click',{bubbles:true}));n.remove();});assert.equal(await raw(p),one);
     await hit(p,`[data-to="${start}"]`,input);saved=await envelope(p);assert.deepEqual(saved.pendingTurn.path,[start,first,start]);assert.equal(saved.pendingTurn.steps,2);assert.equal(await p.locator('[data-to],[data-actor]').count(),0);
@@ -61,7 +61,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
     const wall=engine.wallOptions(game,second)[0];await hit(p,`[data-wall="${wall}"]`,input);assert.deepEqual((await envelope(p)).game,engine.applyTurn(game,{actor,path:[start,first,second],to:wall}));
     // Reinicio de un primer paso todavía sin muro: confirmar rechazo y aceptación.
     await load(p,game);if(mode==='team')await hit(p,'[data-actor=A2]',input);await hit(p,`[data-to="${first}"]`,input);const incomplete=await raw(p);
-    await p.locator('#new').click();assert.equal(await raw(p),incomplete);assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('#newDialog .dialog-close').click();assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await raw(p),incomplete);
+    await p.locator('#new').click();assert.equal(await raw(p),incomplete);assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==="true");assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await raw(p),incomplete);await require('./m4-navigation.cjs').resumeClassic(p);
     await p.locator('#new').click();await p.locator('#startLocal').click();assert.deepEqual((await envelope(p)).game,game);assert.equal(Object.hasOwn(await envelope(p),'pendingTurn'),false);
    }
    const frames=[...collected,...await p.evaluate(()=>stepAudit.frames)];for(const frame of frames){assert.deepEqual(frame.page,[width,height]);assert.deepEqual(frame.board,baseline);}

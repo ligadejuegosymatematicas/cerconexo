@@ -13,6 +13,7 @@ import {createResultFeedback} from './resultFeedback.mjs';
 import {bindDialog} from './dialogs.mjs';
 import {matchupPresentation} from './matchup.mjs';
 import {createExploration} from './exploration.mjs';
+import {createLiveInspection} from './liveInspection.mjs';
 import {CPU_LEVELS} from './cpuSearch.mjs';
 import {createCpuPlanner} from './cpuPlanner.mjs';
 import {createCpuController} from './cpuController.mjs';
@@ -24,6 +25,8 @@ const TEAM_NAME={A:'Equipo A',B:'Equipo B'};
 const gate=new InteractionGate();
 const boardView=createBoardView($('board'));
 const exploration=createExploration({board:$('board'),panel:$('componentInfo'),clearButton:$('clearSelection'),announcement:$('explorationAnnouncement')});
+const liveInspection=createLiveInspection({board:$('board'),info:$('classicInspectionInfo')});
+let inspecting=false,finalInspect=true;
 const feedback=createFeedback({board:$('board'),banner:$('turnBanner'),prompt:$('prompt')});
 const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
@@ -59,7 +62,7 @@ function newGame(mode=PIECE_TURNS,nextControl=null){
   const next=initialState({turnMode:mode}),nextDraft=beginDraft(next);
   if(!safeStore(next,nextDraft,{control:nextControl,cpuPlan:null}))return false;
   cpu.cancel();
-  exploration.reset();
+  exploration.reset();liveInspection.reset();inspecting=false;finalInspect=true;
   gate.reset();feedback.reset();participationFeedback.reset();territorialFeedback.reset();haptics.stop();
   resultFeedback.reset();$('prompt').setAttribute('aria-live','polite');
   game=next;draft=nextDraft;control=nextControl;cpuPlan=null;cpuPhase='idle';boardKeyboard=false;recoveryMessage='';$('homeStatus').textContent='';
@@ -70,7 +73,8 @@ function announceTurn(){
   feedback.turnStarted({actor:draft.actor,team:game.turnTeam});
 }
 function setBusy(){
-  boardView.setBusy(gate.busy||isCpuTurn(game,control));
+  boardView.setBusy(gate.busy||!inspecting&&isCpuTurn(game,control));
+  $('classicInspect').disabled=gate.busy;
 }
 async function step(to,automatic=false){
   if(gate.busy||game.over||!draft.actor||draft.path.length>=3||isCpuTurn(game,control)&&!automatic)return false;
@@ -127,8 +131,8 @@ function selectActor(id,automatic=false){
 }
 function render(){
   const actor=draft.actor;
-  const {score}=territory(game),active=activeIds(game);
-  boardView.render(game,draft,{busy:gate.busy,interactive:!isCpuTurn(game,control)});
+  const {score,components}=territory(game),active=activeIds(game);
+  boardView.render(game,draft,{busy:gate.busy,interactive:!isCpuTurn(game,control)&&!inspecting});
   setBusy();
   $('scoreA').textContent=score.A;
   $('scoreB').textContent=score.B;
@@ -136,7 +140,12 @@ function render(){
   renderDistribution(score);
   renderPlayers(actor,active,score);
   renderCpuIdentity();
-  exploration.update(game,game.over&&!gate.busy&&navigation.playing);
+  exploration.update(game,game.over&&finalInspect&&!gate.busy&&navigation.playing);
+  liveInspection.update(components,game.pieces.map(p=>({...p,pos:p.id===draft.actor&&draft.path.length?draft.path.at(-1):p.pos})),inspecting&&!game.over&&!gate.busy&&navigation.playing);
+  document.querySelector('.app').classList.toggle('is-inspecting',inspecting&&!game.over);
+  $('classicInspect').disabled=gate.busy;
+  $('classicInspect').setAttribute('aria-pressed',String(game.over?finalInspect:inspecting));
+  $('classicInspect').textContent=(game.over?finalInspect:inspecting)?'Salir de inspección':'Inspeccionar';
 }
 function renderCpuIdentity(){
   $('boardMeta').textContent=control&&game.over?`Tú ${control.humanTeam} · CPU ${control.humanTeam==='A'?'B':'A'}`:'7 × 7';
@@ -153,7 +162,7 @@ function renderCpuIdentity(){
 }
 const cpu=createCpuController({
   planner:createCpuPlanner(),
-  read:()=>({game,draft,control,plan:cpuPlan,visible:navigation.playing,blocked:gate.busy||!!document.querySelector('dialog[open]')||document.hidden}),
+  read:()=>({game,draft,control,plan:cpuPlan,visible:navigation.playing,blocked:gate.busy||inspecting||!!document.querySelector('dialog[open]')||document.hidden}),
   savePlan:(plan)=>{
     if(!validCpuPlan(game,draft,control,plan)||!safeStore(game,draft,{control,cpuPlan:plan}))return false;
     cpuPlan=plan;return true;
@@ -226,7 +235,7 @@ function renderPlayers(actor,active,score){
 }
 function activateBoard(target){
   const obj=target.closest?.('[data-to],[data-wall],[data-actor]');
-  if(!obj||gate.busy||isCpuTurn(game,control)||!navigation.playing||document.querySelector('dialog[open]'))return;
+  if(!obj||inspecting||gate.busy||isCpuTurn(game,control)||!navigation.playing||document.querySelector('dialog[open]'))return;
   if(obj.hasAttribute('data-actor'))selectActor(obj.dataset.actor);
   else if(obj.hasAttribute('data-wall'))build(Number(obj.dataset.wall));
   else if(obj.hasAttribute('data-to'))step(Number(obj.dataset.to));
@@ -238,6 +247,7 @@ $('board').addEventListener('pointerdown',event=>{
   const preview=event.target.closest?.('.wall-pick');
   if(!gate.busy&&preview)preview.classList.add('is-pressed');
 });
+$('classicInspect').addEventListener('click',()=>{if(gate.busy)return;cpu.cancel();if(game.over)finalInspect=!finalInspect;else inspecting=!inspecting;render();if(!inspecting)queueMicrotask(()=>cpu.resume());});
 function clearPreview(){document.querySelectorAll('.wall-pick.is-pressed').forEach(node=>node.classList.remove('is-pressed'));}
 $('board').addEventListener('pointercancel',()=>{pointerOrigin=null;clearPreview();});
 $('board').addEventListener('pointerup',clearPreview);
@@ -263,8 +273,8 @@ $('board').addEventListener('click',event=>{
 $('board').addEventListener('keydown',event=>{
   if(event.key==='Enter'||event.key===' '){event.preventDefault();pointerOrigin=null;boardKeyboard=true;if(!event.repeat)activateBoard(event.target);}
 });
-bindDialog($('helpDialog'),$('help'),{extraOpeners:[$('homeRules')],fallback:$('homeRules'),onOpen:()=>cpu.cancel()});
-bindDialog($('optionsDialog'),$('options'),{extraOpeners:[$('homeOptions')],fallback:$('homeOptions'),onOpen:()=>cpu.cancel()});
+bindDialog($('helpDialog'),$('help'),{extraOpeners:[$('homeRules')],fallback:$('homeRules'),onOpen:()=>{cpu.cancel();$('helpDialog').querySelector('.full-rules').open=false;}});
+bindDialog($('optionsDialog'),$('options'),{extraOpeners:[$('homeOptions')],fallback:$('help'),onOpen:()=>{cpu.cancel();if($('helpDialog').open)$('helpDialog').close();}});
 bindDialog($('guideDialog'),$('guide'),{fallback:$('help'),onOpen:()=>{cpu.cancel();document.querySelector('.legend-panel').open=true;}});
 for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('close',()=>{if(navigation.playing)queueMicrotask(()=>cpu.resume());});
 function updateHapticOption(){
@@ -282,11 +292,8 @@ updateHapticOption();
 const compactLayout=matchMedia('(max-width:1199px), (max-height:650px)');
 const legendPanel=document.querySelector('.legend-panel');
 function placeLegend(){
-  const compact=compactLayout.matches;
-  if(!compact&&$('guideDialog').open)$('guideDialog').close();
-  const parent=compact?$('guideDialog'):document.querySelector('.turn-panel');
-  parent.append(legendPanel);legendPanel.open=true;
-  $('guide').hidden=!compact;
+  $('helpDialog').insertBefore(legendPanel,$('helpDialog').querySelector('.full-rules'));
+  legendPanel.open=true;$('guide').hidden=true;
 }
 compactLayout.addEventListener('change',placeLegend);
 placeLegend();

@@ -4,21 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071A2F">
-  <title>Cerconexo Arena · Experimental M3-B</title>
+  <title>Cerconexo Arena · Experimental</title>
   <link rel="stylesheet" href="./src/styles.css">
+  <link rel="stylesheet" href="../src/gameShell.css">
 </head>
 <body>
   <div class="arena-app">
     <header class="header">
       <a class="brand" id="arenaHome" href="../" aria-label="Inicio · elegir modalidad"><img src="../assets/Cerconexo_wordmark_transparente.png" alt="Cerconexo" width="176" height="45"><div><strong>ARENA</strong><span>⌂ Inicio</span></div></a>
-      <nav aria-label="Controles"><button id="rulesOpen" type="button">Reglas</button><button id="newOpen" type="button">Nueva partida</button></nav>
+      <nav aria-label="Controles"><a href="../" id="homeLink">Inicio</a><button id="guideOpen" type="button">Guía</button><button id="newOpen" type="button">Nueva partida</button></nav>
     </header>
     <section class="scoreboard" aria-label="Puntuación territorial"><div id="scores"></div><p id="distribution"></p></section>
     <main class="workspace">
       <section class="play-area" aria-label="Partida Arena">
         <div class="turn-banner" id="turnBanner" tabindex="0"><span id="turnKicker" class="eyebrow"></span><h1 id="turnTitle"></h1><p id="turnHint"></p></div>
         <div class="board-wrap"><svg id="arenaBoard" viewBox="0 0 900 900" role="group" aria-label="Tablero Arena de 9 por 9. Toca casillas para mover y bordes para construir."></svg></div>
-        <div class="board-tools"><button id="inspectToggle" type="button" aria-pressed="false" aria-controls="arenaBoard">Inspeccionar regiones</button><button id="guideOpen" type="button" aria-label="Guía del tablero y poderes">Guía</button></div>
+        <div class="board-tools"><button id="inspectToggle" type="button" aria-pressed="false" aria-controls="arenaBoard">Inspeccionar regiones</button></div>
         <p id="inspectionInfo" class="inspection-info" role="status" aria-live="polite" aria-atomic="true" tabindex="0" hidden></p>
         <p id="eventNotice" class="event-notice" role="status" aria-live="polite" aria-atomic="true" tabindex="0"></p>
       </section>
@@ -34,10 +35,10 @@
   </div>
   <dialog id="newDialog" aria-labelledby="newTitle" aria-describedby="newIntro">
     <form id="newForm"><div class="dialog-heading"><h2 id="newTitle">Nueva partida Arena</h2><button type="button" class="close" data-close aria-label="Cerrar">×</button></div>
-      <div class="dialog-body"><p id="newIntro">Prototipo local para probar las reglas. Comparte el dispositivo libremente.</p>
+      <div class="dialog-body"><p id="newIntro">Elige cómo quieres jugar. Comparte el dispositivo libremente.</p>
         <fieldset><legend>Enfrentamiento</legend><div class="setup-options"><label><input type="radio" name="mode" value="duo" checked><span><strong>2 vs. 2</strong><small>Dos equipos, dos fichas por equipo</small></span></label><label><input type="radio" name="mode" value="ffa"><span><strong>4 equipos independientes</strong><small>A → B → C → D</small></span></label></div></fieldset>
         <fieldset id="policyField"><legend>Sistema de turnos</legend><div class="setup-options"><label><input type="radio" name="policy" value="piece" checked><span><strong>Por ficha</strong><small>A1 → B1 → A2 → B2 · Un poder por ficha</small></span></label><label><input type="radio" name="policy" value="team"><span><strong>Por equipo</strong><small>Elige una ficha activa · Inventario compartido</small></span></label></div></fieldset>
-        <details id="experimentDetails"><summary>Parámetros experimentales</summary><p>Posiciones internas 0–80, por filas. Puedes modificar apariciones y turnos de oleada antes de empezar. La geometría y las reglas son fijas.</p><label for="experimentJson">Configuración de poderes y simetría</label><textarea id="experimentJson" rows="12" spellcheck="false"></textarea><button id="restorePreset" type="button">Restaurar parámetros propuestos</button></details>
+        <details id="experimentDetails" hidden><summary>Parámetros experimentales</summary><p>Posiciones internas 0–80, por filas. Puedes modificar apariciones y turnos de oleada antes de empezar. La geometría y las reglas son fijas.</p><label for="experimentJson">Configuración de poderes y simetría</label><textarea id="experimentJson" rows="12" spellcheck="false"></textarea><button id="restorePreset" type="button">Restaurar parámetros propuestos</button></details>
         <p id="replaceWarning" class="warning" hidden>Al comenzar reemplazarás la partida de Arena guardada. Cerrar conserva la partida actual.</p><p id="setupError" role="alert" class="problem" hidden></p>
       </div><div class="dialog-footer"><button id="startArena" class="primary" type="submit">Comenzar partida</button></div>
     </form>
@@ -50,9 +51,16 @@
       <li><strong>El territorio puede cambiar.</strong> Demolición puede unir regiones y reactivar fichas. Un Salto puede cambiar su ocupación sin cambiar los muros. Los puntos se recalculan después de cada acción; puedes perder territorio antes asegurado.</li>
       <li><strong>Resuelve el inventario.</strong> Por ficha y con cuatro equipos cabe un poder por ficha, conservado al asegurarse. Por equipo caben tantos poderes como fichas activas tenga. El dueño elige qué descartar si sobra capacidad, aunque se interrumpa un turno rival. El poder recién recogido también puede rechazarse.</li>
       <li><strong>Final.</strong> Al desaparecer la última región compartida termina la partida. Gana quien tiene más casillas exclusivas; puede haber empate. No se solicitan descartes después del final.</li></ol>
-    <p class="muted">Los parámetros de aparición son experimentales y se consultan en Nueva partida. Esta aplicación utiliza un motor y un guardado propios; no modifica Cerconexo Clásico.</p>
+    <p>Demolición elimina un muro interior adyacente sin gastar pasos. Salto cruza un muro intacto hacia la casilla ortogonal contigua libre: no lo destruye y consume un paso. Muro adicional construye sin gastar pasos y permite continuar; si sigues activo, aún debes construir el muro final.</p>
+    <p>Una ficha está activa si comparte componente con algún rival. Puede asegurarse y reactivarse. Asegurada conserva su inventario individual, pero no puede usarlo hasta reactivarse. La capacidad compartida es el número de fichas activas; el afectado decide sus descartes antes de continuar, incluso durante un turno rival.</p>
+    <p>Tras cada acción se resuelven territorios y actividad. Si termina la partida se presenta el resultado sin descartes irrelevantes; en otro caso se ajustan capacidades, se resuelven descartes y se recoge el poder visitado, que puede rechazarse si no cabe. La casilla queda desactivada igualmente.</p>
+    <p>Las cuatro posiciones iniciales son (2,2), (2,8), (8,8) y (8,2), sin muros interiores. Por ficha: A1 → B1 → A2 → B2. Por equipo: A → B, eligiendo una ficha activa; al actuar queda comprometida. Con cuatro equipos: A → B → C → D, omitiendo fichas aseguradas.</p>
+    <p>La configuración inicial añade oleadas después de las intervenciones completadas 8 y 16, si sigue la partida. Solo aparecen en casillas libres de componentes compartidas, sin reemplazar fichas ni poderes. Si no existe un conjunto simétrico válido, esa oleada no aparece.</p>
+    <p>Los poderes descartados no se recuperan al aumentar la capacidad. Un muro no siempre divide una región: puede existir otro camino abierto. Las casillas de una región se cuentan una vez, aunque contenga varias fichas del mismo equipo.</p>
   </div></dialog>
-  <dialog id="guideDialog" aria-labelledby="guideTitle"><div class="dialog-heading"><h2 id="guideTitle">Guía del tablero y poderes</h2><button type="button" class="close" data-close aria-label="Cerrar">×</button></div><div class="dialog-body guide">        <ul>
+  <dialog id="guideDialog" aria-labelledby="guideTitle"><div class="dialog-heading"><h2 id="guideTitle">Guía · Cerconexo Arena</h2><button type="button" class="close" data-close aria-label="Cerrar">×</button></div><div class="dialog-body guide"><ol class="guide-steps">
+<li><h3>MUÉVETE</h3><p>Da 0, 1 o 2 pasos. Cada paso es definitivo.</p></li><li><h3>USA PODERES</h3><p>Recógelos al pasar. Puedes usar varios en tu turno.</p></li>
+<li><h3>CONSTRUYE</h3><p>Si sigues activo, termina con un muro. Si te aseguras, tu turno termina.</p></li><li><h3>CONQUISTA</h3><p>Las regiones exclusivas puntúan. Pueden reconquistarse hasta el final.</p></li></ol>        <ul>
           <li><span class="sample move-sample"></span> Punto turquesa: paso disponible.</li>
           <li><span class="sample wall-sample"></span> Borde dorado: muro final obligatorio.</li>
           <li><span class="sample built-sample"></span> Muro construido: bloquea el paso normal.</li>
@@ -61,7 +69,7 @@
           <li><span data-guide-icon="demolition"></span> Demolición: retira un muro adyacente, sin gastar pasos.</li>
           <li><span data-guide-icon="jump"></span> Salto: cruza un muro hacia la casilla contigua libre; consume un paso.</li>
           <li><span data-guide-icon="extraWall"></span> Muro adicional: construye sin gastar pasos; no sustituye el muro final si sigues activo.</li>
-        </ul><p>Elige un poder del inventario y después su objetivo en el tablero. Puedes volver al movimiento normal sin gastar el poder. Los pasos y poderes ejecutados son definitivos.</p></div></dialog>
+        </ul><details class="full-rules"><summary>Ver reglas completas</summary><div id="arenaFullRules"></div></details><p>Elige un poder del inventario y después su objetivo en el tablero. Puedes volver al movimiento normal sin gastar el poder. Los pasos y poderes ejecutados son definitivos.</p></div></dialog>
   <script type="module" src="./src/app.mjs"></script>
 </body>
 </html>

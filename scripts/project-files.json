@@ -169,5 +169,15 @@
   "tests/territory.test.mjs",
   "tests/unified.browser.cjs",
   "tests/unified.test.mjs",
-  "tests/usability.test.mjs"
+  "tests/usability.test.mjs",
+  "src/gameShell.css",
+  "src/liveInspection.mjs",
+  "docs/src/gameShell.css",
+  "docs/src/liveInspection.mjs",
+  "tests/m4.browser.cjs",
+  "tests/m4.test.mjs",
+  "M4.md",
+  "CPU_ARENA.md",
+  "ONLINE.md",
+  "tests/m4-navigation.cjs"
 ]

@@ -3,7 +3,7 @@ import {turnMode} from './turnPolicies.mjs';
 
 export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
   const get=id=>document.getElementById(id),home=get('homeScreen'),app=document.querySelector('.app'),dialog=get('newDialog');
-  let playing=false,controlType='local';
+  let playing=false,controlType='local',confirmedNew=false;
   const difficultyDescriptions={beginner:'Decisiones sencillas y variedad para aprender.',intermediate:'Equilibrio entre territorio y anticipación.',advanced:'Más anticipación y análisis de respuestas rivales.'};
   function describeDifficulty(){get('difficultyDescription').textContent=difficultyDescriptions[dialog.querySelector('input[name="difficulty"]:checked').value];}
   function describeTeam(){get('humanTeamDescription').textContent=dialog.querySelector('[name="humanTeam"]:checked').value==='A'?'Tú juegas con A (naranja) y comienzas. La CPU controla B (celeste)':'Tú juegas con B (celeste). La CPU controla A (naranja) y comienza';}
@@ -32,7 +32,7 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
     get('home').focus({preventScroll:true});
   }
   bindDialog(dialog,get('new'),{extraOpeners:[get('play')],fallback:get('play'),onOpen:opener=>{
-    pause();const s=read(),fromGame=opener.id==='new';
+    confirmedNew=false;pause();const s=read(),fromGame=opener.id==='new';
     setControl(fromGame&&s.control?'cpu':'local');
     dialog.querySelector(`input[name="turnMode"][value="${fromGame?turnMode(s.game):'piece'}"]`).checked=true;
     dialog.querySelector(`input[name="difficulty"][value="${fromGame&&s.control?s.control.difficulty:'intermediate'}"]`).checked=true;
@@ -58,9 +58,9 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
       control={version:1,type:'cpu',humanTeam:dialog.querySelector('input[name="humanTeam"]:checked').value,difficulty:dialog.querySelector('input[name="difficulty"]:checked').value,seed:seed[0]};
     }
     if(!start(mode,control)){get('configurationStatus').textContent='No se pudo guardar. No se reemplazó la partida. Vuelve a intentarlo.';return;}
-    get('configurationStatus').textContent='';dialog.close();showGame();
+    get('configurationStatus').textContent='';confirmedNew=true;dialog.close();showGame();
   });
-  dialog.addEventListener('close',()=>{if(playing)resume();});
+  dialog.addEventListener('close',()=>{if(!confirmedNew){playing=false;pause();location.assign(get('home').dataset.home);}else if(playing)resume();});
   get('continueGame').addEventListener('click',()=>showGame());
   get('home').addEventListener('click',()=>{
     // Los pasos y los planes CPU ya están guardados por el controlador normal.

@@ -44,7 +44,7 @@ test('UX: textos contextuales aprobados, plural y ausencia de puntos en vacías'
 });
 test('UX: solo cuatro pasos, sin modo separado ni teoría; controles accesibles',async()=>{
   const html=await readFile(new URL('../clasico/index.html',import.meta.url),'utf8');
-  assert.doesNotMatch(html,/full-rules|Ver reglas completas|id="explore"|exploration-tabs|explorationPanel|¿Qué matemática hay detrás\?/);
+  assert.doesNotMatch(html,/id="explore"|exploration-tabs|explorationPanel|¿Qué matemática hay detrás\?/);
   assert.equal((html.match(/<li><h3>/g)||[]).length,4);
   assert.match(html,/región con fichas de tu equipo queda sin fichas rivales/);assert.match(html,/En caso de igualdad, hay empate/);
   assert.match(html,/aria-label="Quitar selección"/);

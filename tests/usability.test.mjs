@@ -63,7 +63,7 @@ test('5A: controles y los cuatro pasos breves mantienen el contenido aprobado',a
   for(const title of ['MUÉVETE','CONSTRUYE','ASEGURA TERRITORIO','GANA'])assert.ok(html.includes(title));
   const help=html.slice(html.indexOf('<dialog id="helpDialog"'),html.indexOf('<dialog id="optionsDialog"'));
   assert.doesNotMatch(help,/id="vibration"|legend-panel|LIGA DE JUEGOS/);
-  assert.doesNotMatch(help,/Ver reglas completas|full-rules/);
+  assert.match(help,/Ver reglas completas/); // M4 recupera el segundo nivel solicitado.
   for(const text of ['0, 1 o 2','sin atravesar muros','Después, debes colocar un muro','región con fichas de tu equipo','sin fichas rivales','gana el equipo','empate'])assert.ok(help.includes(text),text);
 });
 test('5A: cerrar restaura el control que abrió el diálogo aunque el toque no lo enfoque',()=>{

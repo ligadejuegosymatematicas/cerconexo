@@ -43,7 +43,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    assert.ok(await p.locator('#newDialog .dialog-close').evaluate(n=>n===document.activeElement));
    await p.keyboard.press('Shift+Tab');assert.ok(await p.locator('#startLocal').evaluate(n=>n===document.activeElement));await p.keyboard.press('Tab');
    assert.equal(await p.locator('#newDialog input[name=turnMode]').count(),2);await screenshot('selector');
-   await p.locator('#newDialog h2').click();assert.ok(await p.locator('#newDialog').isVisible());await p.keyboard.press('Escape');assert.ok(await p.locator('#new').evaluate(n=>n===document.activeElement));
+   await p.locator('#newDialog h2').click();assert.ok(await p.locator('#newDialog').isVisible());await require('./m4-navigation.cjs').escape(p);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');await require('./m4-navigation.cjs').resumeClassic(p);
    await p.locator('#new').click();await p.locator('[name=turnMode][value=team]').check();await p.locator('#startLocal').click();await idle(p);
    assert.equal((await game(p)).turnMode,'team');assert.equal((await game(p)).currentActor,null);assert.equal((await game(p)).moves,0);
    assert.equal(await p.locator('[data-actor]').count(),2);assert.equal(await p.locator('.token-candidate').count(),2);assert.equal(await p.locator('[data-wall],[data-to]').count(),0);
@@ -63,10 +63,10 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    assert.equal((await game(p)).lastMove.actor,'B2');assert.equal((await game(p)).turnTeam,'A');assert.deepEqual(engine.legalActors(await game(p)),['A1','A2']);
    await hit(p,'[data-actor=A2]',{touch});assert.match(await p.locator('#turnName').innerText(),/Ficha A2/);
    const confirmed=await saved(p);await reload(p);assert.equal(await saved(p),confirmed);assert.equal(await p.locator('[data-wall]').count(),0);assert.equal(await p.locator('[data-actor]').count(),2);
-   await p.locator('#new').click();assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('#newDialog .dialog-close').click();assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await saved(p),confirmed);
-   await p.locator('#new').click();assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.locator('#newDialog .dialog-close').click();assert.equal(await saved(p),confirmed);
+   await p.locator('#new').click();assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==="true");await require('./m4-navigation.cjs').resumeClassic(p);assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await saved(p),confirmed);
+   await p.locator('#new').click();assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==="true");await require('./m4-navigation.cjs').resumeClassic(p);assert.equal(await saved(p),confirmed);
    for(const opener of ['#help','#options','#guide'])if(await p.locator(opener).isVisible()){
-    await p.locator(opener).click();await p.keyboard.press('Escape');assert.equal(await saved(p),confirmed);
+    if(opener==='#options')await p.locator('#help').click();await p.locator(opener).click();await require('./m4-navigation.cjs').escape(p);assert.equal(await saved(p),confirmed);
    }
    // Fixture real: una única ficha pasa a estar asegurada. La elección restante es automática.
    const fixture=fixtures.participationFixture(),before=asTeam(fixture.before);await load(p,before);await hit(p,'[data-actor=A1]',{touch});await hit(p,'[data-wall="15"]',{touch});

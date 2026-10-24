@@ -138,7 +138,7 @@ async function layout(page){
     assert.equal((await saved(page)).moves,0);assert.equal(await page.locator('.wall-confirmation').count(),0);
     // Confirmación rechazada conserva la partida.
     await activate(page,'[data-wall]');const current=await saved(page);
-    await page.locator('#new').click();assert.ok(await page.locator('#replaceWarning').isVisible());await page.locator('#newDialog .dialog-close').click();assert.deepEqual(await saved(page),current);
+    await page.locator('#new').click();assert.ok(await page.locator('#replaceWarning').isVisible());await page.locator('#newDialog .dialog-close').click();await page.waitForFunction(()=>document.documentElement.dataset.portalReady==="true");assert.deepEqual(await saved(page),current);await require('./m4-navigation.cjs').resumeClassic(page);
     // Escape no elimina pasos ejecutados; la partida oficial solo avanza con el muro.
     await reset(page);await activate(page,'[data-to="15"]');await activate(page,'[data-to="16"]');
     await page.keyboard.press('Escape');await idle(page);

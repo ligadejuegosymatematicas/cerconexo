@@ -8,7 +8,7 @@ import {ArenaSession,ARENA_SAVE_KEY} from './session.mjs';
 const $=id=>document.getElementById(id),board=$('arenaBoard');
 const TEAM_COLORS={A:'#F59E0B',B:'#38BDF8',C:'#B79AFF',D:'#59D6A4'};
 const inspection=new RegionInspection();
-let session=null,selectedPower=null,boardActions=new Map(),busy=false,dialogOpener=null,hasSaved=false,loadBlocked=false;
+let session=null,selectedPower=null,boardActions=new Map(),busy=false,dialogOpener=null,hasSaved=false,loadBlocked=false,newConfirmed=false;
 const storage={setItem(key,value){localStorage.setItem(key,value);}};
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const point=cell=>({x:(cell%9)*100+50,y:Math.floor(cell/9)*100+50});
@@ -69,13 +69,14 @@ function renderBoard(s,view,legal){
   }else actions.forEach((a,i)=>markup+=actionSvg(a,s,i));
   board.innerHTML=markup;board.setAttribute('aria-busy','false');
 }
+function publicItems(items){return items.map(item=>`<span class="public-power" role="img" aria-label="${POWER_LABELS[item.type]}" title="${POWER_LABELS[item.type]}">${powerIcon(item.type)}</span>`).join('');}
 function renderScores(s,view){
   $('scores').innerHTML=s.teams.map(t=>`<div class="score" style="--team:${TEAM_COLORS[t]}"><div class="score-top"><span>Equipo ${t}</span><strong data-score="${t}">${view.score[t]}</strong></div><div class="roster" role="list" aria-label="Fichas del equipo ${t}">${s.pieces.filter(p=>p.team===t).map(p=>{
     const active=view.active.includes(p.id),current=s.turn.actor===p.id&&!s.over;
     const items=s.inventories[inventoryOwner(s,p.id)],status=active?(current?'En turno':'En juego'):'Asegurada';
     const label=`${p.id}: ${status}. ${items.length?items.map(i=>POWER_LABELS[i.type]).join(', '):'Sin poderes'}`;
-    return `<span role="listitem" tabindex="0" title="${label}" aria-label="${label}" class="roster-piece ${current?'current':''}">${p.id} ${active?'●':'✓'}</span>`;
-  }).join('')}</div></div>`).join('');
+    return `<span role="listitem" tabindex="0" title="${label}" aria-label="${label}" class="roster-piece ${current?'current':''}">${p.id} ${active?'●':'✓'}${s.policy!=='team'?publicItems(items):''}</span>`;
+  }).join('')}${s.policy==='team'?`<span class="public-inventory" aria-label="Inventario compartido del equipo ${t}">${s.inventories[t].length}${s.over?'':`/${inventoryCapacity(s,t,view)}`} ${publicItems(s.inventories[t])}</span>`:''}</div></div>`).join('');
   $('distribution').textContent=`${view.score.shared} en disputa · ${view.score.empty} vacías · 81 casillas`;
 }
 function renderTurn(s,view){
@@ -137,6 +138,7 @@ function eventText(s){
   const secured=s.lastEvents.filter(e=>e.type==='secured').map(e=>e.actor);if(secured.length)out.push(`${secured.join(' y ')} ${secured.length===1?'aseguró su territorio':'aseguraron sus territorios'}.`);
   const reactivated=s.lastEvents.filter(e=>e.type==='reactivated').map(e=>e.actor);if(reactivated.length)out.push(`${reactivated.join(' y ')} ${reactivated.length===1?'vuelve':'vuelven'} a participar.`);
   for(const e of s.lastEvents.filter(e=>e.type==='territory'))out.push(`Equipo ${e.team}: ${e.delta>0?'+':''}${e.delta} ${Math.abs(e.delta)===1?'casilla':'casillas'}.`);
+  for(const e of s.lastEvents.filter(e=>e.type==='action'&&POWER_LABELS[e.action]))out.push(`${e.actor} usó ${POWER_LABELS[e.action]}.`);
   for(const e of s.lastEvents.filter(e=>e.type==='pickup'))out.push(`${e.actor} recogió ${POWER_LABELS[e.power]}.`);
   if(s.pending)out.push(`El equipo ${s.pending.team} debe elegir un descarte.`);
   else if(s.lastEvents.some(e=>e.type==='discard'))out.push(`Inventario resuelto. ${s.turn.actor?`Continúa ${s.turn.actor}`:`Elige una ficha del equipo ${s.turn.team}`}.`);
@@ -179,10 +181,11 @@ function openDialog(id,opener){dialogOpener=opener;$(id).showModal();$(id).query
 for(const dialog of document.querySelectorAll('dialog')){
   dialog.querySelector('[data-close]').addEventListener('click',()=>dialog.close());
   dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();});
-  dialog.addEventListener('close',()=>dialogOpener?.focus());
+  dialog.addEventListener('close',()=>{if(dialog.id==='newDialog'&&!newConfirmed)location.assign($('arenaHome').href);else dialogOpener?.focus();});
 }
 function resetExperiment(){const mode=new FormData($('newForm')).get('mode');$('experimentJson').value=JSON.stringify(DEFAULT_EXPERIMENT[mode],null,2);}
 function showNew(opener){
+  newConfirmed=false;
   if(session){$('newForm').elements.mode.value=session.game.mode;$('newForm').elements.policy.value=session.game.policy;}
   $('policyField').hidden=$('newForm').elements.mode.value==='ffa';
   if(session)$('experimentJson').value=JSON.stringify(session.game.experiment,null,2);else resetExperiment();
@@ -195,12 +198,13 @@ $('restorePreset').addEventListener('click',resetExperiment);
 $('newOpen').addEventListener('click',()=>showNew($('newOpen')));
 $('guideOpen').addEventListener('click',()=>openDialog('guideDialog',$('guideOpen')));
 for(const node of document.querySelectorAll('[data-guide-icon]'))node.innerHTML=powerIcon(node.dataset.guideIcon);
-$('rulesOpen').addEventListener('click',()=>openDialog('rulesDialog',$('rulesOpen')));
+$('arenaFullRules').innerHTML=$('rulesDialog').querySelector('.rules-content').innerHTML;
+$('experimentDetails').hidden=new URL(location.href).searchParams.get('diagnostico')!=='1';
 function startArena(setup){
   // Guardar primero: si falla el almacenamiento, la partida anterior sigue intacta.
   const next=new ArenaSession(storage,setup);next.save();
   session=next;inspection.reset();selectedPower=null;hasSaved=true;loadBlocked=false;
-  setProblem('');$('eventNotice').textContent='Nueva partida.';render();
+  setProblem('');$('eventNotice').textContent='';render();
 }
 $('arenaReplay').addEventListener('click',()=>{
   if(!session?.game.over||loadBlocked)return;
@@ -212,14 +216,14 @@ $('newForm').addEventListener('submit',e=>{
   try{
     const data=new FormData($('newForm')),mode=data.get('mode'),policy=mode==='ffa'?'piece':data.get('policy');
     startArena({mode,policy,experiment:JSON.parse($('experimentJson').value)});
-    $('newDialog').close();
+    newConfirmed=true;$('newDialog').close();
   }catch(error){$('setupError').textContent=error.message;$('setupError').hidden=false;}
 });
 try{
   const raw=localStorage.getItem(ARENA_SAVE_KEY);
   if(raw){
     hasSaved=true;const restored=ArenaSession.restore(storage,raw);
-    if(restored.ok){session=restored.session;$('eventNotice').textContent='Partida recuperada.';}
+    if(restored.ok){session=restored.session;$('eventNotice').textContent='';}
     else {loadBlocked=true;setProblem(`${restored.error} El guardado se conserva sin sobrescribirlo. Puedes reemplazarlo desde Nueva partida.`);}
   }
 }catch(e){setProblem(`No se puede acceder al guardado de Arena: ${e.message}`);}

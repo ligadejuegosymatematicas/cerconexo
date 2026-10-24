@@ -42,5 +42,7 @@
   "arena/src/engine.mjs",
   "arena/src/session.mjs",
   "arena/src/regionInspection.mjs",
-  "arena/src/powerIcons.mjs"
+  "arena/src/powerIcons.mjs",
+  "src/gameShell.css",
+  "src/liveInspection.mjs"
 ]
