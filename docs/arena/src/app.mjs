@@ -5,6 +5,7 @@ import {ARENA_MODES,DEFAULT_EXPERIMENT,POWER_LABELS} from './config.mjs';
 import {createArena,legalArenaActions,arenaPiece,inventoryOwner,inventoryCapacity,eligibleActors} from './engine.mjs';
 import {ArenaSession,ARENA_SAVE_KEY} from './session.mjs';
 import {setupContextHelp} from '../../src/contextHelp.mjs';
+import {mountIllustratedManual} from '../../src/illustratedManual.mjs';
 
 const $=id=>document.getElementById(id),board=$('arenaBoard');
 const TEAM_COLORS={A:'#F59E0B',B:'#38BDF8',C:'#B79AFF',D:'#59D6A4'};
@@ -202,6 +203,7 @@ $('newForm').addEventListener('change',e=>{if(e.target.name==='mode'){$('policyF
 $('restorePreset').addEventListener('click',resetExperiment);
 $('newOpen').addEventListener('click',()=>showNew($('newOpen')));
 $('guideOpen').addEventListener('click',()=>openDialog('guideDialog',$('guideOpen')));
+mountIllustratedManual();
 for(const node of document.querySelectorAll('[data-guide-icon]'))node.innerHTML=powerIcon(node.dataset.guideIcon);
 setupContextHelp();
 $('experimentDetails').hidden=new URL(location.href).searchParams.get('diagnostico')!=='1';

@@ -23,8 +23,8 @@ export function createNavigation({read,start,pause,resume,feedback=()=>{}}){
     // al abandonar una partida evita reiniciar efectos o vibración al cargar.
     if(wasPlaying)pause();
     get('continueGame').hidden=!read().saved;
-    get('play').className=read().saved?'new-mode':'enter-mode';
-    get('play').textContent=read().saved?'Nueva partida':'Jugar';
+    get('play').className='enter-mode';
+    get('play').textContent='Nueva partida';
     get('continueGame').textContent=read().game.over?'Ver resultado':'Continuar partida';
     get('homeStatus').textContent=read().notice??'';
     get('homeStatus').hidden=!get('homeStatus').textContent;

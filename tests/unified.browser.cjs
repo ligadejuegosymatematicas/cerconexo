@@ -88,12 +88,12 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
     // Sin guardados: navegar y cancelar no crea nada. Teclado y ambas modalidades nuevas.
     {
       const c=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'}),p=await c.newPage();collect(p);await p.goto(site.url);
-      await shot(p,'inicio-sin-partidas');assert.equal(await p.locator('[data-new]:visible').count(),0);await p.locator('[data-mode=classic] [data-continue]').focus();await p.keyboard.press('Enter');
+      await shot(p,'inicio-sin-partidas');assert.equal(await p.locator('[data-new]:visible').count(),2);assert.equal(await p.locator('[data-continue]:visible').count(),0);await p.locator('[data-mode=classic] [data-new]').focus();await p.keyboard.press('Enter');
       await p.locator('#newDialog').waitFor();assert.equal(await raw(p,ck),null);await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ck),null);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
-      await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#newDialog').waitFor();await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ak),null);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
-      await p.locator('[data-mode=classic] [data-continue]').click();await p.check('[name=turnMode][value=team]');await p.click('#startLocal');await idle(p);await p.locator('[data-actor=A2]').focus();await p.keyboard.press('Enter');
+      await p.locator('[data-mode=arena] [data-new]').click();await p.locator('#newDialog').waitFor();await require('./m4-navigation.cjs').escape(p);assert.equal(await raw(p,ak),null);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
+      await p.locator('[data-mode=classic] [data-new]').click();await p.check('[name=turnMode][value=team]');await p.click('#startLocal');await idle(p);await p.locator('[data-actor=A2]').focus();await p.keyboard.press('Enter');
       await p.locator('[data-to]').first().focus();await p.keyboard.press('Enter');await idle(p);assert.equal(JSON.parse(await raw(p,ck)).pendingTurn.actor,'A2');
-      await home(p,'#home');await p.locator('[data-mode=arena] [data-continue]').click();await p.check('[name=mode][value=ffa]');await p.click('#startArena');
+      await home(p,'#home');await p.locator('[data-mode=arena] [data-new]').click();await p.check('[name=mode][value=ffa]');await p.click('#startArena');
       assert.equal(JSON.parse(await raw(p,ak)).setup.mode,'ffa');await p.click('#inspectToggle');await p.locator('[data-inspect="0"]').focus();await p.keyboard.press('ArrowRight');await p.keyboard.press('Enter');assert.equal(await p.locator('.region-count text').textContent(),'81');
       await p.click('#inspectToggle');assert.equal(await p.locator('[data-kind=move]').count()>0,true);await c.close();report.checks.push('Sin guardados y teclado: entradas directas, cancelaciones sin escrituras, Clásico por equipo y Arena cuatro equipos, foco e inspección');
     }
@@ -129,9 +129,9 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
       const c=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'}),p=await c.newPage();collect(p);
       const file=pathToFileURL(path.join(root,'offline/index.html')).href;
       await p.goto(file);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
-      await p.locator('[data-mode=classic] [data-continue]').click();await p.locator('#newDialog').waitFor();await p.click('#startLocal');await idle(p);
+      await p.locator('[data-mode=classic] [data-new]').click();await p.locator('#newDialog').waitFor();await p.click('#startLocal');await idle(p);
       await p.locator('[data-to="9"]').click();await idle(p);const saved=await raw(p,ck);await home(p,'#home');assert.equal(await raw(p,ck),saved);
-      await p.locator('[data-mode=arena] [data-continue]').click();await p.locator('#newDialog').waitFor();await p.click('#startArena');await p.locator('[data-cell-bg]').first().waitFor();
+      await p.locator('[data-mode=arena] [data-new]').click();await p.locator('#newDialog').waitFor();await p.click('#startArena');await p.locator('[data-cell-bg]').first().waitFor();
       await p.locator('[data-kind=move]').first().click();const arenaSaved=await raw(p,ak);await home(p,'#arenaHome');
       assert.equal(await raw(p,ck),saved);assert.equal(await raw(p,ak),arenaSaved);await p.locator('[data-mode=classic] [data-continue]').click();await idle(p);assert.equal(await raw(p,ck),saved);
       await p.reload();await p.waitForFunction(()=>document.documentElement.dataset.entry==='game');await idle(p);assert.equal(await raw(p,ck),saved);await c.close();

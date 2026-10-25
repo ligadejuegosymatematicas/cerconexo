@@ -8,6 +8,7 @@ html = (root / 'index.html').read_text(encoding='utf-8')
 css = (root / 'src/styles.css').read_text(encoding='utf-8')+'\n'+(root.parent/'src/gameShell.css').read_text(encoding='utf-8')+'\n'+(root.parent/'src/experience.css').read_text(encoding='utf-8')
 html=html.replace('<link rel="stylesheet" href="../src/gameShell.css">','').replace('<link rel="stylesheet" href="../src/experience.css">','')
 modules = [(root.parent/'src/contextHelp.mjs').read_text(encoding='utf-8').replace('export function ', 'function ')]
+modules.append((root.parent/'src/illustratedManual.mjs').read_text(encoding='utf-8').replace('export function ', 'function '))
 for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'app']:
     source = (root / f'src/{name}.mjs').read_text(encoding='utf-8')
     source = '\n'.join(line for line in source.splitlines() if not line.startswith('import '))

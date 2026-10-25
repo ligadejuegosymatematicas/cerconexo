@@ -13,8 +13,8 @@ def backdrop(mode):
         begin = markup.index('<nav class="card-actions"')
         end = markup.index('</nav>', begin) + len('</nav>')
         markup = markup[:begin] + '''<nav class="card-actions" aria-label="Cerconexo Clásico">
-          <button class="enter-mode" type="button" id="continueGame" data-continue hidden>Continuar partida</button>
-          <button class="enter-mode" type="button" id="play">Jugar</button>
+          <button class="continue-mode" type="button" id="continueGame" data-continue hidden>Continuar partida</button>
+          <button class="enter-mode" type="button" id="play">Nueva partida</button>
         </nav>''' + markup[end:]
         markup = markup.replace('id="portalNotice"', 'id="homeStatus"')
         markup = markup.replace('</main>', '<nav class="portal-utilities" aria-label="Ayuda"><button id="homeRules" type="button">Guía</button><button id="homeOptions" type="button">Opciones</button></nav></main>')

@@ -8,8 +8,8 @@ function refresh(){
   for(const [mode,{status}] of Object.entries(states)){
     const card=document.querySelector(`[data-mode="${mode}"]`),links=launchLinks(mode,status),enter=card.querySelector('[data-continue]');
     enter.href=links.enter;
-    enter.textContent=links.label+' →';
-    const fresh=card.querySelector('[data-new]');fresh.href=links.fresh;fresh.hidden=!links.showNew;
+    enter.textContent=links.label;enter.hidden=status==='new';
+    const fresh=card.querySelector('[data-new]');fresh.href=links.fresh;fresh.hidden=false;
     const label=card.querySelector('[data-save-status]');
     label.textContent=status==='pending'?'Partida pendiente':status==='finished'?'Última partida finalizada':status==='invalid'?'Guardado conservado · requiere revisión':descriptions[mode];
     label.classList.toggle('pending',status==='pending');

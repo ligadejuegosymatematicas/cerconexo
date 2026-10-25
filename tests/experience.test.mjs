@@ -46,7 +46,8 @@ test('UX: solo cuatro pasos, sin modo separado ni teoría; controles accesibles'
   const html=await readFile(new URL('../clasico/index.html',import.meta.url),'utf8');
   assert.doesNotMatch(html,/id="explore"|exploration-tabs|explorationPanel|¿Qué matemática hay detrás\?/);
   assert.equal((html.match(/<li><svg viewBox="0 0 44 44"/g)||[]).length,4);
-  assert.match(html,/Sin rivales en tu región/);assert.match(html,/si hay igualdad, hay empate/);
+  assert.match(html,/Sin rivales, aseguras la región y no vuelves a actuar/);
+  const manual=await readFile(new URL('../src/illustratedManual.mjs',import.meta.url),'utf8');assert.match(manual,/con igualdad en el máximo hay empate/);
   assert.match(html,/aria-label="Quitar selección"/);
   const panel=html.slice(html.indexOf('<aside class="score-panel'),html.indexOf('<section class="arena'));
   for(const id of ['componentInfo','scoreA','scoreB','activeA','activeB','meter','emptyCount'])assert.ok(panel.includes(`id="${id}"`));

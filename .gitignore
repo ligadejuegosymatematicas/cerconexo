@@ -199,3 +199,13 @@
 !/tests/m41.test.mjs
 !/M41.md
 !/REGLAMENTO.md
+
+# M4.2: manual visual; fuentes canónicas internas preservadas.
+!/src/illustratedManual.mjs
+!/docs/src/illustratedManual.mjs
+!/rules/
+!/rules/canonical-classic.html
+!/rules/canonical-arena.html
+!/tests/m42.test.mjs
+!/tests/m42.browser.cjs
+!/M42.md

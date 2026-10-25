@@ -1,4 +1,4 @@
-/* M4.1: portada y controles de consulta; geometría de juego intacta. */
+/* M4.2: presentación compartida; motores y tablero intactos. */
 @scope (#homeScreen) {
 [hidden] { display:none!important; }
 h1,h2,p { margin:0; }
@@ -18,10 +18,13 @@ a:focus-visible { outline:3px solid var(--gold); outline-offset:4px; }
 h2 { font-size:24px; letter-spacing:.07em; line-height:1.2; }
 .mode-tag { display:block; color:var(--muted); font-size:11px; line-height:17px; }
 .experimental { color:var(--gold); border:1px solid #D4A64A70; border-radius:5px; padding:1px 6px; letter-spacing:0; }
-.mode-description { margin-top:12px; font-size:16px; line-height:1.45; text-wrap:balance; }
+
 .save-status { min-height:34px; margin:10px 0; color:var(--muted); font-size:12px; line-height:17px; }
 .save-status.pending { color:#FCE7B2; }
 .card-actions { display:flex; flex-direction:column; gap:4px; min-height:94px; }
+.card-actions [data-new],.card-actions #play { order:-1; }
+.continue-mode { min-height:44px; padding:8px 10px; display:flex; align-items:center; justify-content:center; border:1px solid #42607a; border-radius:9px; color:var(--muted); background:transparent; font-size:13px; font-weight:600; }
+.continue-mode:hover { border-color:#d4a64a; color:#fbf7ef; }
 .enter-mode { min-height:46px; padding:10px 14px; border:1px solid #D4A64A; border-radius:9px; background:var(--gold); color:#071A2F; font-size:15px; font-weight:800; display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .new-mode { min-height:44px; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--muted); border-radius:7px; }
 .new-mode:hover { color:var(--gold); background:#FFD1660A; }
@@ -61,13 +64,13 @@ h2 { font-size:24px; letter-spacing:.07em; line-height:1.2; }
   .mode-tag { font-size:10px; }
   .new-mode { font-size:12px; }
 }
-}
 
+}
 /* Fondo común del selector. Los controles actuales siguen siendo los mismos. */
 #homeScreen button { font:inherit; cursor:pointer; }
 #homeScreen .portal-brand h1 { margin:0; padding:0; background:transparent; box-shadow:none; }
 #homeScreen .enter-mode { font-weight:800; }
-#homeScreen .new-mode { background:transparent; border:0; }
+#homeScreen .continue-mode { background:transparent; font-size:13px; font-weight:600; }
 #homeScreen .portal-utilities { display:flex; gap:12px; justify-content:center; }
 #homeScreen .portal-utilities button { min-height:44px; border:0; background:transparent; color:#b4c4d5; font-size:13px; padding:8px 16px; }
 #homeScreen button:focus-visible { outline:3px solid #ffd166; outline-offset:3px; }
@@ -174,4 +177,120 @@ html[data-game="arena"] #newDialog .setup-options label { min-height:56px; paddi
  .visual-guide .legend-content,.visual-legend { grid-template-columns:repeat(4,1fr); }
  .power-guide { grid-template-columns:repeat(3,1fr); }
  .context-help { padding:18px; }
+}
+
+/* M4.2 · controles compactos: glifo discreto, superficie táctil de 44 px. */
+.help-dot { position:relative; border:0; background:transparent; color:#b5c6d6; font-size:13px; font-weight:700; }
+.help-dot::before { content:""; position:absolute; width:20px; height:20px; border:1px solid #8e9b9f; border-radius:50%; pointer-events:none; }
+.help-dot:hover { background:#ffd1660c; color:#ffd166; }
+.help-dot:focus-visible { outline:2px solid #ffd166; outline-offset:0; }
+.context-help ul { margin:0; padding-left:19px; display:grid; gap:10px; font-size:15px; line-height:1.45; }
+.context-help li::marker { color:#ffd166; }
+.selector-label { display:flex; align-items:center; color:#b5c6d6; font-size:13px; font-weight:700; min-height:44px; }
+#newDialog h2 { font-size:22px; letter-spacing:-.3px; }
+#newDialog fieldset legend { margin-bottom:4px; }
+#newDialog .selector-label { grid-column:1; grid-row:1; }
+#newDialog .control-options { margin:0 0 8px; }
+#newDialog .mode-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+#newDialog .mode-choice { position:relative; justify-content:center; gap:8px; min-height:56px; padding:8px; }
+#newDialog .mode-choice input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+#newDialog .mode-choice strong { font-size:14px; }
+#newDialog .mode-choice:has(:checked) { box-shadow:inset 0 0 0 1px #ffd16655; }
+.choice-symbol { display:inline-block; width:24px; height:24px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; color:#b5c6d6; }
+#newDialog label:has(:checked) .choice-symbol { color:#ffd166; }
+.implemented-option { display:flex; justify-content:center; align-items:center; gap:10px; border:1px solid #d4a64a; background:#ffd1660d; border-radius:10px; min-height:52px; font-size:15px; }
+.local-only .setup-options { grid-template-columns:1fr!important; }
+#newDialog .setup-options label { justify-content:center; position:relative; gap:8px; min-height:56px; }
+#newDialog .setup-options input { position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; cursor:pointer; }
+@media(min-width:1000px), (max-height:480px) and (min-width:620px) {
+ #newDialog[data-selector-control="cpu"] .selector-label { grid-column:1; grid-row:1; }
+ #newDialog[data-selector-control="cpu"] .control-options { grid-column:1; grid-row:2; }
+ #newDialog[data-selector-control="cpu"] .mode-options { grid-column:1; grid-row:3; }
+ #newDialog[data-selector-control="cpu"] #cpuOptions { grid-row:1/4; }
+}
+/* Una sola identidad de turno; los anuncios y avisos relevantes conservan sus capas. */
+.app .turn-card>.micro,.app .cpu-identity,.app #matchupPlayers {
+ position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip-path:inset(50%)!important; white-space:nowrap!important;
+}
+.app .turn-card { display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:4px 10px; padding:10px 12px; align-items:center; }
+.app .turn-identity { display:contents; margin:0; }
+.app .turn-disc { grid-column:1; grid-row:1; width:40px; height:40px; font-size:18px; }
+.app .turn-identity strong { grid-column:2; grid-row:1; font-size:16px; line-height:20px; }
+.app .matchup-state { grid-column:3; grid-row:1; height:auto; min-height:20px; margin:0; color:#b5c6d6; }
+.app .context-slot { grid-column:1/-1; grid-row:2; height:100px; margin:0; border:0; }
+.app .context-slot .prompt { font-size:14px; line-height:20px; padding-top:3px; }
+.app .has-recent-event .context-slot { height:100px; }
+@media(min-width:761px) and (min-height:501px) {
+ .app .final-result { inset:10px 12px; gap:5px; }
+ .app .final-result h2 { font-size:18px; line-height:22px; }
+ .app .final-result p { font-size:13px; line-height:18px; }
+ .app .final-result #winnerDifference { padding-top:5px; }
+}
+@media(max-width:760px), (max-height:500px) {
+ .app .turn-card { padding:7px 10px; gap:2px 8px; }
+ .app .turn-identity strong { font-size:14px; line-height:18px; }
+ .app .turn-disc { width:36px; height:36px; font-size:17px; }
+ .app .matchup-state { font-size:11px; }
+ .app .context-slot,.app .has-recent-event .context-slot { height:48px; }
+ .app .context-slot .prompt { font-size:13px; line-height:16px; padding-top:2px; }
+ .app .context-slot #recentEvent { height:48px; }
+}
+/* Manual común: capítulos cortos y diagramas de casillas reales, sin cambiar el juego. */
+#completeRules,#rulesDialog { width:min(900px,calc(100vw - 24px)); max-width:900px; max-height:calc(100dvh - 24px); }
+#completeRules[open],#rulesDialog[open] { display:flex; flex-direction:column; overflow:hidden; }
+#completeRules>h2 { flex-shrink:0; background:transparent; }
+#completeRules>.illustrated-manual { min-height:0; }
+#rulesDialog .dialog-heading { flex-shrink:0; }
+.illustrated-manual { display:flex; flex-direction:column; overflow:hidden; }
+.manual-topics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin:0 0 12px; flex-shrink:0; }
+.manual-topics button { min-height:44px; padding:8px 6px; border:1px solid #47617a; border-radius:9px; color:#b5c6d6; background:#071a2f; font-size:13px; font-weight:650; cursor:pointer; }
+.manual-topics button[aria-pressed="true"] { border-color:#ffd166; color:#ffd166; background:#ffd16612; box-shadow:inset 0 0 0 1px #ffd16633; }
+.manual-topics button:focus-visible { outline:3px solid #ffd166; outline-offset:1px; }
+.manual-pages { overflow:auto; overscroll-behavior:contain; min-height:0; scrollbar-gutter:stable; padding-right:3px; }
+.manual-page>h3 { color:#fbf7ef; font-size:20px; margin:0 0 4px; }
+.manual-page .manual-lead { margin:0 0 14px; color:#b5c6d6; font-size:14px; line-height:1.4; }
+.manual-layout { display:grid; gap:16px; align-items:start; }
+.manual-layout.has-diagram { grid-template-columns:minmax(150px,.8fr) minmax(0,1.4fr); }
+.manual-layout figure { margin:0; padding:12px; border:1px solid #355674; background:#071a2f66; border-radius:12px; }
+.manual-board { width:100%; max-height:300px; display:block; }
+.manual-layout figcaption { color:#b5c6d6; font-size:12px; line-height:17px; margin-top:10px; text-align:center; }
+.manual-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.has-diagram .manual-cards { grid-template-columns:1fr; }
+.manual-cards article { border:1px solid #355674; border-radius:11px; padding:12px; background:#17334b60; }
+.manual-cards h4 { color:#ffd166; font-size:14px; margin:0 0 6px; line-height:1.4; }
+.manual-cards ul { padding-left:17px; margin:0; display:grid; gap:6px; }
+.manual-cards li { margin:0; font-size:14px; line-height:1.45; }
+.manual-cards li::marker { color:#b5c6d6; }
+.manual-cards [data-guide-icon] { float:right; margin:0 0 8px 8px; }
+.manual-cards .power-icon { width:30px; height:30px; }
+@media(max-width:760px) {
+ #completeRules { padding:14px; }
+ .manual-layout.has-diagram { grid-template-columns:1fr; gap:10px; }
+ .manual-layout figure { padding:8px; display:flex; align-items:center; gap:12px; }
+ .manual-board { width:150px; max-height:150px; flex-shrink:0; }
+ .manual-layout figcaption { text-align:left; margin:0; }
+ .manual-cards { grid-template-columns:1fr; }
+ .manual-cards article { padding:10px; }
+ .manual-topics { gap:5px; }
+ [data-illustrated-manual="arena"] .manual-topics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ .manual-cards li { font-size:13px; }
+}
+@media(max-height:480px) and (min-width:620px) {
+ #completeRules { padding:12px 16px; }
+ .manual-layout.has-diagram { grid-template-columns:170px minmax(0,1fr); }
+ .manual-layout figure { display:block; padding:8px; }
+ .manual-board { width:100%; max-height:145px; }
+ .manual-layout figcaption { font-size:11px; margin-top:4px; text-align:center; }
+ .has-diagram .manual-cards,.manual-cards { grid-template-columns:1fr 1fr; }
+ .manual-topics,[data-illustrated-manual="arena"] .manual-topics { grid-template-columns:repeat(7,minmax(0,1fr)); margin-bottom:8px; }
+ .manual-topics button { font-size:12px; }
+ .manual-page>h3 { font-size:17px; }
+ .manual-page .manual-lead { margin-bottom:8px; font-size:13px; }
+ .manual-cards article { padding:8px; }
+ html[data-game="arena"] #newDialog { width:calc(100vw - 24px); max-width:900px; }
+ html[data-game="arena"] #newDialog .dialog-body { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:12px; }
+ html[data-game="arena"] #newDialog .dialog-body>fieldset { min-width:0; margin:0; }
+ html[data-game="arena"] #newDialog .setup-options label { min-height:56px; padding:6px; gap:4px; }
+ html[data-game="arena"] #newDialog .choice-symbol { width:20px; height:20px; }
+ html[data-game="arena"] #newDialog .dialog-body>.warning,html[data-game="arena"] #newDialog .dialog-body>.problem,html[data-game="arena"] #newDialog #experimentDetails { grid-column:1/-1; }
 }

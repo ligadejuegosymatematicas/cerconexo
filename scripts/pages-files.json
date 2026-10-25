@@ -46,5 +46,6 @@
   "src/gameShell.css",
   "src/liveInspection.mjs",
   "src/experience.css",
-  "src/contextHelp.mjs"
+  "src/contextHelp.mjs",
+  "src/illustratedManual.mjs"
 ]

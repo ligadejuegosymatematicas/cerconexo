@@ -12,6 +12,7 @@ import {finalPresentation} from './resultEvents.mjs';
 import {createResultFeedback} from './resultFeedback.mjs';
 import {bindDialog} from './dialogs.mjs';
 import {setupContextHelp} from './contextHelp.mjs';
+import {mountIllustratedManual} from './illustratedManual.mjs';
 import {matchupPresentation} from './matchup.mjs';
 import {createExploration} from './exploration.mjs';
 import {createLiveInspection} from './liveInspection.mjs';
@@ -156,7 +157,7 @@ function renderCpuIdentity(){
   $('cpuIdentity').textContent=`Tú: ${control.humanTeam} · CPU: ${cpuTeam} · ${CPU_LEVELS[control.difficulty].label}`;
   if(draft.path.length===3)$('turnBanner').querySelector('h2').textContent='2 PASOS';
   if(isCpuTurn(game,control)){
-    $('turnName').textContent=`CPU · Equipo ${game.turnTeam}${draft.actor?` · ${draft.actor}`:''}`;
+    $('turnName').textContent=`${draft.actor?`Turno de ${draft.actor}`:`Equipo ${game.turnTeam}`} · CPU`;
     if(!committedDraft(draft))$('turnBanner').querySelector('h2').textContent='TURNO CPU';
     if(cpuPhase==='thinking')feedback.message('Preparando su jugada…');
   }
@@ -169,7 +170,7 @@ const cpu=createCpuController({
     cpuPlan=plan;return true;
   },
   select:actor=>selectActor(actor,true),step:to=>step(to,true),build:to=>build(to,true),
-  status:phase=>{if(phase==='idle'&&cpuPhase==='blocked')return;cpuPhase=phase;if(phase==='idle'&&isCpuTurn(game,control))return;if(phase==='acting'&&draft.path.length<=1)feedback.message(`Turno de ${draft.actor} · Mueve o construye`);renderCpuIdentity();},
+  status:phase=>{if(phase==='idle'&&cpuPhase==='blocked')return;cpuPhase=phase;if(phase==='idle'&&isCpuTurn(game,control))return;if(phase==='acting'&&draft.path.length<=1)feedback.message('Mueve o construye');renderCpuIdentity();},
   onError:()=>{cpuPhase='blocked';feedback.message('La CPU no pudo completar la acción. Vuelve a Inicio y continúa para reintentar.');}
 });
 function pauseGame(){
@@ -228,10 +229,10 @@ function renderPlayers(actor,active,score){
     $('prompt').setAttribute('aria-live','polite');
     $('turnBanner').classList.toggle('team-b',team==='B');
     $('turnDisc').textContent=actor??team;
-    $('turnName').textContent=byTeam?actor?`${TEAM_NAME[team]} · Ficha ${actor}`:`${TEAM_NAME[team]} · Elige ficha`:`${TEAM_NAME[team]} · Ficha ${actor}`;
+    $('turnName').textContent=actor?`Turno de ${actor}`:`${TEAM_NAME[team]} · Elige ficha`;
     if(byTeam&&steps===0)$('turnBanner').querySelector('h2').textContent=actor?`FICHA ${actor}`:'AHORA JUEGA';
     $('stepsPill').textContent=steps===0?'Elige casilla o borde':`${steps} ${steps===1?'paso':'pasos'}`;
-    feedback.message(!actor?`Elige ${legalActors(game).join(' o ')} · Toca una ficha`:steps===0?`Turno de ${actor} · Mueve o construye`:steps===1?'1 paso · Puedes continuar o construir':'2 pasos · Construye tu muro');
+    feedback.message(!actor?`Elige ${legalActors(game).join(' o ')}`:steps===0?'Mueve o construye':steps===1?'1 paso · Mueve o construye':'2 pasos · Construye tu muro');
   }
 }
 function activateBoard(target){
@@ -298,6 +299,7 @@ function placeLegend(){
 }
 compactLayout.addEventListener('change',placeLegend);
 placeLegend();
+mountIllustratedManual();
 setupContextHelp();
 // visualViewport incluye la altura realmente visible al cambiar las barras del navegador.
 function fitViewport(){

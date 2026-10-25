@@ -57,6 +57,7 @@ jobs:
           path: |
             validation/m4/browser/
             validation/m41/browser/
+            validation/m42/browser/
             validation/platform/
             validation/integration/suites/
             validation/integration/browser/results.json
