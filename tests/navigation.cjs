@@ -56,3 +56,15 @@ exports.historicalBrowser=async browser=>{
  };
  return browser;
 };
+
+// El archivo autónomo se ensaya también como lo abre un usuario normalmente:
+// perfil propio persistente, sin copiar ni reinyectar guardados al recargar.
+// Las sondas independientes M4.2 siguen comprobando los contextos efímeros.
+exports.offlineContext=async(chromium,options={})=>{
+ const fs=require('node:fs/promises'),path=require('node:path');
+ const root=path.resolve('validation/integration/offline-profiles');await fs.mkdir(root,{recursive:true});
+ const profile=await fs.mkdtemp(path.join(root,'profile-'));
+ const context=await chromium.launchPersistentContext(profile,{...options,headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'});
+ const adapter=await exports.historicalBrowser({newContext:async()=>context});
+ return adapter.newContext(options);
+};

@@ -21,8 +21,9 @@ async function enable(page,value){
   const engine=await import(pathToFileURL(path.join(root,'src/engine.mjs')));
   const site=await startPagesServer(),browser=await require('./navigation.cjs').historicalBrowser(await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}));
   const errors=[],report={screens:[],checks:[]};
-  async function create({mode='supported',width=390,height=844}={}){
-    const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:width<761});
+  async function create({mode='supported',width=390,height=844,offline=false}={}){
+    const options={viewport:{width,height},hasTouch:true,isMobile:width<761};
+    const context=offline?await require('./navigation.cjs').offlineContext(chromium,options):await browser.newContext(options);
     await context.addInitScript(mode=>{
       window.vibrationCalls=[];
       Object.defineProperty(navigator,'vibrate',{configurable:true,value:mode==='absent'?undefined:pattern=>{
@@ -100,7 +101,7 @@ async function enable(page,value){
     }
     report.checks.push('Navegador sin API, vibración rechazada y excepción: movimiento, muro y guardado siguen funcionando');
     // Paquete autónomo: misma marca y opción persistente, sin archivos auxiliares.
-    const standalone=await create(),single=standalone.page;
+    const standalone=await create({offline:true}),single=standalone.page;
     await single.goto(pathToFileURL(path.join(root,'Cerconexo_Premium_Listo_Para_Jugar.html')).href);await idle(single);await settle(single);
     assert.ok(await single.locator('.official-logo').evaluate(img=>img.src.startsWith('data:image/png;base64,')&&img.complete));
     await enable(single,true);await choose(single,'[data-wall]');assert.deepEqual(await positive(single),[12]);
