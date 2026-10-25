@@ -65,3 +65,30 @@ test('M4.2: portada ofrece nueva partida primaria y consulta secundaria sin desc
  assert.equal((s.match(/class="continue-mode" data-continue/g)||[]).length,2);
  assert.doesNotMatch(s,/Muros y estrategia territorial|Poderes, conquista y reconquista/);
 });
+
+test('M4.2 final: ayudas en español de Chile',async()=>{
+ const help=await readFile(new URL('../src/contextHelp.mjs',import.meta.url),'utf8');
+ assert.equal(help.split('Local: compartes el dispositivo.').length-1,2);
+ assert.doesNotMatch(help,/compartís|elegís|podés|tenés/);
+ assert.doesNotMatch(JSON.stringify(manualChapters('classic')),/compartís/);
+});
+
+test('M4.2 final: seis símbolos compartidos y diferencias de Arena conservadas',async()=>{
+ const files=await Promise.all(['clasico/index.html','arena/index.html'].map(f=>
+  readFile(new URL('../'+f,import.meta.url),'utf8')));
+ const basic=s=>s.match(/<div class="legend-content board-legend">([\s\S]*?)<span>Región vacía · sin puntos<\/span><\/div>/)[1];
+ assert.equal(basic(files[0]),basic(files[1]));
+ for(const symbol of ['legend-dot','legend-gold','legend-solid','legend-dash','legend-cell','legend-cell empty'])assert.ok(basic(files[1]).includes('class="'+symbol+'"'));
+ const manual=JSON.stringify(manualChapters('arena'));
+ assert.match(manual,/Un paso normal no atraviesa muros/);
+ assert.match(manual,/Aro discontinuo: ficha disponible/);
+ assert.match(manual,/se reactiva inmediatamente/);
+});
+
+test('M4.2 final: Arena reutiliza el módulo háptico existente',async()=>{
+ const app=await readFile(new URL('../arena/src/app.mjs',import.meta.url),'utf8');
+ const build=await readFile(new URL('../arena/build.py',import.meta.url),'utf8');
+ assert.ok(app.includes("import {createHaptics} from '../../src/haptics.mjs'"));
+ assert.ok(app.includes("if(action.type==='wall')haptics.committed()"));
+ assert.ok(build.includes('src/haptics.mjs'));
+});

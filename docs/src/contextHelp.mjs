@@ -1,11 +1,11 @@
 // Ayuda de consulta: no lee ni escribe el estado de juego.
 export function setupContextHelp(){
   const content={
-    control:['¿Cómo quieres jugar?',['Local: compartís el dispositivo.','Contra CPU: eliges equipo y dificultad.']],
+    control:['¿Cómo quieres jugar?',['Local: compartes el dispositivo.','Contra CPU: eliges equipo y dificultad.']],
     turns:['Sistema de turnos',['Por ficha: A1 → B1 → A2 → B2, mientras sigan activas.','Por equipo: eliges cualquier ficha activa de tu equipo.','Cada paso es definitivo.']],
     difficulty:['Dificultad',['Principiante: decisiones sencillas.','Intermedio: territorio y anticipación.','Avanzado: mayor análisis de respuestas.']],
     team:['Tu equipo',['A · Naranja: empiezas tú.','B · Celeste: empieza la CPU.','Elegir equipo no cambia las posiciones.']],
-    arenaControl:['Juego local',['Compartís un dispositivo.','Elige dos equipos o cuatro equipos independientes.']],
+    arenaControl:['Juego local',['Local: compartes el dispositivo.','Elige dos equipos o cuatro equipos independientes.']],
     arenaMode:['Enfrentamiento',['2 vs. 2: dos fichas por equipo.','4 equipos: una ficha por equipo.','Cuatro equipos juegan A → B → C → D.']],
     arenaTurns:['Turnos e inventarios',['Por ficha: A1 → B1 → A2 → B2; un poder por ficha.','Por equipo: eliges ficha activa; inventario compartido.','Capacidad compartida: un poder por cada ficha activa.','Cada paso es definitivo.']]
   };

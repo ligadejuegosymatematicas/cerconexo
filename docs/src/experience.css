@@ -174,7 +174,7 @@ html[data-game="arena"] #newDialog .setup-options label { min-height:56px; paddi
  .visual-guide .guide-steps svg { width:32px; height:32px; margin-bottom:2px; }
  .visual-guide .guide-steps p { font-size:13px; }
  .visual-guide .guide-tabs,.visual-guide .rules-link { margin-bottom:6px; margin-top:6px; }
- .visual-guide .legend-content,.visual-legend { grid-template-columns:repeat(4,1fr); }
+ .visual-guide .legend-content,.visual-legend { grid-template-columns:1fr 1fr; }
  .power-guide { grid-template-columns:repeat(3,1fr); }
  .context-help { padding:18px; }
 }
@@ -294,3 +294,22 @@ html[data-game="arena"] #newDialog .setup-options label { min-height:56px; paddi
  html[data-game="arena"] #newDialog .choice-symbol { width:20px; height:20px; }
  html[data-game="arena"] #newDialog .dialog-body>.warning,html[data-game="arena"] #newDialog .dialog-body>.problem,html[data-game="arena"] #newDialog #experimentDetails { grid-column:1/-1; }
 }
+
+/* Guía Tablero: los mismos seis símbolos y tres pares en ambas modalidades.
+   Alcance exclusivo del diálogo; no afecta al SVG ni a sus áreas interactivas. */
+.visual-guide .board-legend { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.visual-guide .board-legend>div { display:flex; align-items:center; gap:13px; color:#b5c6d6; font-size:13px; line-height:1.4; }
+.visual-guide .board-legend b { display:block; color:#fbf7ef; font-size:13px; font-weight:600; margin-top:3px; }
+.visual-guide .board-legend .legend-dot { width:15px; height:15px; flex-shrink:0; background:#2dd4bf; border:2px solid #0d5148; border-radius:50%; box-shadow:0 0 0 3px #2dd4bf20; margin:0 7px; }
+.visual-guide .board-legend .legend-gold,.visual-guide .board-legend .legend-solid,.visual-guide .board-legend .legend-dash { display:block; flex-shrink:0; width:29px; border-top:5px solid #ffd166; border-radius:4px; }
+.visual-guide .board-legend .legend-solid { border-color:#475569; }
+.visual-guide .board-legend .legend-dash { border-top:2px dashed #cbbeaa; }
+.visual-guide .board-legend .legend-cell { width:19px; height:19px; flex-shrink:0; border-radius:3px; margin:0 5px; background:#fbf7ef; }
+.visual-guide .board-legend .legend-cell.empty { background:repeating-linear-gradient(135deg,#e7e1d5 0 3px,#c4bfb4 3px 5px); }
+html[data-game="arena"] .visual-guide>.guide-footer { margin:0; padding:0 20px 14px; flex-shrink:0; }
+html[data-game="arena"] .haptic-option { margin:4px 0; padding:12px 0; border-block:1px solid #355674; }
+html[data-game="arena"] .haptic-label { display:flex; align-items:center; gap:10px; min-height:44px; font-weight:700; cursor:pointer; }
+html[data-game="arena"] .haptic-label input { width:24px; height:24px; margin:10px; accent-color:#2dd4bf; }
+html[data-game="arena"] .haptic-option p { font-size:13px; line-height:1.5; margin:4px 0 0; }
+@media(max-width:760px) { .visual-guide .board-legend>div { gap:9px; } html[data-game="arena"] .visual-guide>.guide-footer { padding-inline:14px; } }
+@media(max-height:480px) and (min-width:620px) { .visual-guide .board-legend>div { min-height:44px; padding:6px 8px; } }

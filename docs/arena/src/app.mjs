@@ -6,10 +6,13 @@ import {createArena,legalArenaActions,arenaPiece,inventoryOwner,inventoryCapacit
 import {ArenaSession,ARENA_SAVE_KEY} from './session.mjs';
 import {setupContextHelp} from '../../src/contextHelp.mjs';
 import {mountIllustratedManual} from '../../src/illustratedManual.mjs';
+import {createHaptics} from '../../src/haptics.mjs';
 
 const $=id=>document.getElementById(id),board=$('arenaBoard');
 const TEAM_COLORS={A:'#F59E0B',B:'#38BDF8',C:'#B79AFF',D:'#59D6A4'};
 const inspection=new RegionInspection();
+// Preferencia compartida con Clásico, independiente del guardado de Arena.
+const haptics=createHaptics();
 let session=null,selectedPower=null,boardActions=new Map(),busy=false,dialogOpener=null,hasSaved=false,loadBlocked=false,newConfirmed=false;
 const storage={setItem(key,value){localStorage.setItem(key,value);}};
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -151,6 +154,7 @@ function dispatch(action,keyboard=false){
   busy=true;
   try{
     session.dispatch(action);hasSaved=true;selectedPower=null;setProblem('');render();
+    if(action.type==='wall')haptics.committed();
     const message=eventText(session.game);if(message)$('eventNotice').textContent=message;
     if(keyboard){const target=session.game.pending?$('discardOptions').querySelector('button'):board.querySelector('[data-action]');target?.focus();}
   }catch(e){setProblem(`No se aplicó la acción. ${e.message}`);}finally{busy=false;}
@@ -199,10 +203,19 @@ function showNew(opener){
   $('replaceWarning').hidden=!replacing;$('startArena').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';$('setupError').textContent=$('problem').textContent;$('setupError').hidden=!$('setupError').textContent;
   openDialog('newDialog',opener);
 }
-$('newForm').addEventListener('change',e=>{if(e.target.name==='mode'){$('policyField').hidden=e.target.value==='ffa';resetExperiment();}});
+$('newForm').addEventListener('change',e=>{if(e.target.matches('input[type=radio]'))haptics.pulse('turn');if(e.target.name==='mode'){$('policyField').hidden=e.target.value==='ffa';resetExperiment();}});
 $('restorePreset').addEventListener('click',resetExperiment);
 $('newOpen').addEventListener('click',()=>showNew($('newOpen')));
 $('guideOpen').addEventListener('click',()=>openDialog('guideDialog',$('guideOpen')));
+function updateHapticOption(){
+  $('vibration').checked=haptics.enabled;$('vibration').disabled=!haptics.supported;
+  $('vibrationStatus').textContent=!haptics.supported?'Este navegador no ofrece vibración.':haptics.paused?'En pausa por la preferencia de movimiento reducido.':'Pulsos breves, si el dispositivo lo permite.';
+}
+$('options').addEventListener('click',()=>{updateHapticOption();$('guideDialog').close();openDialog('optionsDialog',$('guideOpen'));});
+$('vibration').addEventListener('change',()=>{haptics.setEnabled($('vibration').checked);updateHapticOption();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)haptics.stop();});
+window.addEventListener('pagehide',()=>haptics.stop());
+updateHapticOption();
 mountIllustratedManual();
 for(const node of document.querySelectorAll('[data-guide-icon]'))node.innerHTML=powerIcon(node.dataset.guideIcon);
 setupContextHelp();
