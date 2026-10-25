@@ -207,5 +207,6 @@
 !/rules/canonical-classic.html
 !/rules/canonical-arena.html
 !/tests/m42.test.mjs
+!/tests/m42-offline-probe.cjs
 !/tests/m42.browser.cjs
 !/M42.md
