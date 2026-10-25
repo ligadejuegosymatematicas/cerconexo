@@ -1,4 +1,4 @@
-const fs=require('node:fs/promises'),path=require('node:path'),{pathToFileURL}=require('node:url'),{chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
+const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),{chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
 (async()=>{const out=path.resolve('validation/m42/browser/offline-probe');await fs.mkdir(out,{recursive:true});const report=[],channel=process.env.CERCONEXO_BROWSER_CHANNEL||'msedge';
 const minimal=path.join(out,'minimal.html');await fs.writeFile(minimal,'<!doctype html><meta charset="utf-8"><title>Storage probe</title><p>Sin motor ni interfaz de juego</p>');
 for(const persistent of [false,true]){
@@ -17,4 +17,4 @@ for(const persistent of [false,true]){
  }
  }finally{await context.close();await browser?.close();}
 }
-await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report.map(({events,...r})=>({...r,cycles:events.length,failure:events.find(e=>e.raw!==e.expected)})),null,2));})().catch(e=>{console.error(e);process.exitCode=1;});
+await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report.map(({events,...r})=>({...r,cycles:events.length,failure:events.find(e=>e.raw!==e.expected)})),null,2));assert.ok(report.every(r=>r.ok),'La recarga debe conservar los datos reales, sin reinyectarlos.');})().catch(e=>{console.error(e);process.exitCode=1;});

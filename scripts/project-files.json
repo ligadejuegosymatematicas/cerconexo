@@ -168,6 +168,7 @@
   "tests/m4.test.mjs",
   "tests/m41.browser.cjs",
   "tests/m41.test.mjs",
+  "tests/m42-offline-probe.cjs",
   "tests/m42.browser.cjs",
   "tests/m42.test.mjs",
   "tests/modes.browser.cjs",
