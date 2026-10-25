@@ -1,0 +1,10 @@
+<ol>
+<li>Tablero 7 × 7, con A1 en (2,2), B1 en (2,6), A2 en (6,6) y B2 en (6,2). Inicialmente no hay muros interiores.</li>
+<li>Por ficha: A1 → B1 → A2 → B2. Se alternan fichas activas dentro de cada equipo. Si una se asegura, su compañera ocupa los turnos del equipo.</li>
+<li>Por equipo: A y B alternan; cada equipo elige una ficha activa, que puede repetirse en sus turnos. Antes de mover puede cambiar su elección; después del primer paso queda fijada.</li>
+<li>Se permiten 0, 1 o 2 pasos ortogonales, sin atravesar muros ni fichas. Se puede girar o regresar al origen con el segundo paso: ambos pasos quedan consumidos. Cada paso es definitivo, también al recargar.</li>
+<li>El turno termina construyendo exactamente un muro en un lado interior libre de la casilla final. Se puede construir entre casillas ocupadas. No se puede deshacer un paso ni el muro.</li>
+<li>Una región con fichas de un solo equipo puntúa todas sus casillas una única vez, aunque contenga sus dos fichas. Una región sin fichas no puntúa. Las regiones con ambos equipos siguen en disputa.</li>
+<li>Las fichas en regiones exclusivas quedan aseguradas y no vuelven a participar en Clásico. Permanecen en el tablero.</li>
+<li>La partida termina cuando no hay regiones con ambos equipos. Gana quien aseguró más casillas; si hay igualdad, hay empate. La CPU respeta las mismas reglas.</li>
+</ol>

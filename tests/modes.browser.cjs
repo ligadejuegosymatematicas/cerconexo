@@ -51,7 +51,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    const official=await saved(p),writes=await p.evaluate(()=>m1Audit.writes);
    await hit(p,'[data-actor=A1]',{touch,keyboard:width===1366});assert.equal(await saved(p),official);assert.equal(await p.locator('[data-actor=A1]').getAttribute('aria-pressed'),'true');await screenshot('seleccion-A1');
    await hit(p,'[data-actor=A2]',{touch});assert.equal(await saved(p),official);assert.equal(await p.evaluate(()=>m1Audit.writes),writes);
-   assert.equal(await p.locator('[data-piece=A1]').getAttribute('transform'),'translate(180 180)');assert.match(await p.locator('#prompt').innerText(),/Turno de A2/);await screenshot('cambio-A2');
+   assert.equal(await p.locator('[data-piece=A1]').getAttribute('transform'),'translate(180 180)');assert.match(await p.locator('#turnName').innerText(),/Turno de A2/);assert.equal(await p.locator('#prompt').innerText(),'Mueve o construye');await screenshot('cambio-A2');
    await hit(p,'[data-to="39"]',{touch});await hit(p,'[data-to="32"]',{touch});
    assert.equal(await p.locator('#turnBanner > h2').innerText(),'2 PASOS · CONSTRUYE');
    const to=Number(await p.locator('[data-wall]').first().getAttribute('data-wall')),expected=engine.applyTurn(JSON.parse(official).game,{actor:'A2',path:[40,39,32],to});
@@ -61,7 +61,7 @@ async function load(p,state){await p.evaluate(state=>localStorage.setItem('wallg
    const timings=await p.evaluate(()=>m1Audit.animations);for(const duration of [180,280,320])assert.ok(timings.includes(duration),`Animación compartida ${duration} ms`);
    await hit(p,'[data-actor=B2]',{touch});const bTo=Number(await p.locator('[data-wall]').first().getAttribute('data-wall'));await hit(p,`[data-wall="${bTo}"]`,{touch});
    assert.equal((await game(p)).lastMove.actor,'B2');assert.equal((await game(p)).turnTeam,'A');assert.deepEqual(engine.legalActors(await game(p)),['A1','A2']);
-   await hit(p,'[data-actor=A2]',{touch});assert.match(await p.locator('#turnName').innerText(),/Ficha A2/);
+   await hit(p,'[data-actor=A2]',{touch});assert.match(await p.locator('#turnName').innerText(),/Turno de A2/);
    const confirmed=await saved(p);await reload(p);assert.equal(await saved(p),confirmed);assert.equal(await p.locator('[data-wall]').count(),0);assert.equal(await p.locator('[data-actor]').count(),2);
    await p.locator('#new').click();assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==="true");await require('./m4-navigation.cjs').resumeClassic(p);assert.ok(await p.locator('#newDialog').isHidden());assert.equal(await saved(p),confirmed);
    await p.locator('#new').click();assert.equal(await p.locator('[name=turnMode]:checked').inputValue(),'team');await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==="true");await require('./m4-navigation.cjs').resumeClassic(p);assert.equal(await saved(p),confirmed);

@@ -188,3 +188,25 @@
 !/CPU_ARENA.md
 !/ONLINE.md
 !/tests/m4-navigation.cjs
+
+# M4.1: navegación y ayudas visuales.
+!/src/experience.css
+!/src/contextHelp.mjs
+!/docs/src/experience.css
+!/docs/src/contextHelp.mjs
+!/scripts/sync_portal.py
+!/tests/m41.browser.cjs
+!/tests/m41.test.mjs
+!/M41.md
+!/REGLAMENTO.md
+
+# M4.2: manual visual; fuentes canónicas internas preservadas.
+!/src/illustratedManual.mjs
+!/docs/src/illustratedManual.mjs
+!/rules/
+!/rules/canonical-classic.html
+!/rules/canonical-arena.html
+!/tests/m42.test.mjs
+!/tests/m42-offline-probe.cjs
+!/tests/m42.browser.cjs
+!/M42.md

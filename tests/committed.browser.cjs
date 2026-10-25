@@ -40,7 +40,7 @@ async function instrument(context){await context.addInitScript(()=>document.addE
      const saved=await raw(p);await hit(p,'[data-actor=A1]',input);await screenshot(p,`seleccion-A1-${width}x${height}`);await hit(p,'[data-actor=A2]',input);assert.equal(await raw(p),saved);await screenshot(p,`cambio-A2-${width}x${height}`);
      const available=await p.locator('[data-actor=A1]').evaluate(n=>({outline:getComputedStyle(n).outlineStyle,stroke:getComputedStyle(n.querySelector('.actor-hit')).stroke}));assert.equal(available.outline,'none');assert.equal(available.stroke,'none');
      await p.locator('#help').click();
-     assert.equal(await p.locator('.legend-content > div:visible').count(),8);assert.ok(await p.locator('[data-team-guide]').first().isVisible());await screenshot(p,`guia-${width}x${height}`);await require('./m4-navigation.cjs').escape(p);await p.waitForFunction(()=>!document.getElementById('helpDialog').open);
+     await p.click('#helpDialog [data-guide-tab=board]');assert.equal(await p.locator('.legend-content > div:visible').count(),8);assert.ok(await p.locator('[data-team-guide]').first().isVisible());await screenshot(p,`guia-${width}x${height}`);await require('./m4-navigation.cjs').escape(p);await p.waitForFunction(()=>!document.getElementById('helpDialog').open);
     }
     await hit(p,`[data-to="${first}"]`,{...input,wait:false});
     let saved=await envelope(p);assert.deepEqual(saved.game,game);assert.deepEqual(saved.pendingTurn.path,[start,first]);assert.equal(saved.pendingTurn.steps,1);

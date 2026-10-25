@@ -26,7 +26,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   assert.equal(await p.locator('#classicInspect').isEnabled(),true);const partial=await p.evaluate(k=>localStorage.getItem(k),ck);
   await p.click('#classicInspect');await p.locator('[data-inspect="9"]').tap();await p.click('#classicInspect');assert.equal(await p.evaluate(k=>localStorage.getItem(k),ck),partial);
   await p.evaluate(({ck,raw})=>localStorage.setItem(ck,raw),{ck,raw});await p.goto(site.url+'clasico/?continue=1');
-  await p.click('#help');await p.locator('#helpDialog .full-rules summary').click();await shot(p,`guia-clasico-${w}x${h}`);await p.keyboard.press('Escape');
+  await p.click('#help');await p.locator('#helpDialog [data-full-rules]').click();await p.locator('#completeRules').waitFor();await shot(p,`guia-clasico-${w}x${h}`);await p.keyboard.press('Escape');await p.locator('#helpDialog').waitFor();await p.keyboard.press('Escape');await p.waitForFunction(()=>!document.getElementById('helpDialog').open);
   await p.click('#new');await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
   assert.equal(await p.evaluate(k=>localStorage.getItem(k),ck),raw);
   await p.goto(site.url+'arena/');assert.deepEqual(await p.locator('.header nav a,.header nav button').allInnerTexts(),['Inicio','Guía','Nueva partida']);const ab=await measure(p,'#arenaBoard');assert.equal(ab.board[2],({1440:778,1366:h===600?478:646,1280:438,390:358,360:328,740:338})[w]);await shot(p,`arena-${w}x${h}`);

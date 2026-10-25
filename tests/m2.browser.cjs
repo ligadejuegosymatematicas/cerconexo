@@ -5,10 +5,14 @@ const raw=p=>p.evaluate(()=>localStorage.getItem('wallgo-league-v2')),state=asyn
 const idle=p=>p.waitForFunction(()=>document.getElementById('board').getAttribute('aria-busy')==='false');
 const done=(p,moves)=>p.waitForFunction(moves=>{const v=JSON.parse(localStorage.getItem('wallgo-league-v2'));return v?.game.moves===moves&&document.getElementById('board').getAttribute('aria-busy')==='false';},moves);
 async function hit(p,selector,keyboard=false){const node=p.locator(selector).first();if(keyboard){await node.focus();await p.keyboard.press('Enter');}else{const b=await node.boundingBox();assert.ok(b,selector);await p.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);}}
-async function continueGame(p){if(await p.locator('.portal').isVisible())await p.locator('[data-mode=classic] [data-continue]').click();else await p.locator('#continueGame').click();await p.waitForFunction(()=>document.getElementById('homeScreen')?.hidden);}
-async function fixture(p,value,{enter=false}={}){await p.evaluate(value=>localStorage.setItem('wallgo-league-v2',value),value);await p.reload();await p.locator('#continueGame').waitFor();if(enter)await continueGame(p);}
+async function continueGame(p){await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true'||document.getElementById('board')?.hasAttribute('aria-busy'));if(!await p.locator('#board').count())await p.locator('[data-mode=classic] [data-continue]').click();else if(!await p.locator('#homeScreen').evaluate(n=>n.hidden))await p.locator('#continueGame').click();await p.waitForFunction(()=>document.getElementById('homeScreen')?.hidden);}
+// El fixture pausa en la portada para instalar sus fallos/Workers antes de continuar.
+async function fixture(p,value,{enter=false}={}){await p.evaluate(value=>localStorage.setItem('wallgo-league-v2',value),value);await p.evaluate(()=>history.replaceState(null,'',location.pathname));await p.reload();await p.locator('#continueGame').waitFor();if(enter)await continueGame(p);}
 async function instrument(context,{fake=false,noWorker=false}={}){
  await context.addInitScript(({fake,noWorker})=>{
+  // Los casos de checkpoint inspeccionan el prefijo antes de reanudar la CPU.
+  // M4.1 recupera directamente el tablero: esta pausa pertenece solo al fixture.
+  if(sessionStorage.getItem('m2-test-pause-next-load')==='1'){history.replaceState(null,'',location.pathname);sessionStorage.removeItem('m2-test-pause-next-load');}
   window.m2={writes:[],animations:[],workers:[],responses:[],pointers:[],blocked:[],frames:[],haptics:[],fakeTerminated:Number(sessionStorage.getItem('m2-terminated')||0)};
   Object.defineProperty(navigator,'vibrate',{configurable:true,value:pattern=>{m2.haptics.push(pattern);return true;}});
   const store=Storage.prototype.setItem;
@@ -21,10 +25,10 @@ async function instrument(context,{fake=false,noWorker=false}={}){
     // Acción humana reentrante durante el turno CPU: debe rechazarse incluso
     // antes de comenzar la animación y aunque se inyecte un objetivo inexistente.
     const board=document.getElementById('board');
-    if(board&&document.getElementById('turnName').textContent.startsWith('CPU')){
+    if(board&&document.getElementById('turnName').textContent.includes('CPU')){
      const before=this.getItem(key),node=document.createElementNS('http://www.w3.org/2000/svg','g');node.dataset.wall='1';board.append(node);node.dispatchEvent(new MouseEvent('click',{bubbles:true}));node.remove();m2.blocked.push(before===this.getItem(key));
     }
-    if(window.reloadAt&&((reloadAt==='plan'&&v.cpuPlan&&!v.pendingTurn)||(reloadAt==='step1'&&v.pendingTurn?.steps===1)||(reloadAt==='step2'&&v.pendingTurn?.steps===2)||(reloadAt==='wall'&&v.game.moves>0&&!v.pendingTurn))){if(reloadAt==='plan')store.call(this,'m2-test-selected',JSON.stringify(v.cpuPlan));window.reloadAt=null;location.reload();}
+    if(window.reloadAt&&((reloadAt==='plan'&&v.cpuPlan&&!v.pendingTurn)||(reloadAt==='step1'&&v.pendingTurn?.steps===1)||(reloadAt==='step2'&&v.pendingTurn?.steps===2)||(reloadAt==='wall'&&v.game.moves>0&&!v.pendingTurn))){if(reloadAt==='plan')store.call(this,'m2-test-selected',JSON.stringify(v.cpuPlan));if(!window.autoRecoverOnReload)sessionStorage.setItem('m2-test-pause-next-load','1');window.reloadAt=null;location.reload();}
    }
   };
   const animate=Element.prototype.animate;Element.prototype.animate=function(...args){m2.animations.push({duration:args[1]?.duration,piece:this.dataset?.piece,frames:args[0],at:performance.now()});return animate.apply(this,args);};
@@ -60,7 +64,7 @@ async function instrument(context,{fake=false,noWorker=false}={}){
  try{
   for(const [width,height,size] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,294],[1440,700,540],[1366,650,490],[1280,560,400]]){
    const {p,context}=await create(width,height,{motion:'reduce'});assert.equal(await raw(p),null);assert.ok(await p.locator('.home-logo').evaluate(img=>img.complete&&img.naturalWidth>1000));assert.equal(await p.locator('#continueGame').isVisible(),false);
-   assert.match(await p.locator('#homeScreen').innerText(),/CLÁSICO[\s\S]*Jugar[\s\S]*Reglas[\s\S]*Opciones/);assert.ok((await p.locator('.home-logo').boundingBox()).width>=280);await screenshot(p,`portada-${width}x${height}`);
+   assert.match(await p.locator('#homeScreen').innerText(),/CLÁSICO[\s\S]*Nueva partida[\s\S]*ARENA[\s\S]*Guía[\s\S]*Opciones/);assert.ok((await p.locator('.home-logo').boundingBox()).width>=(height<500?180:220));await screenshot(p,`portada-${width}x${height}`);
    for(const [opener,dialog] of [['#homeRules','#helpDialog'],['#homeOptions','#optionsDialog']]){
     await p.locator(opener).click();assert.ok(await p.locator(dialog).isVisible());if(dialog==='#helpDialog')assert.equal(await p.locator('.quick-rules li').count(),4);await require('./m4-navigation.cjs').escape(p);await p.waitForFunction(dialog=>!document.querySelector(dialog).open,dialog);assert.ok(await p.locator(opener).evaluate(n=>document.activeElement===n));
    }
@@ -68,7 +72,7 @@ async function instrument(context,{fake=false,noWorker=false}={}){
    await p.locator('[data-control=cpu]').click();assert.ok(await p.locator('#cpuOptions').isVisible());assert.equal(await p.locator('[name=difficulty]:checked').inputValue(),'intermediate');assert.equal(await p.locator('[name=humanTeam]:checked').inputValue(),'A');await screenshot(p,`selector-cpu-${width}x${height}`);
    await p.locator('[data-control=local]').click();await p.locator('#startLocal').click();await idle(p);const box=await p.locator('#board').boundingBox(),baseline=[box.x,box.y,box.width,box.height];assert.equal(box.width,size);assert.ok(await p.locator('#cpuIdentity').isHidden());assert.equal((await state(p)).control,undefined);
    const header=await p.evaluate(()=>{const rect=n=>{const b=n.getBoundingClientRect();return {x:b.x,right:b.right,width:b.width,height:b.height};};return {logo:rect(document.querySelector('.branding h1')),buttons:[...document.querySelectorAll('.header-actions button')].map(rect)};});assert.ok(header.logo.right<=header.buttons[0].x);for(const b of header.buttons){assert.ok(b.width>=44&&b.height>=44);assert.ok(b.right<=width);}
-   await hit(p,'[data-to="9"]',true);await idle(p);const partial=await raw(p);await p.locator('#home').click();assert.equal(await raw(p),partial);await p.locator('.portal').waitFor();assert.ok(await p.locator('[data-mode=classic] [data-continue]').isVisible());await continueGame(p);assert.equal(await raw(p),partial);assert.equal(await p.locator('[data-to="8"]').count(),1);
+   await hit(p,'[data-to="9"]',true);await idle(p);const partial=await raw(p);await p.locator('#home').click();assert.equal(await raw(p),partial);await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');assert.ok(await p.locator('[data-mode=classic] [data-continue]').isVisible());await continueGame(p);assert.equal(await raw(p),partial);assert.equal(await p.locator('[data-to="8"]').count(),1);
    await p.locator('#new').click();assert.ok(await p.locator('#replaceWarning').isVisible());await p.locator('[data-control=cpu]').click();await p.locator('#newDialog .dialog-close').click();await p.waitForFunction(()=>document.documentElement.dataset.portalReady==="true");assert.equal(await raw(p),partial);await require('./m4-navigation.cjs').resumeClassic(p);await idle(p);
    await p.locator('#new').click();await p.locator('[name=turnMode][value=team]').check();await p.locator('#startLocal').click();await idle(p);assert.equal((await state(p)).game.turnMode,'team');assert.equal((await state(p)).control,undefined);assert.equal(await p.locator('[data-actor]').count(),2);await screenshot(p,`local-equipo-${width}x${height}`);
    await checkFrames(p,width,height,baseline);report.viewports.push({width,height,boardWidth:box.width});await context.close();
@@ -92,7 +96,7 @@ async function instrument(context,{fake=false,noWorker=false}={}){
    report.suites.push({name:`CPU ${level}`,passed:true,results});
   }
   {
-   const {p,context}=await create(360,740,{motion:'reduce'});await p.keyboard.press('Tab');assert.ok(await p.locator('.home-return').evaluate(n=>n===document.activeElement));await p.keyboard.press('Tab');assert.ok(await p.locator('#play').evaluate(n=>n===document.activeElement));await p.keyboard.press('Enter');await p.locator('[data-control=cpu]').focus();await p.keyboard.press('Enter');await p.locator('[name=difficulty][value=intermediate]').focus();await p.keyboard.press('ArrowRight');assert.equal(await p.locator('[name=difficulty]:checked').inputValue(),'advanced');await p.locator('[name=humanTeam][value=A]').focus();await p.keyboard.press('ArrowRight');await p.locator('[name=turnMode][value=piece]').focus();await p.keyboard.press('ArrowRight');await p.locator('#startLocal').focus();await p.keyboard.press('Enter');await done(p,1);assert.equal((await state(p)).control.humanTeam,'B');assert.equal((await state(p)).control.difficulty,'advanced');assert.equal((await state(p)).game.turnMode,'team');assert.equal(await p.evaluate(()=>document.getAnimations().length),0);await context.close();
+   const {p,context}=await create(360,740,{motion:'reduce'});await p.keyboard.press('Tab');assert.ok(await p.locator('#play').evaluate(n=>n===document.activeElement));await p.keyboard.press('Enter');await p.locator('[data-control=cpu]').focus();await p.keyboard.press('Enter');await p.locator('[name=difficulty][value=intermediate]').focus();await p.keyboard.press('ArrowRight');assert.equal(await p.locator('[name=difficulty]:checked').inputValue(),'advanced');await p.locator('[name=humanTeam][value=A]').focus();await p.keyboard.press('ArrowRight');await p.locator('[name=turnMode][value=piece]').focus();await p.keyboard.press('ArrowRight');await p.locator('#startLocal').focus();await p.keyboard.press('Enter');await done(p,1);assert.equal((await state(p)).control.humanTeam,'B');assert.equal((await state(p)).control.difficulty,'advanced');assert.equal((await state(p)).game.turnMode,'team');assert.equal(await p.evaluate(()=>document.getAnimations().length),0);await context.close();
   }
   {
    const {p,context}=await create(360,740,{motion:'reduce'});await p.locator('#play').click();await p.locator('[data-control=cpu]').click();await p.locator('[name=difficulty][value=beginner]').check();await p.locator('#startLocal').click();await idle(p);await hit(p,'[data-wall]',true);await done(p,2);assert.ok(await p.evaluate(()=>!!document.activeElement.closest('#interactionLayer')&&document.activeElement.matches(':focus-visible')));assert.equal((await state(p)).game.currentActor,'A2');await screenshot(p,'foco-humano-despues-cpu');await context.close();
@@ -105,6 +109,13 @@ async function instrument(context,{fake=false,noWorker=false}={}){
    const recovered=await state(p);assert.deepEqual(recovered.control,configuration);
    if(reloadAt==='wall'){assert.equal(recovered.game.moves,1);assert.equal(recovered.cpuPlan,undefined);assert.equal(recovered.pendingTurn,undefined);}else{assert.equal(recovered.game.moves,0);assert.equal(recovered.pendingTurn.steps,reloadAt==='step1'?1:2);assert.deepEqual(recovered.pendingTurn.path,turn.path.slice(0,reloadAt==='step1'?2:3));assert.deepEqual(recovered.cpuPlan,plan);}
    await screenshot(p,`recarga-${mode}-${reloadAt}-portada`);await continueGame(p);await done(p,1);const final=await state(p);assert.deepEqual(final.game,engine.applyTurn(game,turn));assert.equal(final.cpuPlan,undefined);assert.equal(final.pendingTurn,undefined);assert.equal(await p.evaluate(()=>m2.workers.length),0);await screenshot(p,`recarga-${mode}-${reloadAt}-recuperada`);report.reloads.push({mode,reloadAt,moves:1,path:final.game.lastMove.path});await context.close();
+  }
+  // Recuperación automática real de M4.1: sin pausa de fixture, el plan continúa una sola vez.
+  {
+   const {p,context}=await create(360,740),game=engine.initialState(),turn={actor:'A1',path:[8,9,8],to:15};
+   await fixture(p,encodeGameSave(game,beginDraft(game),{control:control(),cpuPlan:makeCpuPlan(game,turn)}));
+   await p.evaluate(()=>{window.reloadAt='step1';window.autoRecoverOnReload=true;});const loaded=p.waitForEvent('domcontentloaded');await p.locator('#continueGame').click();await loaded;await done(p,1);
+   const recovered=await state(p);assert.deepEqual(recovered.game,engine.applyTurn(game,turn));assert.equal(recovered.pendingTurn,undefined);assert.equal(recovered.cpuPlan,undefined);assert.equal(await p.evaluate(()=>m2.workers.length),0);await context.close();report.reloads.push({reloadAt:'step1',automaticRecovery:true,moves:1});
   }
   // Decisión real persistida antes del primer paso: recargar no vuelve a elegir.
   {

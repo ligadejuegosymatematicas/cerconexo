@@ -144,7 +144,7 @@ async function instrument(context){
     await context.close();
     report.checks.push('Recarga durante conquista, reinicio cancela continuaciones, reducción de movimiento al inicio/durante efecto, singular y ausencia de dobles acciones');
     // Mismo módulo en HTML autónomo sin recursos de red.
-    const standalone=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'});
+    const standalone=await require('./navigation.cjs').offlineContext(chromium,{viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'});
     await instrument(standalone);const singlePage=await standalone.newPage();singlePage.on('pageerror',e=>errors.push(e.message));
     await singlePage.goto(pathToFileURL(path.join(root,'Cerconexo_Premium_Listo_Para_Jugar.html')).href);await idle(singlePage);
     await load(singlePage,fixture.before);await choose(singlePage,fixture.to);await idle(singlePage);

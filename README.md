@@ -1,5 +1,13 @@
 # CERCONEXO
 
+## M4.1 · Candidata para revisión en Android
+
+Base pública: `0b7f046ae7346ebd723234bc8c863d37ee0bf847`. Esta revisión corrige la navegación y la inspección repetida, y compacta selectores y ayudas. [Informe M4.1](M41.md) · [Reglamento completo opcional](REGLAMENTO.md).
+
+Para probar sin servidor, extraer juntos los tres archivos de `Cerconexo_Integrado_Offline.zip` y abrir `index.html`. También se pueden abrir directamente `Cerconexo_Clasico.html` y `Cerconexo_Arena.html`. Los guardados del sitio público no se trasladan al origen local. La publicación de M4.1 requiere revisión posterior; `desarrollo` solo se sube para CI.
+
+La revisión mantiene los 32 archivos protegidos y añade una suite de navegador (19 en total) y dos comprobaciones del texto reglamentario (250 pruebas automatizadas). Los apartados siguientes conservan la documentación histórica.
+
 ## Aplicación integrada · candidata local
 
 La raíz ahora es la portada común. `clasico/` contiene el juego original 7×7 con CPU y las dos políticas de turnos; `arena/` contiene el prototipo experimental M3-B 9×9. Los motores, la puntuación y los formatos de guardado permanecen intactos.
