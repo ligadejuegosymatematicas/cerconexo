@@ -2,6 +2,7 @@
 from pathlib import Path
 import base64
 import re
+import json
 
 root = Path(__file__).resolve().parent
 html = (root / 'index.html').read_text(encoding='utf-8')
@@ -10,10 +11,18 @@ html=html.replace('<link rel="stylesheet" href="../src/gameShell.css">','').repl
 modules = [(root.parent/'src/contextHelp.mjs').read_text(encoding='utf-8').replace('export function ', 'function ')]
 modules.append((root.parent/'src/illustratedManual.mjs').read_text(encoding='utf-8').replace('export function ', 'function '))
 modules.append(re.sub(r'\bexport (const|function)\b', r'\1', (root.parent/'src/haptics.mjs').read_text(encoding='utf-8')))
-for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'app']:
+def worker_source():
+    parts=[]
+    for name in ['geometry','config','engine','cpuStrategy','cpuWorker']:
+        source=(root/f'src/{name}.mjs').read_text(encoding='utf-8')
+        source='\n'.join(line for line in source.splitlines() if not line.startswith('import '))
+        parts.append(re.sub(r'\bexport (const|async function|function|class)\b',r'\1',source))
+    return '\n'.join(parts)
+modules.append('globalThis.CERCONEXO_ARENA_CPU_WORKER_SOURCE='+json.dumps(worker_source())+';')
+for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'cpuConfig','cpuStrategy','cpuController','app']:
     source = (root / f'src/{name}.mjs').read_text(encoding='utf-8')
     source = '\n'.join(line for line in source.splitlines() if not line.startswith('import '))
-    source = re.sub(r'\bexport (const|function|class)\b', r'\1', source)
+    source = re.sub(r'\bexport (const|async function|function|class)\b', r'\1', source)
     modules.append(source)
 html = html.replace('<link rel="stylesheet" href="./src/styles.css">', f'<style>\n{css}\n</style>')
 html = html.replace('<script type="module" src="./src/app.mjs"></script>', '<script type="module">\n' + '\n'.join(modules) + '\n</script>')

@@ -7,6 +7,8 @@ import {ArenaSession,ARENA_SAVE_KEY} from './session.mjs';
 import {setupContextHelp} from '../../src/contextHelp.mjs';
 import {mountIllustratedManual} from '../../src/illustratedManual.mjs';
 import {createHaptics} from '../../src/haptics.mjs';
+import {arenaControl,restoreArenaControl,saveArenaControl,LOCAL_ARENA_CONTROL} from './cpuConfig.mjs';
+import {createArenaCpuController} from './cpuController.mjs';
 
 const $=id=>document.getElementById(id),board=$('arenaBoard');
 const TEAM_COLORS={A:'#F59E0B',B:'#38BDF8',C:'#B79AFF',D:'#59D6A4'};
@@ -14,7 +16,14 @@ const inspection=new RegionInspection();
 // Preferencia compartida con Clásico, independiente del guardado de Arena.
 const haptics=createHaptics();
 let session=null,selectedPower=null,boardActions=new Map(),busy=false,dialogOpener=null,hasSaved=false,loadBlocked=false,newConfirmed=false;
-const storage={setItem(key,value){localStorage.setItem(key,value);}};
+let control={...LOCAL_ARENA_CONTROL},cpuFault=false;
+const storage={setItem(key,value){saveArenaControl(localStorage,key,value,control);}};
+const cpu=createArenaCpuController({getSession:()=>session,getControl:()=>control,
+  isPaused:()=>busy||loadBlocked||cpuFault||inspection.enabled||document.hidden||document.querySelector('.arena-app').hidden||!!document.querySelector('dialog[open]'),
+  dispatch:action=>dispatch(action,false,true),
+  onThinking:thinking=>{board.dataset.cpuThinking=String(thinking);if(thinking&&!session.game.pending)$('turnHint').textContent='CPU pensando…';},
+  onError:error=>{cpuFault=true;setProblem(`La CPU está en pausa. Recarga para recuperar el turno guardado. ${error.message}`);}
+});
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const point=cell=>({x:(cell%9)*100+50,y:Math.floor(cell/9)*100+50});
 function edgePoints(cell,to){
@@ -98,6 +107,7 @@ function renderTurn(s,view){
     $('turnTitle').textContent=`Equipo ${s.turn.team}${s.turn.actor&&s.turn.actor!==s.turn.team?` · ${s.turn.actor}`:''}`;
     $('turnHint').textContent=!s.turn.actor?`Elige ${eligibleActors(s,view).join(' o ')} en el tablero.`:selectedPower?`${POWER_LABELS[s.inventories[inventoryOwner(s,s.turn.actor)].find(p=>p.id===selectedPower)?.type]}: elige su objetivo.`:
       s.turn.steps===2?'2 pasos · Construye tu muro final.':`${s.turn.steps} ${s.turn.steps===1?'paso':'pasos'} · ${s.turn.steps===0?'Mueve o construye':'Continúa o construye'}.`;
+    if(cpu.owns(s))$('turnHint').textContent='CPU pensando…';
   }
 }
 function renderInventory(s,view,legal){
@@ -107,7 +117,7 @@ function renderInventory(s,view,legal){
   if(!items.length||s.over){const p=document.createElement('p');p.className='muted';p.textContent=s.over?'Resultado definitivo':owner?'Sin poderes':'Selecciona una ficha';options.append(p);}
   else for(const item of items){
     const btn=document.createElement('button');btn.type='button';btn.className='power-button';btn.dataset.power=item.id;
-    btn.setAttribute('aria-pressed',String(selectedPower===item.id));btn.disabled=inspection.enabled||!!s.pending||!legal.some(a=>a.power===item.id);
+    btn.setAttribute('aria-pressed',String(selectedPower===item.id));btn.disabled=cpu.owns(s)||inspection.enabled||!!s.pending||!legal.some(a=>a.power===item.id);
     btn.innerHTML=`<span class="power-symbol" aria-hidden="true">${powerIcon(item.type)}</span><span>${POWER_LABELS[item.type]}${btn.disabled&&!s.pending?' · Sin objetivo':''}</span>`;
     btn.addEventListener('click',()=>{selectedPower=selectedPower===item.id?null:item.id;render();});options.append(btn);
   }
@@ -119,12 +129,12 @@ function renderInventory(s,view,legal){
   if(s.pending){
     $('decisionTitle').textContent=`Decide ${s.pending.owner}`;
     $('decisionDescription').textContent=s.pending.reason==='pickup'?'Puedes rechazar el poder recién recogido.':`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}.`;
-    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=inspection.enabled;btn.addEventListener('click',()=>dispatch({type:'discard',owner:s.pending.owner,power:item.id}));discards.append(btn);}
+    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=inspection.enabled||cpu.owns(s);btn.addEventListener('click',()=>dispatch({type:'discard',owner:s.pending.owner,power:item.id}));discards.append(btn);}
   }
 
 }
 function render(){
-  if(!session)return;const s=session.game,view=analyzeArena(s),legal=loadBlocked?[]:legalArenaActions(s);
+  if(!session)return;const s=session.game,view=analyzeArena(s),legal=loadBlocked||cpu.owns(s)?[]:legalArenaActions(s);
   inspection.update(view.components,9);
   if(selectedPower&&!legal.some(a=>a.power===selectedPower))selectedPower=null;
   renderScores(s,view);renderTurn(s,view);renderInventory(s,view,legal);renderBoard(s,view,legal);
@@ -136,6 +146,7 @@ function render(){
   const description=regionDescription(inspection.selected);if($('inspectionInfo').textContent!==description)$('inspectionInfo').textContent=description;
   board.setAttribute('aria-label',inspection.enabled?'Inspección de regiones. Flechas para recorrer casillas; Enter o Espacio para seleccionar.': 'Tablero Arena de 9 por 9. Toca casillas para mover y bordes para construir.');
   if(loadBlocked){$('turnKicker').textContent='Recuperación segura';$('turnTitle').textContent='Guardado de Arena no válido';$('turnHint').textContent='Se conserva sin sobrescribir. Usa Nueva partida si decides reemplazarlo.';}
+  cpu.tick();
 }
 function eventText(s){
   if(s.over)return `Partida finalizada. ${s.winners.length===1?`Gana el equipo ${s.winners[0]}`:`Empate entre ${s.winners.join(', ')}`}.`;
@@ -149,17 +160,18 @@ function eventText(s){
   else if(s.lastEvents.some(e=>e.type==='discard'))out.push(`Inventario resuelto. ${s.turn.actor?`Continúa ${s.turn.actor}`:`Elige una ficha del equipo ${s.turn.team}`}.`);
   return out.join(' ');
 }
-function dispatch(action,keyboard=false){
+function dispatch(action,keyboard=false,automated=false){
   if(busy||!session||loadBlocked||inspection.enabled||document.querySelector('dialog[open]'))return;
+  if(cpu.owns(session.game)!==automated)return;
   busy=true;
   try{
     session.dispatch(action);hasSaved=true;selectedPower=null;setProblem('');render();
     if(action.type==='wall')haptics.committed();
     const message=eventText(session.game);if(message)$('eventNotice').textContent=message;
     if(keyboard){const target=session.game.pending?$('discardOptions').querySelector('button'):board.querySelector('[data-action]');target?.focus();}
-  }catch(e){setProblem(`No se aplicó la acción. ${e.message}`);}finally{busy=false;}
+  }catch(e){setProblem(`No se aplicó la acción. ${e.message}`);if(automated)throw e;}finally{busy=false;}
 }
-$('inspectToggle').addEventListener('click',()=>{inspection.toggle();selectedPower=null;render();});
+$('inspectToggle').addEventListener('click',()=>{cpu.cancel();inspection.toggle();selectedPower=null;render();});
 function selectInspection(cell,keyboard=false){
   if(document.querySelector('dialog[open]')||!inspection.select(cell))return;
   render();if(keyboard)board.querySelector(`[data-inspect="${cell}"]`)?.focus();
@@ -184,26 +196,36 @@ board.addEventListener('keydown',e=>{
 $('cancelTool').addEventListener('click',()=>{selectedPower=null;render();});
 
 const dialogOpeners=new WeakMap();
-function openDialog(id,opener){dialogOpeners.set($(id),opener);$(id).showModal();$(id).querySelector('[data-close]')?.focus();}
+function openDialog(id,opener){cpu.cancel();dialogOpeners.set($(id),opener);$(id).showModal();$(id).querySelector('[data-close]')?.focus();}
 for(const dialog of document.querySelectorAll('dialog')){
   dialog.querySelector('[data-close]').addEventListener('click',()=>dialog.close());
   let startedOutside=false;
   const outside=e=>{const r=dialog.getBoundingClientRect();return e.target===dialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom);};
   dialog.addEventListener('pointerdown',e=>{startedOutside=outside(e);});
   dialog.addEventListener('click',e=>{if(startedOutside&&outside(e))dialog.close();startedOutside=false;});
-  dialog.addEventListener('close',()=>{if(dialog.id==='newDialog'&&!newConfirmed){showArenaPortal();location.assign($('arenaHome').href);}else dialogOpeners.get(dialog)?.focus({preventScroll:true});});
+  dialog.addEventListener('close',()=>{if(dialog.id==='newDialog'&&!newConfirmed){showArenaPortal();location.assign($('arenaHome').href);}else dialogOpeners.get(dialog)?.focus({preventScroll:true});cpu.tick();});
 }
 function resetExperiment(){const mode=new FormData($('newForm')).get('mode');$('experimentJson').value=JSON.stringify(DEFAULT_EXPERIMENT[mode],null,2);}
 function showNew(opener){
   newConfirmed=false;
   if(session){$('newForm').elements.mode.value=session.game.mode;$('newForm').elements.policy.value=session.game.policy;}
+  $('newForm').elements.opponent.value=control.opponent;$('newForm').elements.humanTeam.value=control.humanTeam;updateCpuSelector();
   $('policyField').hidden=$('newForm').elements.mode.value==='ffa';
   if(session)$('experimentJson').value=JSON.stringify(session.game.experiment,null,2);else resetExperiment();
   const replacing=hasSaved&&(loadBlocked||!session.game.over);
   $('replaceWarning').hidden=!replacing;$('startArena').textContent=replacing?'Reemplazar y comenzar':'Comenzar partida';$('setupError').textContent=$('problem').textContent;$('setupError').hidden=!$('setupError').textContent;
   openDialog('newDialog',opener);
 }
-$('newForm').addEventListener('change',e=>{if(e.target.matches('input[type=radio]'))haptics.pulse('turn');if(e.target.name==='mode'){$('policyField').hidden=e.target.value==='ffa';resetExperiment();}});
+function updateCpuSelector(){
+  const form=$('newForm'),cpuMode=form.elements.opponent.value==='cpu';
+  if(cpuMode&&form.elements.mode.value==='ffa'){form.elements.mode.value='duo';resetExperiment();}
+  form.querySelector('[name=mode][value=ffa]').disabled=cpuMode;
+  $('humanTeamField').hidden=!cpuMode;
+  $('policyField').hidden=form.elements.mode.value==='ffa';
+  $('arenaCpuHint').hidden=!cpuMode;
+  $('arenaCpuHint').textContent=form.elements.humanTeam.value==='A'?'Tú comienzas · CPU experimental':'Comienza la CPU · CPU experimental';
+}
+$('newForm').addEventListener('change',e=>{if(e.target.matches('input[type=radio]'))haptics.pulse('turn');if(e.target.name==='mode')resetExperiment();updateCpuSelector();});
 $('restorePreset').addEventListener('click',resetExperiment);
 $('newOpen').addEventListener('click',()=>showNew($('newOpen')));
 $('guideOpen').addEventListener('click',()=>openDialog('guideDialog',$('guideOpen')));
@@ -213,16 +235,19 @@ function updateHapticOption(){
 }
 $('options').addEventListener('click',()=>{updateHapticOption();$('guideDialog').close();openDialog('optionsDialog',$('guideOpen'));});
 $('vibration').addEventListener('change',()=>{haptics.setEnabled($('vibration').checked);updateHapticOption();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)haptics.stop();});
-window.addEventListener('pagehide',()=>haptics.stop());
+document.addEventListener('visibilitychange',()=>{if(document.hidden){haptics.stop();cpu.cancel();}else cpu.tick();});
+window.addEventListener('pagehide',()=>{haptics.stop();cpu.cancel();});
+new MutationObserver(()=>{if(document.querySelector('dialog[open]'))cpu.cancel();else cpu.tick();}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
 updateHapticOption();
 mountIllustratedManual();
 for(const node of document.querySelectorAll('[data-guide-icon]'))node.innerHTML=powerIcon(node.dataset.guideIcon);
 setupContextHelp();
 $('experimentDetails').hidden=new URL(location.href).searchParams.get('diagnostico')!=='1';
-function startArena(setup){
+function startArena(setup,nextControl=control){
   // Guardar primero: si falla el almacenamiento, la partida anterior sigue intacta.
-  const next=new ArenaSession(storage,setup);next.save();
+  const prior=control;control=arenaControl(nextControl,setup.mode);
+  let next;try{next=new ArenaSession(storage,setup);next.save();}catch(error){control=prior;throw error;}
+  cpu.cancel();cpuFault=false;
   session=next;inspection.reset();selectedPower=null;hasSaved=true;loadBlocked=false;
   setProblem('');$('eventNotice').textContent='';render();
 }
@@ -235,7 +260,7 @@ $('newForm').addEventListener('submit',e=>{
   e.preventDefault();
   try{
     const data=new FormData($('newForm')),mode=data.get('mode'),policy=mode==='ffa'?'piece':data.get('policy');
-    startArena({mode,policy,experiment:JSON.parse($('experimentJson').value)});
+    startArena({mode,policy,experiment:JSON.parse($('experimentJson').value)},{opponent:data.get('opponent'),humanTeam:data.get('humanTeam')});
     newConfirmed=true;$('newDialog').close();showArenaGame();
     const url=new URL(location.href);url.searchParams.delete('new');url.searchParams.delete('continue');history.replaceState(null,'',url);
   }catch(error){$('setupError').textContent=error.message;$('setupError').hidden=false;}
@@ -244,7 +269,7 @@ try{
   const raw=localStorage.getItem(ARENA_SAVE_KEY);
   if(raw){
     hasSaved=true;const restored=ArenaSession.restore(storage,raw);
-    if(restored.ok){session=restored.session;$('eventNotice').textContent='';}
+    if(restored.ok){session=restored.session;control=restoreArenaControl(localStorage,raw,session.game.mode);$('eventNotice').textContent='';}
     else {loadBlocked=true;setProblem(`${restored.error} El guardado se conserva sin sobrescribirlo. Puedes reemplazarlo desde Nueva partida.`);}
   }
 }catch(e){setProblem(`No se puede acceder al guardado de Arena: ${e.message}`);}
@@ -252,8 +277,10 @@ if(!session)session=new ArenaSession(storage);
 render();
 function showArenaGame(){
   $('homeScreen').hidden=true;document.querySelector('.arena-app').hidden=false;document.documentElement.dataset.entry='game';
+  cpu.tick();
 }
 function showArenaPortal(){
+  cpu.cancel();
   $('homeScreen').hidden=false;document.querySelector('.arena-app').hidden=true;document.documentElement.dataset.entry='portal';
 }
 for(const link of [$('arenaHome'),$('homeLink')])link.addEventListener('click',e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey)showArenaPortal();});
@@ -264,7 +291,8 @@ function enterArena(){
 }
 window.addEventListener('pageshow',event=>{
   if(!event.persisted)return;
-  try{const raw=localStorage.getItem(ARENA_SAVE_KEY);if(raw){const restored=ArenaSession.restore(storage,raw);if(restored.ok){session=restored.session;hasSaved=true;loadBlocked=false;inspection.reset();selectedPower=null;render();}else{loadBlocked=true;setProblem(restored.error);render();}}else{session=new ArenaSession(storage);hasSaved=false;loadBlocked=false;inspection.reset();selectedPower=null;render();}}catch(e){setProblem(`No se puede recuperar el guardado: ${e.message}`);}
+  cpu.cancel();cpuFault=false;
+  try{const raw=localStorage.getItem(ARENA_SAVE_KEY);if(raw){const restored=ArenaSession.restore(storage,raw);if(restored.ok){session=restored.session;control=restoreArenaControl(localStorage,raw,session.game.mode);hasSaved=true;loadBlocked=false;inspection.reset();selectedPower=null;render();}else{loadBlocked=true;setProblem(restored.error);render();}}else{session=new ArenaSession(storage);control={...LOCAL_ARENA_CONTROL};hasSaved=false;loadBlocked=false;inspection.reset();selectedPower=null;render();}}catch(e){setProblem(`No se puede recuperar el guardado: ${e.message}`);}
   enterArena();
 });
 enterArena();
