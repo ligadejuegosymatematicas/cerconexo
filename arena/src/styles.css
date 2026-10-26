@@ -190,3 +190,17 @@ h1 { grid-column:1; grid-row:1; font-size:21px; margin:0; }
   .board-tools { justify-content:space-between; }
   .replay-actions button { font-size:13px; }
 }
+/* M5-A: controles del rival; el tablero mantiene su geometría. */
+.team-choice-a,.team-choice-b{font-weight:800;flex:0 0 auto}
+.team-choice-a{color:#F59E0B}.team-choice-b{color:#38BDF8}
+.setup-options label:has(input:disabled){opacity:.5}
+#arenaCpuHint{margin:6px 0 0;font-size:.8rem}
+@media(min-width:761px){
+ html[data-game="arena"] #newDialog:has([name="opponent"][value="cpu"]:checked){width:min(820px,calc(100vw - 24px))}
+ html[data-game="arena"] #newDialog:has([name="opponent"][value="cpu"]:checked) .dialog-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px}
+ html[data-game="arena"] #newDialog .dialog-body>fieldset{min-width:0}
+ html[data-game="arena"] #newDialog .dialog-body>.warning,html[data-game="arena"] #newDialog .dialog-body>.problem,html[data-game="arena"] #newDialog #experimentDetails{grid-column:1/-1}
+}
+@media(max-height:480px) and (min-width:620px){
+ html[data-game="arena"] #newDialog:has([name="opponent"][value="cpu"]:checked) .dialog-body{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
