@@ -21,8 +21,14 @@ export function restoreArenaControl(storage,raw,mode='duo'){
 }
 /** Escritura anticipada: admite el diario anterior si la escritura oficial falla. */
 export function saveArenaControl(storage,key,raw,control){
-  const old=storage.getItem(key);
+  const old=storage.getItem(key),oldMetadata=storage.getItem(ARENA_CPU_KEY);
   const previous=old?{journal:journalIdentity(old),control:restoreArenaControl(storage,old)}:null;
   storage.setItem(ARENA_CPU_KEY,JSON.stringify({version:1,current:{journal:journalIdentity(raw),control:arenaControl(control,JSON.parse(raw).setup?.mode)},previous}));
-  storage.setItem(key,raw);
+  try{storage.setItem(key,raw);}
+  catch(error){
+    // Si el reemplazo tiene exactamente el mismo diario inicial, su identidad
+    // no distingue las dos configuraciones. Recuperar también la preferencia.
+    try{storage.setItem(ARENA_CPU_KEY,oldMetadata??'null');}catch{}
+    throw error;
+  }
 }

@@ -78,6 +78,12 @@ test('Control persistente: fallo de escritura no confirma acción y mantiene asi
  const wrapped={setItem:(k,v)=>saveArenaControl(storage,k,v,cfg)},s=new ArenaSession(wrapped);s.save();const before=store.getItem(ARENA_SAVE_KEY);fail=true;
  assert.throws(()=>s.dispatch({type:'move',to:11}),/cuota/);assert.equal(s.game.revision,0);assert.equal(store.getItem(ARENA_SAVE_KEY),before);assert.deepEqual(restoreArenaControl(store,before),cfg);
 });
+test('Control persistente: reemplazo fallido con diario inicial idéntico conserva el rival anterior',()=>{
+ const store=memory(),session=new ArenaSession(store);session.save();const raw=store.getItem(ARENA_SAVE_KEY);
+ const failing={getItem:k=>store.getItem(k),setItem(k,v){if(k===ARENA_SAVE_KEY)throw Error('cuota');store.setItem(k,v);}};
+ assert.throws(()=>saveArenaControl(failing,ARENA_SAVE_KEY,raw,{opponent:'cpu',humanTeam:'B'}));
+ assert.equal(store.getItem(ARENA_SAVE_KEY),raw);assert.equal(restoreArenaControl(store,raw).opponent,'local');
+});
 test('Controlador: respuestas obsoletas, pausa humana, cancelación y respaldo sin Worker',async()=>{
  let session=new ArenaSession(memory()),paused=false;const workers=[],applied=[];
  const controller=createArenaCpuController({getSession:()=>session,getControl:()=>({opponent:'cpu',humanTeam:'B'}),isPaused:()=>paused,
