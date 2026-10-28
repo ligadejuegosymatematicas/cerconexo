@@ -1,0 +1,37 @@
+name: Diagnóstico temporal teclado Arena
+on:
+  push:
+    branches: [diagnostico/m5a1-teclado-1280]
+permissions:
+  contents: read
+jobs:
+  diagnostico:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Preparar Chromium idéntico al CI habitual
+        run: |
+          npm install --prefix "$RUNNER_TEMP/cerconexo-browser" --no-save --package-lock=false playwright@1.62.1
+          "$RUNNER_TEMP/cerconexo-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Diagnosticar exclusivamente el primer movimiento 1280x560
+        env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
+          CERCONEXO_BROWSER_CHANNEL: chromium
+          CERCONEXO_KEYBOARD_REPEATS: '24'
+          CERCONEXO_KEYBOARD_REFS: '72d3abc,06416bd,5afd939'
+        run: node arena/tests/cpu.browser.cjs --keyboard-diagnostic
+      - name: Conservar diagnóstico, capturas y trazas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teclado-arena-${{ github.run_id }}
+          path: validation/m5a/browser/keyboard-diagnostic/
+          retention-days: 7

@@ -12,6 +12,53 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   await p.goto(site.url+'?new=1');await p.check('[name=opponent][value=cpu]');await p.check(`[name=policy][value=${policy}]`);await p.check(`[name=humanTeam][value=${human}]`);
   assert.equal(await p.locator('[name=mode][value=ffa]').isDisabled(),true);await p.click('#startArena');
  }
+ async function keyboardDiagnosis(){
+  const {execFileSync}=require('node:child_process'),{createHash}=require('node:crypto');
+  const dir=path.join(out,'keyboard-diagnostic');await fs.mkdir(dir,{recursive:true});
+  const refs=(process.env.CERCONEXO_KEYBOARD_REFS||'72d3abc,06416bd,5afd939').split(','),count=Number(process.env.CERCONEXO_KEYBOARD_REPEATS||24);
+  const results={platform:process.platform,browser:browser.version(),viewport:[1280,560],cases:[]};
+  const instrumentation=`\nconst auditedArenaDispatch=ArenaSession.prototype.dispatch;ArenaSession.prototype.dispatch=function(action){window.arenaKeyboardRecord?.('session-enter',{action});try{const result=auditedArenaDispatch.call(this,action);window.arenaKeyboardRecord?.('session-exit',{action,revision:this.game.revision});return result;}catch(error){window.arenaKeyboardRecord?.('session-error',{error:error.message});throw error;}};`;
+  for(const ref of refs){
+   let app=execFileSync('git',['show',ref+':arena/src/app.mjs'],{encoding:'utf8'});
+   const originalHash=createHash('sha256').update(app).digest('hex');
+   app=app.replace('function dispatch(action,keyboard=false,automated=false){',`function dispatch(action,keyboard=false,automated=false){window.arenaKeyboardRecord?.('ui-dispatch',{action,keyboard,automated,busy,presentation:typeof presentation==='undefined'?false:presentation.active,loadBlocked,inspection:inspection.enabled,dialog:!!document.querySelector('dialog[open]'),owns:cpu.owns(session.game)});`);
+   for(let iteration=0;iteration<count;iteration++){
+    const ctx=await browser.newContext({viewport:{width:1280,height:560},hasTouch:false,isMobile:false,reducedMotion:'reduce'});
+    const errors=[];let p;
+    try{
+     await ctx.tracing.start({screenshots:true,snapshots:true,sources:false});
+     await ctx.route('**/arena/src/app.mjs',r=>r.fulfill({contentType:'text/javascript',body:app}));
+     await ctx.route('**/arena/src/session.mjs',async r=>r.fulfill({contentType:'text/javascript',body:await fs.readFile('arena/src/session.mjs','utf8')+instrumentation}));
+     await ctx.addInitScript(()=>{
+      const K='cerconexo-arena-m3a-v1';window.arenaKeyboardEvents=[];
+      const describe=n=>{if(!n)return null;const r=n.getBoundingClientRect?.(),s=n.nodeType===1?getComputedStyle(n):null;return {tag:n.tagName,id:n.id,kind:n.getAttribute?.('data-kind'),cell:n.getAttribute?.('data-cell'),action:n.getAttribute?.('data-action'),connected:n.isConnected,visible:!!r&&r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none',disabled:n.disabled??n.getAttribute?.('aria-disabled'),rect:r?[r.x,r.y,r.width,r.height]:null};};
+      window.arenaKeyboardRecord=(kind,extra={})=>{if(arenaKeyboardEvents.length>=160)return;const target=window.arenaKeyboardTarget;arenaKeyboardEvents.push({kind,at:performance.now(),active:describe(document.activeElement),target:describe(target),targetFocused:!!target&&document.activeElement===target,dialog:document.querySelector('#newDialog')?.open,visibility:document.visibilityState,raw:localStorage.getItem(K),...extra});};
+      for(const type of ['focusin','focusout','keydown','keyup','close','visibilitychange'])document.addEventListener(type,e=>arenaKeyboardRecord(type,{key:e.key,eventTarget:describe(e.target)}),true);
+      const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){const result=set.call(this,k,v);if(k===K)arenaKeyboardRecord('saved',{value:v});return result;};
+     });
+     p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(site.url+'?new=1');await p.check('[name=opponent][value=cpu]');
+     await p.screenshot({path:path.join(dir,'latest-selector.png')});
+     await p.locator('#startArena').boundingBox();await p.locator('#arenaCpuHint').boundingBox();await p.locator('#newDialog .dialog-body').boundingBox();
+     await p.check('[name=humanTeam][value=A]');await p.click('#startArena');await p.locator('#arenaBoard').boundingBox();
+     await p.evaluate(()=>{window.framesCpu=[];window.samplingCpu=true;const sample=()=>{if(!samplingCpu)return;const b=document.querySelector('#arenaBoard').getBoundingClientRect();framesCpu.push([b.x,b.y,b.width,b.height]);requestAnimationFrame(sample);};requestAnimationFrame(sample);});
+     const first=p.locator('[data-kind=move]').first();
+     const to=await first.evaluate(n=>{window.arenaKeyboardTarget=n;arenaKeyboardRecord('before-focus');return Number(n.dataset.cell);});
+     await first.focus();await p.evaluate(()=>arenaKeyboardRecord('after-focus'));
+     await p.keyboard.press('Enter');const immediate=await state(p);await p.evaluate(()=>arenaKeyboardRecord('immediate-read'));
+     let confirmed=true;
+     try{await p.waitForFunction(({K,to})=>{const commands=JSON.parse(localStorage.getItem(K)||'null')?.commands;return commands?.length===1&&commands[0].type==='move'&&commands[0].to===to;},{K,to},{timeout:1500});}catch{confirmed=false;}
+     const final=await state(p);await p.evaluate(()=>arenaKeyboardRecord('final-read'));
+     const events=await p.evaluate(()=>arenaKeyboardEvents),outcome=immediate.commands.length===1?'immediate':confirmed?'delayed':'missing';
+     const row={ref,originalHash,iteration,to,outcome,immediate,final,events,errors};results.cases.push(row);
+     const name=`${ref}-${iteration}`;
+     if(outcome!=='immediate'||errors.length){await p.screenshot({path:path.join(dir,name+'.png')});await ctx.tracing.stop({path:path.join(dir,name+'.zip')});await fs.writeFile(path.join(dir,name+'.json'),JSON.stringify(row,null,2));}
+     else await ctx.tracing.stop();
+    }finally{await ctx.close();}
+   }
+  }
+  const summary=refs.map(ref=>({ref,cases:results.cases.filter(c=>c.ref===ref).length,immediate:results.cases.filter(c=>c.ref===ref&&c.outcome==='immediate').length,delayed:results.cases.filter(c=>c.ref===ref&&c.outcome==='delayed').length,missing:results.cases.filter(c=>c.ref===ref&&c.outcome==='missing').length}));
+  results.summary=summary;await fs.writeFile(path.join(dir,'results.json'),JSON.stringify(results,null,2));console.log(JSON.stringify({platform:results.platform,browser:results.browser,viewport:results.viewport,summary},null,2));
+ }
  async function presentationChecks(){
   const {createArena}=await import('../src/engine.mjs'),{arenaNeighbors,arenaWall}=await import('../src/geometry.mjs');
   const engine=await fs.readFile(path.resolve('arena/src/engine.mjs'),'utf8');
@@ -81,6 +128,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   }
  }
  try{
+ if(process.argv.includes('--keyboard-diagnostic')){await keyboardDiagnosis();return;}
  await presentationChecks();
  for(const [width,height] of [[1440,900],[1366,768],[1366,600],[1280,560],[390,844],[360,740],[740,360]]){
   const ctx=await browser.newContext({viewport:{width,height},hasTouch:width<800,isMobile:width<800,reducedMotion:'reduce'}),p=await ctx.newPage();p.on('pageerror',e=>report.errors.push(e.message));
