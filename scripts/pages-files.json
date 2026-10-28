@@ -46,6 +46,7 @@
   "arena/src/cpuConfig.mjs",
   "arena/src/cpuStrategy.mjs",
   "arena/src/cpuController.mjs",
+  "arena/src/cpuPresentation.mjs",
   "arena/src/cpuWorker.mjs",
   "src/gameShell.css",
   "src/liveInspection.mjs",

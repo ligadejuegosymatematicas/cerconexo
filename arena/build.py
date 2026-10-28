@@ -19,7 +19,7 @@ def worker_source():
         parts.append(re.sub(r'\bexport (const|async function|function|class)\b',r'\1',source))
     return '\n'.join(parts)
 modules.append('globalThis.CERCONEXO_ARENA_CPU_WORKER_SOURCE='+json.dumps(worker_source())+';')
-for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'cpuConfig','cpuStrategy','cpuController','app']:
+for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'cpuConfig','cpuStrategy','cpuController','cpuPresentation','app']:
     source = (root / f'src/{name}.mjs').read_text(encoding='utf-8')
     source = '\n'.join(line for line in source.splitlines() if not line.startswith('import '))
     source = re.sub(r'\bexport (const|async function|function|class)\b', r'\1', source)
