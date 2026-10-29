@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
-      CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
       CERCONEXO_BROWSER_CHANNEL: chromium
     steps:
       - uses: actions/checkout@v7
@@ -33,6 +32,7 @@ jobs:
       - name: Doce casos aislados de la candidata
         working-directory: ${{ runner.temp }}/cerconexo-candidate
         env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_PROBE_ROOT: ${{ runner.temp }}/cerconexo-candidate
           CERCONEXO_FILE_AUDIT_OUT: ${{ github.workspace }}/validation/file-audit/candidate
           CERCONEXO_FILE_AUDIT_TAG: isolated
@@ -40,6 +40,7 @@ jobs:
       - name: Doce casos aislados de la referencia anterior a M5-A
         working-directory: ${{ runner.temp }}/cerconexo-m42
         env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_PROBE_ROOT: ${{ runner.temp }}/cerconexo-m42
           CERCONEXO_FILE_AUDIT_OUT: ${{ github.workspace }}/validation/file-audit/m42
           CERCONEXO_FILE_AUDIT_TAG: isolated
@@ -47,6 +48,7 @@ jobs:
       - name: Una ejecución de la suite afectada con auditoría temporal
         working-directory: ${{ runner.temp }}/cerconexo-candidate
         env:
+          CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_PROBE_ROOT: ${{ runner.temp }}/cerconexo-candidate
           CERCONEXO_FILE_AUDIT_OUT: ${{ github.workspace }}/validation/file-audit/candidate
           CERCONEXO_FILE_AUDIT_TAG: suite
