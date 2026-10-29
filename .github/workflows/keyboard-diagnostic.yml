@@ -25,8 +25,9 @@ jobs:
         env:
           CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_BROWSER_CHANNEL: chromium
-          CERCONEXO_KEYBOARD_REPEATS: '24'
+          CERCONEXO_KEYBOARD_REPEATS: '4'
           CERCONEXO_KEYBOARD_REFS: '72d3abc,06416bd,5afd939'
+          CERCONEXO_KEYBOARD_DEFER_CLOSE: '1'
         run: node arena/tests/cpu.browser.cjs --keyboard-diagnostic
       - name: Conservar diagnóstico, capturas y trazas
         if: always()

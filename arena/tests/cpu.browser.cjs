@@ -16,7 +16,8 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   const {execFileSync}=require('node:child_process'),{createHash}=require('node:crypto');
   const dir=path.join(out,'keyboard-diagnostic');await fs.mkdir(dir,{recursive:true});
   const refs=(process.env.CERCONEXO_KEYBOARD_REFS||'72d3abc,06416bd,5afd939').split(','),count=Number(process.env.CERCONEXO_KEYBOARD_REPEATS||24);
-  const results={platform:process.platform,browser:browser.version(),viewport:[1280,560],cases:[]};
+  const deferClose=process.env.CERCONEXO_KEYBOARD_DEFER_CLOSE==='1';
+  const results={platform:process.platform,browser:browser.version(),viewport:[1280,560],deferClose,cases:[]};
   const instrumentation=`\nconst auditedArenaDispatch=ArenaSession.prototype.dispatch;ArenaSession.prototype.dispatch=function(action){window.arenaKeyboardRecord?.('session-enter',{action});try{const result=auditedArenaDispatch.call(this,action);window.arenaKeyboardRecord?.('session-exit',{action,revision:this.game.revision});return result;}catch(error){window.arenaKeyboardRecord?.('session-error',{error:error.message});throw error;}};`;
   for(const ref of refs){
    let app=execFileSync('git',['show',ref+':arena/src/app.mjs'],{encoding:'utf8'});
@@ -29,13 +30,14 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
      await ctx.tracing.start({screenshots:true,snapshots:true,sources:false});
      await ctx.route('**/arena/src/app.mjs',r=>r.fulfill({contentType:'text/javascript',body:app}));
      await ctx.route('**/arena/src/session.mjs',async r=>r.fulfill({contentType:'text/javascript',body:await fs.readFile('arena/src/session.mjs','utf8')+instrumentation}));
-     await ctx.addInitScript(()=>{
+     await ctx.addInitScript(deferClose=>{
       const K='cerconexo-arena-m3a-v1';window.arenaKeyboardEvents=[];
       const describe=n=>{if(!n)return null;const r=n.getBoundingClientRect?.(),s=n.nodeType===1?getComputedStyle(n):null;return {tag:n.tagName,id:n.id,kind:n.getAttribute?.('data-kind'),cell:n.getAttribute?.('data-cell'),action:n.getAttribute?.('data-action'),connected:n.isConnected,visible:!!r&&r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none',disabled:n.disabled??n.getAttribute?.('aria-disabled'),rect:r?[r.x,r.y,r.width,r.height]:null};};
       window.arenaKeyboardRecord=(kind,extra={})=>{if(arenaKeyboardEvents.length>=160)return;const target=window.arenaKeyboardTarget;arenaKeyboardEvents.push({kind,at:performance.now(),active:describe(document.activeElement),target:describe(target),targetFocused:!!target&&document.activeElement===target,dialog:document.querySelector('#newDialog')?.open,visibility:document.visibilityState,raw:localStorage.getItem(K),...extra});};
       for(const type of ['focusin','focusout','keydown','keyup','close','visibilitychange'])document.addEventListener(type,e=>arenaKeyboardRecord(type,{key:e.key,eventTarget:describe(e.target)}),true);
       const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){const result=set.call(this,k,v);if(k===K)arenaKeyboardRecord('saved',{value:v});return result;};
-     });
+      if(deferClose){const add=EventTarget.prototype.addEventListener;EventTarget.prototype.addEventListener=function(type,listener,options){if(this.id==='newDialog'&&type==='close'){const dialog=this;return add.call(this,type,event=>{arenaKeyboardRecord('deferred-close');window.arenaPendingClose=()=>listener.call(dialog,event);},options);}return add.call(this,type,listener,options);};}
+     },deferClose);
      p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(site.url+'?new=1');await p.check('[name=opponent][value=cpu]');
      await p.screenshot({path:path.join(dir,'latest-selector.png')});
      await p.locator('#startArena').boundingBox();await p.locator('#arenaCpuHint').boundingBox();await p.locator('#newDialog .dialog-body').boundingBox();
@@ -45,6 +47,7 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
      // Mismo orden de comandos que el caso original: ningún evaluate extra
      // entre focus y Enter. focusin/keydown registran el foco sin otra espera.
      await first.focus();
+     if(deferClose)await p.evaluate(()=>{arenaKeyboardRecord('release-close');const close=window.arenaPendingClose;window.arenaPendingClose=null;close?.();});
      await p.keyboard.press('Enter');const immediate=await state(p);await p.evaluate(()=>arenaKeyboardRecord('immediate-read'));
      let confirmed=true;
      try{await p.waitForFunction(({K,to})=>{const commands=JSON.parse(localStorage.getItem(K)||'null')?.commands;return commands?.length===1&&commands[0].type==='move'&&commands[0].to===to;},{K,to},{timeout:1500});}catch{confirmed=false;}
