@@ -25,10 +25,13 @@ jobs:
         env:
           CERCONEXO_PLAYWRIGHT_PATH: ${{ runner.temp }}/cerconexo-browser/node_modules/playwright
           CERCONEXO_BROWSER_CHANNEL: chromium
-          CERCONEXO_KEYBOARD_REPEATS: '4'
-          CERCONEXO_KEYBOARD_REFS: '72d3abc,06416bd,5afd939,HEAD'
-          CERCONEXO_KEYBOARD_NATIVE_CLOSE: '1'
-        run: node arena/tests/cpu.browser.cjs --keyboard-diagnostic
+          CERCONEXO_KEYBOARD_REPEATS: '24'
+          CERCONEXO_KEYBOARD_REFS: 'HEAD'
+        run: |
+          CERCONEXO_KEYBOARD_NATIVE_CLOSE=0 node arena/tests/cpu.browser.cjs --keyboard-diagnostic
+          cp validation/m5a/browser/keyboard-diagnostic/results.json validation/m5a/browser/keyboard-diagnostic/natural-results.json
+          CERCONEXO_KEYBOARD_NATIVE_CLOSE=1 node arena/tests/cpu.browser.cjs --keyboard-diagnostic
+          cp validation/m5a/browser/keyboard-diagnostic/results.json validation/m5a/browser/keyboard-diagnostic/native-close-results.json
       - name: Conservar diagnóstico, capturas y trazas
         if: always()
         uses: actions/upload-artifact@v4
