@@ -270,7 +270,16 @@ for(const dialog of document.querySelectorAll('dialog')){
   const outside=e=>{const r=dialog.getBoundingClientRect();return e.target===dialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom);};
   dialog.addEventListener('pointerdown',e=>{startedOutside=outside(e);});
   dialog.addEventListener('click',e=>{if(startedOutside&&outside(e))dialog.close();startedOutside=false;});
-  dialog.addEventListener('close',()=>{if(dialog.id==='newDialog'&&!newConfirmed){showArenaPortal();location.assign($('arenaHome').href);}else dialogOpeners.get(dialog)?.focus({preventScroll:true});cpu.tick();});
+  dialog.addEventListener('close',()=>{
+    if(dialog.id==='newDialog'&&!newConfirmed){showArenaPortal();location.assign($('arenaHome').href);}
+    else {
+      const opener=dialogOpeners.get(dialog),active=document.activeElement;
+      // close se entrega después de open=false. Si el jugador ya enfocó
+      // otro control, no robarle el foco con una restauración tardía.
+      if(!active||active===document.body||dialog.contains(active)||active===opener)opener?.focus({preventScroll:true});
+    }
+    cpu.tick();
+  });
 }
 function resetExperiment(){const mode=new FormData($('newForm')).get('mode');$('experimentJson').value=JSON.stringify(DEFAULT_EXPERIMENT[mode],null,2);}
 function showNew(opener){
