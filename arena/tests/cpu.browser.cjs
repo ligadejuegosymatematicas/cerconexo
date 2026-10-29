@@ -40,10 +40,11 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
      await p.screenshot({path:path.join(dir,'latest-selector.png')});
      await p.locator('#startArena').boundingBox();await p.locator('#arenaCpuHint').boundingBox();await p.locator('#newDialog .dialog-body').boundingBox();
      await p.check('[name=humanTeam][value=A]');await p.click('#startArena');await p.locator('#arenaBoard').boundingBox();
-     await p.evaluate(()=>{window.framesCpu=[];window.samplingCpu=true;const sample=()=>{if(!samplingCpu)return;const b=document.querySelector('#arenaBoard').getBoundingClientRect();framesCpu.push([b.x,b.y,b.width,b.height]);requestAnimationFrame(sample);};requestAnimationFrame(sample);});
+     const to=await p.evaluate(()=>{window.framesCpu=[];window.samplingCpu=true;const sample=()=>{if(!samplingCpu)return;const b=document.querySelector('#arenaBoard').getBoundingClientRect();framesCpu.push([b.x,b.y,b.width,b.height]);requestAnimationFrame(sample);};requestAnimationFrame(sample);window.arenaKeyboardTarget=document.querySelector('[data-kind=move]');arenaKeyboardRecord('before-focus');return Number(arenaKeyboardTarget.dataset.cell);});
      const first=p.locator('[data-kind=move]').first();
-     const to=await first.evaluate(n=>{window.arenaKeyboardTarget=n;arenaKeyboardRecord('before-focus');return Number(n.dataset.cell);});
-     await first.focus();await p.evaluate(()=>arenaKeyboardRecord('after-focus'));
+     // Mismo orden de comandos que el caso original: ningún evaluate extra
+     // entre focus y Enter. focusin/keydown registran el foco sin otra espera.
+     await first.focus();
      await p.keyboard.press('Enter');const immediate=await state(p);await p.evaluate(()=>arenaKeyboardRecord('immediate-read'));
      let confirmed=true;
      try{await p.waitForFunction(({K,to})=>{const commands=JSON.parse(localStorage.getItem(K)||'null')?.commands;return commands?.length===1&&commands[0].type==='move'&&commands[0].to===to;},{K,to},{timeout:1500});}catch{confirmed=false;}
