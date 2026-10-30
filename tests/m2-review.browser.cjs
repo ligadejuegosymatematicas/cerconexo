@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/m2-review
 (async()=>{
  const {startPagesServer}=await import('./pages-server.mjs'),engine=await import('../src/engine.mjs'),{beginDraft,advanceDraft}=await import('../src/turnDraft.mjs'),{encodeGameSave}=await import('../src/gameSave.mjs');
  const site=await startPagesServer(),browser=await chromium.launch({headless:true,channel:process.env.CERCONEXO_BROWSER_CHANNEL||'msedge'}),report={viewports:[],haptics:[],errors:[],checks:[]};await fs.mkdir(out,{recursive:true});
- const idle=p=>p.waitForFunction(()=>document.getElementById('board').getAttribute('aria-busy')==='false'),raw=p=>p.evaluate(()=>localStorage.getItem('wallgo-league-v2'));
+ const idle=p=>p.waitForFunction(()=>document.getElementById('board')?.getAttribute('aria-busy')==='false'),raw=p=>p.evaluate(()=>localStorage.getItem('wallgo-league-v2'));
  async function page(width=390,height=844,options={}){const context=await browser.newContext({viewport:{width,height},hasTouch:true,reducedMotion:options.reduce?'reduce':'no-preference'});await context.addInitScript(options=>{
   window.selectorAudit={pulses:[],frames:[]};
   Object.defineProperty(navigator,'vibrate',{configurable:true,value:options.api==='absent'?undefined:pattern=>{selectorAudit.pulses.push(pattern);if(options.api==='throw')throw Error('API rechazada');return true;}});
