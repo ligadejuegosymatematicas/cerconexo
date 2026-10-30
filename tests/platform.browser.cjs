@@ -119,7 +119,12 @@ async function arenaSnapshot(p){return p.evaluate(()=>({raw:localStorage.getItem
           assert.equal(JSON.parse(selected.raw).commands.length,1);assert.match(selected.inventory,/1\/1/);
         }
         await p.click('#arenaHome');await p.waitForFunction(()=>document.documentElement.dataset.portalReady==='true');
-        await p.locator('[data-mode=arena] [data-continue]').click();assert.equal((await arenaSnapshot(p)).raw,after.raw);
+        await p.locator('[data-mode=arena] [data-continue]').click();
+        // La navegación puede haber cambiado de URL sin terminar de construir
+        // el documento. Comprobar la vista lista antes de leer su inventario.
+        await p.waitForFunction(()=>document.documentElement.dataset.entry==='game'&&
+          document.getElementById('arenaBoard')?.getClientRects().length>0&&document.getElementById('inventoryTitle')!==null);
+        assert.equal((await arenaSnapshot(p)).raw,after.raw);
       }
       await p.screenshot({path:path.join(out,'inventory-original-sequence.png')});
       // Selección explícita y verificada: no confundir el estado de foco con el motor.

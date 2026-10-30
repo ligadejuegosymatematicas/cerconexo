@@ -9,6 +9,7 @@ import {mountIllustratedManual} from '../../src/illustratedManual.mjs';
 import {createHaptics} from '../../src/haptics.mjs';
 import {arenaControl,restoreArenaControl,saveArenaControl,LOCAL_ARENA_CONTROL} from './cpuConfig.mjs';
 import {createArenaCpuController} from './cpuController.mjs';
+import {arenaCpuPresentation,createCpuPresentation} from './cpuPresentation.mjs';
 
 const $=id=>document.getElementById(id),board=$('arenaBoard');
 const TEAM_COLORS={A:'#F59E0B',B:'#38BDF8',C:'#B79AFF',D:'#59D6A4'};
@@ -17,9 +18,11 @@ const inspection=new RegionInspection();
 const haptics=createHaptics();
 let session=null,selectedPower=null,boardActions=new Map(),busy=false,dialogOpener=null,hasSaved=false,loadBlocked=false,newConfirmed=false;
 let control={...LOCAL_ARENA_CONTROL},cpuFault=false;
+let presentationEffects=[],presentationContext=null;
+const presentation=createCpuPresentation({show:showCpuStep,clear:clearCpuEffects,onFinish:()=>{presentationContext=null;render();}});
 const storage={setItem(key,value){saveArenaControl(localStorage,key,value,control);}};
 const cpu=createArenaCpuController({getSession:()=>session,getControl:()=>control,
-  isPaused:()=>busy||loadBlocked||cpuFault||inspection.enabled||document.hidden||document.querySelector('.arena-app').hidden||!!document.querySelector('dialog[open]'),
+  isPaused:()=>busy||presentation.active||loadBlocked||cpuFault||inspection.enabled||document.hidden||document.querySelector('.arena-app').hidden||!!document.querySelector('dialog[open]'),
   dispatch:action=>dispatch(action,false,true),
   onThinking:thinking=>{board.dataset.cpuThinking=String(thinking);if(thinking&&!session.game.pending)$('turnHint').textContent='CPU pensando…';},
   onError:error=>{cpuFault=true;setProblem(`La CPU está en pausa. Recarga para recuperar el turno guardado. ${error.message}`);}
@@ -117,8 +120,9 @@ function renderInventory(s,view,legal){
   if(!items.length||s.over){const p=document.createElement('p');p.className='muted';p.textContent=s.over?'Resultado definitivo':owner?'Sin poderes':'Selecciona una ficha';options.append(p);}
   else for(const item of items){
     const btn=document.createElement('button');btn.type='button';btn.className='power-button';btn.dataset.power=item.id;
-    btn.setAttribute('aria-pressed',String(selectedPower===item.id));btn.disabled=cpu.owns(s)||inspection.enabled||!!s.pending||!legal.some(a=>a.power===item.id);
-    btn.innerHTML=`<span class="power-symbol" aria-hidden="true">${powerIcon(item.type)}</span><span>${POWER_LABELS[item.type]}${btn.disabled&&!s.pending?' · Sin objetivo':''}</span>`;
+    btn.setAttribute('aria-pressed',String(selectedPower===item.id));btn.disabled=presentation.active||cpu.owns(s)||inspection.enabled||!!s.pending||!legal.some(a=>a.power===item.id);
+    const hasTarget=legalArenaActions(s).some(a=>a.power===item.id);
+    btn.innerHTML=`<span class="power-symbol" aria-hidden="true">${powerIcon(item.type)}</span><span>${POWER_LABELS[item.type]}${!hasTarget&&!s.pending?' · Sin objetivo':''}</span>`;
     btn.addEventListener('click',()=>{selectedPower=selectedPower===item.id?null:item.id;render();});options.append(btn);
   }
   $('toolHelp').textContent=s.over?'No se admiten más acciones. Puedes examinar el tablero final o comenzar otra partida.':s.pending?'El tablero está en pausa hasta resolver el descarte.':selectedPower?'El poder se consume solo al elegir un objetivo válido.':'Toca casillas con punto turquesa para moverte o un borde dorado para terminar construyendo.';
@@ -129,12 +133,12 @@ function renderInventory(s,view,legal){
   if(s.pending){
     $('decisionTitle').textContent=`Decide ${s.pending.owner}`;
     $('decisionDescription').textContent=s.pending.reason==='pickup'?'Puedes rechazar el poder recién recogido.':`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}.`;
-    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=inspection.enabled||cpu.owns(s);btn.addEventListener('click',()=>dispatch({type:'discard',owner:s.pending.owner,power:item.id}));discards.append(btn);}
+    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=presentation.active||inspection.enabled||cpu.owns(s);btn.addEventListener('click',()=>dispatch({type:'discard',owner:s.pending.owner,power:item.id}));discards.append(btn);}
   }
 
 }
 function render(){
-  if(!session)return;const s=session.game,view=analyzeArena(s),legal=loadBlocked||cpu.owns(s)?[]:legalArenaActions(s);
+  if(!session)return;const s=session.game,view=analyzeArena(s),legal=presentation.active||loadBlocked||cpu.owns(s)?[]:legalArenaActions(s);
   inspection.update(view.components,9);
   if(selectedPower&&!legal.some(a=>a.power===selectedPower))selectedPower=null;
   renderScores(s,view);renderTurn(s,view);renderInventory(s,view,legal);renderBoard(s,view,legal);
@@ -144,6 +148,7 @@ function render(){
   $('inspectToggle').textContent=inspection.enabled?'Salir de inspección':'Inspeccionar regiones';
   $('inspectionInfo').hidden=!inspection.enabled;$('eventNotice').hidden=inspection.enabled;
   const description=regionDescription(inspection.selected);if($('inspectionInfo').textContent!==description)$('inspectionInfo').textContent=description;
+  board.setAttribute('aria-busy',String(presentation.active));
   board.setAttribute('aria-label',inspection.enabled?'Inspección de regiones. Flechas para recorrer casillas; Enter o Espacio para seleccionar.': 'Tablero Arena de 9 por 9. Toca casillas para mover y bordes para construir.');
   if(loadBlocked){$('turnKicker').textContent='Recuperación segura';$('turnTitle').textContent='Guardado de Arena no válido';$('turnHint').textContent='Se conserva sin sobrescribir. Usa Nueva partida si decides reemplazarlo.';}
   cpu.tick();
@@ -160,18 +165,80 @@ function eventText(s){
   else if(s.lastEvents.some(e=>e.type==='discard'))out.push(`Inventario resuelto. ${s.turn.actor?`Continúa ${s.turn.actor}`:`Elige una ficha del equipo ${s.turn.team}`}.`);
   return out.join(' ');
 }
+function clearCpuEffects(){
+  for(const effect of presentationEffects)effect.cancel?.();presentationEffects=[];
+  board.querySelectorAll('[data-cpu-effect]').forEach(node=>node.remove());
+  delete board.dataset.presentation;board.setAttribute('aria-busy','false');
+}
+function cancelCpuPresentation(){const wasActive=presentation.active;presentation.cancel();presentationContext=null;if(wasActive)render();}
+function showCpuStep(step){
+  clearCpuEffects();render();
+  const context=presentationContext;if(!context)return;
+  const {before,after,action}=context,actor=before.turn.actor??action.actor;
+  board.dataset.presentation=step.kind;board.setAttribute('aria-busy','true');
+  if($('eventNotice').textContent!==step.text)$('eventNotice').textContent=step.text;
+  if(!after.over&&!after.pending){
+    $('turnTitle').textContent=action.type==='discard'?`Equipo ${before.pending.team}`:`Equipo ${before.turn.team} · ${actor}`;
+    $('turnKicker').textContent=`Turno ${before.completedTurns+1}`;
+    $('turnHint').textContent=action.type==='discard'?'CPU resuelve su descarte…':'CPU jugando…';
+  }
+  // Conserva visible el símbolo del poder aunque ya se haya consumido/descartado.
+  const item=action.type==='discard'?before.inventories[action.owner]?.find(p=>p.id===action.power):null;
+  const type=step.kind==='pickup'?after.lastEvents.find(e=>e.type==='pickup')?.power:step.kind==='discard'?item?.type:POWER_LABELS[step.kind]?step.kind:null;
+  if(type){
+    const anchor=step.kind==='discard'?(before.policy==='team'?before.pieces.find(p=>p.team===action.owner):arenaPiece(before,action.owner)):arenaPiece(after,actor);
+    const p=point(anchor.pos),x=Math.max(4,Math.min(842,p.x+34)),y=Math.max(4,Math.min(842,p.y-66));
+    const badge=document.createElementNS('http://www.w3.org/2000/svg','g');badge.dataset.cpuEffect='';badge.setAttribute('aria-hidden','true');badge.style.pointerEvents='none';
+    badge.innerHTML=`<rect x="${x}" y="${y}" width="54" height="54" rx="10" fill="#102a43" stroke="#ffd166" stroke-width="2"/>${powerIcon(type,{x:x+7,y:y+7,size:40})}`;
+    // Los muros y las fichas se dibujan por encima del símbolo decorativo.
+    board.insertBefore(badge,board.querySelector('.wall,.piece-token'));
+  }
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const animate=(node,frames,duration)=>{if(node?.animate)presentationEffects.push(node.animate(frames,{duration,easing:'ease-out',fill:'none'}));};
+  const pulse=node=>animate(node,[{opacity:.45},{opacity:1}],Math.min(step.milliseconds,500));
+  const piece=board.querySelector(`[data-piece="${action.actor??actor}"]`);
+  if(step.kind==='move'||step.kind==='jump'){
+    const from=point(arenaPiece(before,actor).pos),to=point(arenaPiece(after,actor).pos);
+    animate(piece,[{transform:`translate(${from.x-to.x}px,${from.y-to.y}px)`},{transform:'translate(0px,0px)'}],step.kind==='jump'?480:260);
+  }else if(step.kind==='wall'||step.kind==='extraWall'){
+    const wall=arenaWall(arenaPiece(before,actor).pos,action.to);
+    const node=board.querySelector(`[data-wall="${wall}"]`);
+    const length=node?Math.hypot(+node.getAttribute('x2')- +node.getAttribute('x1'),+node.getAttribute('y2')- +node.getAttribute('y1')):100;
+    animate(node,[{strokeDasharray:`${length}`,strokeDashoffset:`${length}`},{strokeDasharray:`${length}`,strokeDashoffset:'0'}],step.kind==='wall'?280:480);
+  }else if(step.kind==='demolition'){
+    const e=edgePoints(arenaPiece(before,actor).pos,action.to),node=document.createElementNS('http://www.w3.org/2000/svg','line');
+    for(const key of ['x1','y1','x2','y2'])node.setAttribute(key,e[key]);
+    node.setAttribute('class','wall cpu-demolition');node.setAttribute('opacity','0');node.dataset.cpuEffect='';board.append(node);
+    animate(node,[{opacity:1,strokeDasharray:'12 3'},{opacity:0,strokeDasharray:'3 12'}],480);
+  }else if(step.kind==='territory'){
+    const previous=analyzeArena(before),current=analyzeArena(after);
+    for(let cell=0;cell<81;cell++)if(previous.components[previous.byCell[cell]].type!==current.components[current.byCell[cell]].type)
+      animate(board.querySelector(`[data-cell-bg="${cell}"]`),[{stroke:'#ffd166',strokeWidth:5},{stroke:'#ffd166',strokeWidth:0}],700);
+  }else if(step.kind==='pickup'||step.kind==='discard'){
+    const team=step.kind==='discard'?(before.policy==='team'?action.owner:arenaPiece(before,action.owner).team):arenaPiece(before,actor).team;
+    pulse(document.querySelector(`[data-score="${team}"]`)?.closest('.score'));pulse($('powerOptions'));pulse(piece);
+  }else pulse(piece);
+}
 function dispatch(action,keyboard=false,automated=false){
-  if(busy||!session||loadBlocked||inspection.enabled||document.querySelector('dialog[open]'))return;
+  if(busy||presentation.active||!session||loadBlocked||inspection.enabled||document.querySelector('dialog[open]'))return;
   if(cpu.owns(session.game)!==automated)return;
   busy=true;
   try{
-    session.dispatch(action);hasSaved=true;selectedPower=null;setProblem('');render();
+    const before=session.game;
+    session.dispatch(action);hasSaved=true;selectedPower=null;setProblem('');
+    if(automated){
+      presentationContext={before,after:session.game,action};
+      // Activa la barrera antes del render: tampoco se puede actuar por el humano
+      // que recibe el turno hasta que se haya mostrado la última acción.
+      const steps=arenaCpuPresentation(before,session.game,action);
+      presentation.play(steps);
+    }else render();
     if(action.type==='wall')haptics.committed();
-    const message=eventText(session.game);if(message)$('eventNotice').textContent=message;
+    const message=eventText(session.game);if(message&&!automated)$('eventNotice').textContent=message;
     if(keyboard){const target=session.game.pending?$('discardOptions').querySelector('button'):board.querySelector('[data-action]');target?.focus();}
   }catch(e){setProblem(`No se aplicó la acción. ${e.message}`);if(automated)throw e;}finally{busy=false;}
 }
-$('inspectToggle').addEventListener('click',()=>{cpu.cancel();inspection.toggle();selectedPower=null;render();});
+$('inspectToggle').addEventListener('click',()=>{cpu.cancel();cancelCpuPresentation();inspection.toggle();selectedPower=null;render();});
 function selectInspection(cell,keyboard=false){
   if(document.querySelector('dialog[open]')||!inspection.select(cell))return;
   render();if(keyboard)board.querySelector(`[data-inspect="${cell}"]`)?.focus();
@@ -196,14 +263,23 @@ board.addEventListener('keydown',e=>{
 $('cancelTool').addEventListener('click',()=>{selectedPower=null;render();});
 
 const dialogOpeners=new WeakMap();
-function openDialog(id,opener){cpu.cancel();dialogOpeners.set($(id),opener);$(id).showModal();$(id).querySelector('[data-close]')?.focus();}
+function openDialog(id,opener){cpu.cancel();cancelCpuPresentation();dialogOpeners.set($(id),opener);$(id).showModal();$(id).querySelector('[data-close]')?.focus();}
 for(const dialog of document.querySelectorAll('dialog')){
   dialog.querySelector('[data-close]').addEventListener('click',()=>dialog.close());
   let startedOutside=false;
   const outside=e=>{const r=dialog.getBoundingClientRect();return e.target===dialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom);};
   dialog.addEventListener('pointerdown',e=>{startedOutside=outside(e);});
   dialog.addEventListener('click',e=>{if(startedOutside&&outside(e))dialog.close();startedOutside=false;});
-  dialog.addEventListener('close',()=>{if(dialog.id==='newDialog'&&!newConfirmed){showArenaPortal();location.assign($('arenaHome').href);}else dialogOpeners.get(dialog)?.focus({preventScroll:true});cpu.tick();});
+  dialog.addEventListener('close',()=>{
+    if(dialog.id==='newDialog'&&!newConfirmed){showArenaPortal();location.assign($('arenaHome').href);}
+    else {
+      const opener=dialogOpeners.get(dialog),active=document.activeElement;
+      // close se entrega después de open=false. Si el jugador ya enfocó
+      // otro control, no robarle el foco con una restauración tardía.
+      if(!active||active===document.body||dialog.contains(active)||active===opener)opener?.focus({preventScroll:true});
+    }
+    cpu.tick();
+  });
 }
 function resetExperiment(){const mode=new FormData($('newForm')).get('mode');$('experimentJson').value=JSON.stringify(DEFAULT_EXPERIMENT[mode],null,2);}
 function showNew(opener){
@@ -235,8 +311,8 @@ function updateHapticOption(){
 }
 $('options').addEventListener('click',()=>{updateHapticOption();$('guideDialog').close();openDialog('optionsDialog',$('guideOpen'));});
 $('vibration').addEventListener('change',()=>{haptics.setEnabled($('vibration').checked);updateHapticOption();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){haptics.stop();cpu.cancel();}else cpu.tick();});
-window.addEventListener('pagehide',()=>{haptics.stop();cpu.cancel();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){haptics.stop();cpu.cancel();cancelCpuPresentation();}else {render();cpu.tick();}});
+window.addEventListener('pagehide',()=>{haptics.stop();cpu.cancel();cancelCpuPresentation();});
 new MutationObserver(()=>{if(document.querySelector('dialog[open]'))cpu.cancel();else cpu.tick();}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
 updateHapticOption();
 mountIllustratedManual();
@@ -247,7 +323,7 @@ function startArena(setup,nextControl=control){
   // Guardar primero: si falla el almacenamiento, la partida anterior sigue intacta.
   const prior=control;control=arenaControl(nextControl,setup.mode);
   let next;try{next=new ArenaSession(storage,setup);next.save();}catch(error){control=prior;throw error;}
-  cpu.cancel();cpuFault=false;
+  cpu.cancel();cancelCpuPresentation();cpuFault=false;
   session=next;inspection.reset();selectedPower=null;hasSaved=true;loadBlocked=false;
   setProblem('');$('eventNotice').textContent='';render();
 }
@@ -280,7 +356,7 @@ function showArenaGame(){
   cpu.tick();
 }
 function showArenaPortal(){
-  cpu.cancel();
+  cpu.cancel();cancelCpuPresentation();
   $('homeScreen').hidden=false;document.querySelector('.arena-app').hidden=true;document.documentElement.dataset.entry='portal';
 }
 for(const link of [$('arenaHome'),$('homeLink')])link.addEventListener('click',e=>{if(e.button===0&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey)showArenaPortal();});
@@ -291,7 +367,7 @@ function enterArena(){
 }
 window.addEventListener('pageshow',event=>{
   if(!event.persisted)return;
-  cpu.cancel();cpuFault=false;
+  cpu.cancel();cancelCpuPresentation();cpuFault=false;
   try{const raw=localStorage.getItem(ARENA_SAVE_KEY);if(raw){const restored=ArenaSession.restore(storage,raw);if(restored.ok){session=restored.session;control=restoreArenaControl(localStorage,raw,session.game.mode);hasSaved=true;loadBlocked=false;inspection.reset();selectedPower=null;render();}else{loadBlocked=true;setProblem(restored.error);render();}}else{session=new ArenaSession(storage);control={...LOCAL_ARENA_CONTROL};hasSaved=false;loadBlocked=false;inspection.reset();selectedPower=null;render();}}catch(e){setProblem(`No se puede recuperar el guardado: ${e.message}`);}
   enterArena();
 });

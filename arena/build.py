@@ -13,15 +13,15 @@ modules.append((root.parent/'src/illustratedManual.mjs').read_text(encoding='utf
 modules.append(re.sub(r'\bexport (const|function)\b', r'\1', (root.parent/'src/haptics.mjs').read_text(encoding='utf-8')))
 def worker_source():
     parts=[]
-    for name in ['geometry','config','engine','cpuStrategy','cpuWorker']:
+    for name in ['geometry','config','engine','cpuEvaluation','cpuStrategy','cpuWorker']:
         source=(root/f'src/{name}.mjs').read_text(encoding='utf-8')
-        source='\n'.join(line for line in source.splitlines() if not line.startswith('import '))
+        source='\n'.join(line for line in source.splitlines() if not line.startswith(('import ', 'export {')))
         parts.append(re.sub(r'\bexport (const|async function|function|class)\b',r'\1',source))
     return '\n'.join(parts)
 modules.append('globalThis.CERCONEXO_ARENA_CPU_WORKER_SOURCE='+json.dumps(worker_source())+';')
-for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'cpuConfig','cpuStrategy','cpuController','app']:
+for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'cpuConfig','cpuEvaluation','cpuStrategy','cpuController','cpuPresentation','app']:
     source = (root / f'src/{name}.mjs').read_text(encoding='utf-8')
-    source = '\n'.join(line for line in source.splitlines() if not line.startswith('import '))
+    source = '\n'.join(line for line in source.splitlines() if not line.startswith(('import ', 'export {')))
     source = re.sub(r'\bexport (const|async function|function|class)\b', r'\1', source)
     modules.append(source)
 html = html.replace('<link rel="stylesheet" href="./src/styles.css">', f'<style>\n{css}\n</style>')

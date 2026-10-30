@@ -2,7 +2,7 @@ name: Comprobar Cerconexo
 
 on:
   push:
-    branches: [main, desarrollo]
+    branches: [main, desarrollo, m5c-integracion]
   pull_request:
     branches: [main]
 
