@@ -8,6 +8,7 @@ const token = /^oauth_token\s*=\s*"([^"\r\n]+)"/m.exec(config)?.[1];
 if (!token) throw new Error('Se necesita la sesión oficial de Wrangler.');
 const since = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 const query = `query { viewer { accounts(filter: {accountTag: "${account}"}) {
+  workersInvocationsAdaptive(filter: {datetime_geq: "${since}T00:00:00Z", scriptName: "cerconexo-m6-experimental"}, limit: 100) { sum { requests errors subrequests } }
   durableObjectsInvocationsAdaptiveGroups(filter: {date_gt: "${since}"}, limit: 1000) { sum { requests responseBodySize } }
   durableObjectsPeriodicGroups(filter: {date_gt: "${since}"}, limit: 1000) { sum { cpuTime } }
   durableObjectsStorageGroups(filter: {date_gt: "${since}"}, limit: 1000) { max { storedBytes } }

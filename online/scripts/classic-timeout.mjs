@@ -90,7 +90,14 @@ try {
   assert.deepEqual(report.pageErrors, []);
   report.ok = true; report.browsers = 4; report.winner = 'B'; report.partialPath = [8, 9];
   report.scenarios = ['Ocho minutos reales, cuatro navegadores conectados y un paso parcial persistente', 'Alarma del servidor, victoria B y resultado visible idéntico sin acciones habilitadas', 'Recarga final sin recuperar tiempo ni perder el recorrido'];
-} catch (error) { report.ok = false; report.error = error.stack ?? error.message; process.exitCode = 1; }
+} catch (error) {
+  report.ok = false; report.error = error.stack ?? error.message; process.exitCode = 1;
+  report.layout = await pages[0]?.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+    styles: [...document.querySelectorAll('link[rel=stylesheet]')].map(link => ({ path: new URL(link.href).pathname, ready: !!link.sheet })),
+    overflowing: [...document.querySelectorAll('body *')].filter(node => node.getBoundingClientRect().right > innerWidth + 1)
+      .slice(0, 12).map(node => ({ tag: node.tagName, id: node.id, class: String(node.className), right: node.getBoundingClientRect().right })) })).catch(() => null);
+  await pages[0]?.screenshot({ path: path.join(root, `evidence/classic-timeout-failure${target ? '-' + target.suffix : ''}.png`), fullPage: true }).catch(() => {});
+}
 finally {
   for (const context of contexts) await context.close().catch(() => {});
   await browser?.close().catch(() => {});

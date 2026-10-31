@@ -1,6 +1,12 @@
-# CERCONEXO · M6.2 local
+# CERCONEXO · Piloto privado M6
 
-**Preparación M6.3:** se añade el sitio completo experimental con portada, Clásico y Arena Local/CPU, y entrada Online exclusiva de Clásico. Consultar [estado y requisitos del despliegue](../M63.md). Todavía no hay una dirección pública: falta crear y autorizar la cuenta gratuita de Cloudflare. El Pages estable no cambia.
+**M6.3 desplegado:** [abrir el piloto privado](https://cerconexo-m6-experimental.cerconexo-piloto-h89.workers.dev/). Conserva portada, Clásico y Arena Local/CPU; Online está disponible únicamente en Clásico. Consultar [informe, pruebas y límites](../M63.md). El Pages estable no cambia.
+
+El acceso requiere la credencial privada del piloto, conservada solo para el responsable en `online/.state/pilot/ACCESO-PRIVADO.txt`, fuera de Git. No es una clave de Cloudflare ni el código de una sala. Cada dispositivo debe entrar primero al piloto; después puede solicitar admisión con la invitación de sala. La sesión de acceso dura siete días. Las credenciales personales de las salas son independientes.
+
+Cloudflare funciona sin los servidores locales; los puertos M6 8787, 8791 y 8800 se detuvieron para verificarlo. No se activó facturación ni Zero Trust. El control privado se ejecuta en el propio Worker antes de servir recursos o API/WSS.
+
+## Herramientas locales de desarrollo
 
 ```powershell
 npm run dev:experimental
@@ -8,7 +14,9 @@ npm run dev:experimental
 
 Abrir `http://127.0.0.1:8800/`. Este servidor usa almacenamiento separado de la demo M6.2 y genera sus recursos en `.experimental/`, excluido de Git. No ejecutar un segundo proceso si ya está activo. `npm run build:experimental` prepara solo el paquete. `npm run deploy:experimental -- --help` explica la preparación en seco; publicar exige una acción explícita y confirmar Workers Free.
 
-Clásico online 2 vs. 2 para cuatro personas, una por ficha: **A1, B1, A2 y B2**. El servidor reutiliza el motor oficial y confirma pasos, muros, territorios y resultados. Arena online queda pendiente de su etapa autorizada. La primera publicación de M6 seguirá requiriendo Clásico 2 vs. 2, Arena 2 vs. 2 y Arena de cuatro equipos independientes.
+## Laboratorio M6.2 conservado
+
+Clásico online 2 vs. 2 para cuatro personas, una por ficha: **A1, B1, A2 y B2**. El servidor reutiliza el motor oficial y confirma pasos, muros, territorios y resultados. Arena online queda pendiente de su etapa autorizada. La primera publicación estable de M6 seguirá requiriendo Clásico 2 vs. 2, Arena 2 vs. 2 y Arena de cuatro equipos independientes.
 
 Base: `0ce64e92c744e75cdcd9383b7ddb00270cd64df8`; rama `m6-salas-conexiones`. El juego publicado, los motores, CPU, guardados y manifiestos de Pages conservan sus bytes.
 
