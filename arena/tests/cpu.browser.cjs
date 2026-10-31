@@ -145,14 +145,14 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
     await p.check(`[name=opponent][value=${capacity?'cpu':'local'}]`);if(cfg.mode==='ffa')await p.check('[name=mode][value=ffa]');else await p.check(`[name=policy][value=${policy}]`);
     if(capacity)await p.check('[name=humanTeam][value=B]');await p.click('#startArena');
     await p.waitForFunction(()=>document.querySelector('.arena-app').classList.contains('manual-discard'));
-    assert.equal(await p.locator('#decisionTitle').innerText(),'¡Debes descartar un poder!');assert.equal(await p.locator('#decisionDescription').innerText(),'Selecciona qué poder deseas descartar para continuar jugando.');
+    assert.equal(await p.locator('#discardNotice').innerText(),'¡Debes descartar un poder!');assert.equal(await p.locator('#decisionTitle').innerText(),`Decide ${owner}`);assert.equal(await p.locator('#decisionDescription').innerText(),'Selecciona qué poder deseas descartar para continuar jugando.');
     const panel=await p.locator('#decisionPanel').boundingBox(),box=await p.locator('#arenaBoard').boundingBox();assert.ok(panel.y>=0&&panel.y+panel.height<=height,JSON.stringify({cfg,panel}));
     for(const b of await p.locator('[data-discard]').all()){
      const r=await b.boundingBox();assert.ok(r.y>=0&&r.y+r.height<=height&&r.height>=44);assert.equal(await b.isEnabled(),true);
      assert.ok(await b.evaluate(n=>n.scrollWidth<=n.clientWidth&&n.scrollHeight<=n.clientHeight),'Texto de descarte completo');
     }
     assert.deepEqual(await p.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.scrollHeight]),[width,height],JSON.stringify(cfg));
-    const saved=await raw(p);assert.equal((await state(p)).commands.length,0);assert.equal(await p.evaluate(()=>document.activeElement.id),'decisionTitle');
+    const saved=await raw(p);assert.equal((await state(p)).commands.length,0);assert.equal(await p.evaluate(()=>document.activeElement.id),'discardNotice');
     await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));assert.equal(await raw(p),saved,'No descartar automáticamente');
     if(width===360)assert.equal(await p.locator('#decisionPanel').evaluate(n=>n.getAnimations().length),0);
     await p.screenshot({path:path.join(out,`descarte-${cfg.name}-${width}x${height}.png`)});

@@ -136,15 +136,16 @@ function renderInventory(s,view,legal){
   $('decisionPanel').hidden=!s.pending;const discards=$('discardOptions');discards.replaceChildren();
   if(s.pending){
     const title=manual?'¡Debes descartar un poder!':`Decide ${s.pending.owner}`;
-    if($('decisionTitle').textContent!==title)$('decisionTitle').textContent=title;
-    $('decisionOwner').textContent=`${s.pending.owner} · Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}`;
+    if($('discardNotice').textContent!==title)$('discardNotice').textContent=title;
+    $('decisionTitle').textContent=`Decide ${s.pending.owner}`;
+    $('decisionOwner').textContent=`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}`;
     $('decisionDescription').textContent=manual?'Selecciona qué poder deseas descartar para continuar jugando.':s.pending.reason==='pickup'?'Puedes rechazar el poder recién recogido.':`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}.`;
     for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.type='button';btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=presentation.active||inspection.enabled||cpu.owns(s);btn.addEventListener('click',event=>dispatch({type:'discard',owner:s.pending.owner,power:item.id},event.detail===0));discards.append(btn);}
     const key=`${s.pending.owner}:${s.pending.capacity}:${s.inventories[s.pending.owner].map(p=>p.id).join(',')}`;
     if(ready&&!document.querySelector('.arena-app').hidden&&!document.querySelector('dialog[open]')){
       const retained=[...discards.children].find(b=>b.dataset.discard===focusedDiscard);
       if(retained)retained.focus({preventScroll:true});
-      else if(discardFocusKey!==key)$('decisionTitle').focus({preventScroll:true});
+      else if(discardFocusKey!==key)$('discardNotice').focus({preventScroll:true});
       discardFocusKey=key;
     }
   }else discardFocusKey=null;

@@ -198,7 +198,7 @@ h1 { grid-column:1; grid-row:1; font-size:21px; margin:0; }
 .manual-discard .decision h2:focus-visible { outline:2px solid var(--gold); outline-offset:2px; border-radius:3px; }
 .manual-discard .decision p { font-size:13px; line-height:17px; margin:0 0 8px; }
 .manual-discard .discard-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
-.manual-discard .discard-options button { min-width:0; min-height:44px; border-color:var(--gold); background:#ffd16612; padding:6px; line-height:17px; font-size:13px; }
+.manual-discard .discard-options button { min-width:0; min-height:44px; border-color:var(--gold); background:#ffd16612; padding:5px 6px; line-height:17px; font-size:13px; }
 .manual-discard .discard-options button:last-child:nth-child(odd) { grid-column:1/-1; }
 @media(prefers-reduced-motion:no-preference) {
  .manual-discard .decision { animation:discard-arrival 500ms ease-out; }
