@@ -1,0 +1,873 @@
+{
+  "environment": {
+    "platform": "win32",
+    "node": "v24.20.0"
+  },
+  "completed": 32,
+  "errors": 0,
+  "illegal": 0,
+  "types": {
+    "move": 1342,
+    "wall": 1075,
+    "discard": 45,
+    "extraWall": 27,
+    "demolition": 50,
+    "jump": 24,
+    "select": 252
+  },
+  "cpuTypes": {
+    "move": 1160,
+    "wall": 826,
+    "discard": 45,
+    "extraWall": 27,
+    "demolition": 46,
+    "jump": 20,
+    "select": 159
+  },
+  "performance": {
+    "decisions": 2283,
+    "p50": 38.764100000000326,
+    "p95": 72.93929999999818,
+    "p99": 90.35759999999982,
+    "max": 91.64619999999968
+  },
+  "games": [
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 1,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 63,
+      "turns": 26,
+      "score": {
+        "A": 79,
+        "B": 2,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 90.0172,
+      "counts": {
+        "move": 32,
+        "wall": 26,
+        "discard": 2,
+        "extraWall": 2,
+        "demolition": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 2,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 41,
+      "turns": 18,
+      "score": {
+        "A": 79,
+        "B": 2,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 91.64619999999968,
+      "counts": {
+        "move": 20,
+        "wall": 18,
+        "demolition": 1,
+        "jump": 1,
+        "discard": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 3,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 48,
+      "turns": 22,
+      "score": {
+        "A": 78,
+        "B": 3,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 91.44419999999991,
+      "counts": {
+        "move": 22,
+        "wall": 22,
+        "demolition": 1,
+        "jump": 2,
+        "discard": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 4,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 55,
+      "turns": 24,
+      "score": {
+        "A": 78,
+        "B": 2,
+        "empty": 1,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 90.36719999999968,
+      "counts": {
+        "move": 26,
+        "wall": 24,
+        "demolition": 1,
+        "jump": 1,
+        "discard": 2,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 5,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 28,
+      "turns": 14,
+      "score": {
+        "A": 79,
+        "B": 2,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 70.41830000000118,
+      "counts": {
+        "move": 14,
+        "wall": 14
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 6,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 46,
+      "turns": 18,
+      "score": {
+        "A": 78,
+        "B": 2,
+        "empty": 1,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 69.70100000000093,
+      "counts": {
+        "move": 27,
+        "wall": 18,
+        "demolition": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 7,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 172,
+      "turns": 69,
+      "score": {
+        "A": 35,
+        "B": 31,
+        "empty": 15,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 77.8179999999993,
+      "counts": {
+        "move": 93,
+        "wall": 69,
+        "demolition": 4,
+        "discard": 3,
+        "extraWall": 2,
+        "jump": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "A",
+      "seed": 8,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 181,
+      "turns": 73,
+      "score": {
+        "A": 38,
+        "B": 17,
+        "empty": 26,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 87.72119999999995,
+      "counts": {
+        "move": 99,
+        "wall": 73,
+        "demolition": 4,
+        "discard": 3,
+        "extraWall": 2
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 1,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 35,
+      "turns": 17,
+      "score": {
+        "A": 2,
+        "B": 79,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 60.287099999997736,
+      "counts": {
+        "move": 16,
+        "wall": 17,
+        "demolition": 1,
+        "discard": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 2,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 66,
+      "turns": 29,
+      "score": {
+        "A": 3,
+        "B": 77,
+        "empty": 1,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 81.08480000000054,
+      "counts": {
+        "move": 33,
+        "wall": 29,
+        "discard": 3,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 3,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 66,
+      "turns": 27,
+      "score": {
+        "A": 3,
+        "B": 78,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 69.00890000000072,
+      "counts": {
+        "move": 33,
+        "wall": 27,
+        "jump": 1,
+        "discard": 1,
+        "demolition": 3,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 4,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 42,
+      "turns": 17,
+      "score": {
+        "A": 2,
+        "B": 79,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 71.97639999999956,
+      "counts": {
+        "move": 24,
+        "wall": 17,
+        "discard": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 5,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 26,
+      "turns": 13,
+      "score": {
+        "A": 2,
+        "B": 79,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 45.80269999999655,
+      "counts": {
+        "move": 12,
+        "wall": 13,
+        "discard": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 6,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 57,
+      "turns": 25,
+      "score": {
+        "A": 5,
+        "B": 76,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 49.358799999998155,
+      "counts": {
+        "move": 28,
+        "wall": 25,
+        "demolition": 1,
+        "jump": 2,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 7,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 172,
+      "turns": 69,
+      "score": {
+        "A": 35,
+        "B": 31,
+        "empty": 15,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 75.54069999999774,
+      "counts": {
+        "move": 93,
+        "wall": 69,
+        "demolition": 4,
+        "discard": 3,
+        "extraWall": 2,
+        "jump": 1
+      }
+    },
+    {
+      "policy": "piece",
+      "cpuTeam": "B",
+      "seed": 8,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 172,
+      "turns": 69,
+      "score": {
+        "A": 35,
+        "B": 31,
+        "empty": 15,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 54.604999999995925,
+      "counts": {
+        "move": 93,
+        "wall": 69,
+        "demolition": 4,
+        "discard": 3,
+        "extraWall": 2,
+        "jump": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 1,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 39,
+      "turns": 14,
+      "score": {
+        "A": 79,
+        "B": 2,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 56.74399999999878,
+      "counts": {
+        "select": 10,
+        "move": 13,
+        "wall": 14,
+        "jump": 1,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 2,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 34,
+      "turns": 12,
+      "score": {
+        "A": 79,
+        "B": 2,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 47.830199999996694,
+      "counts": {
+        "select": 9,
+        "move": 13,
+        "wall": 12
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 3,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 82,
+      "turns": 28,
+      "score": {
+        "A": 78,
+        "B": 2,
+        "empty": 1,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 48.431900000003225,
+      "counts": {
+        "select": 20,
+        "move": 29,
+        "wall": 28,
+        "discard": 1,
+        "demolition": 2,
+        "jump": 1,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 4,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 67,
+      "turns": 21,
+      "score": {
+        "A": 79,
+        "B": 2,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 63.80589999999938,
+      "counts": {
+        "select": 19,
+        "move": 22,
+        "wall": 21,
+        "jump": 3,
+        "demolition": 1,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 5,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 62,
+      "turns": 20,
+      "score": {
+        "A": 78,
+        "B": 2,
+        "empty": 1,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 90.38419999999314,
+      "counts": {
+        "select": 18,
+        "move": 23,
+        "wall": 20,
+        "jump": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 6,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 43,
+      "turns": 14,
+      "score": {
+        "A": 79,
+        "B": 2,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 74.64929999999731,
+      "counts": {
+        "select": 12,
+        "move": 15,
+        "wall": 14,
+        "demolition": 1,
+        "discard": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 7,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 213,
+      "turns": 77,
+      "score": {
+        "A": 46,
+        "B": 20,
+        "empty": 15,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 73.45580000000336,
+      "counts": {
+        "select": 17,
+        "move": 110,
+        "wall": 77,
+        "extraWall": 1,
+        "demolition": 4,
+        "discard": 3,
+        "jump": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "A",
+      "seed": 8,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 213,
+      "turns": 77,
+      "score": {
+        "A": 46,
+        "B": 20,
+        "empty": 15,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 75.02739999999903,
+      "counts": {
+        "select": 17,
+        "move": 110,
+        "wall": 77,
+        "extraWall": 1,
+        "demolition": 4,
+        "discard": 3,
+        "jump": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 1,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 37,
+      "turns": 13,
+      "score": {
+        "A": 2,
+        "B": 79,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 45.77479999999923,
+      "counts": {
+        "select": 11,
+        "wall": 13,
+        "move": 13
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 2,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 57,
+      "turns": 19,
+      "score": {
+        "A": 2,
+        "B": 79,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 43.70209999999497,
+      "counts": {
+        "select": 14,
+        "move": 20,
+        "wall": 19,
+        "extraWall": 1,
+        "discard": 2,
+        "demolition": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 3,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 67,
+      "turns": 23,
+      "score": {
+        "A": 2,
+        "B": 77,
+        "empty": 2,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 59.90370000000985,
+      "counts": {
+        "select": 17,
+        "wall": 23,
+        "move": 24,
+        "extraWall": 2,
+        "discard": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 4,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 62,
+      "turns": 21,
+      "score": {
+        "A": 2,
+        "B": 79,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 56.682199999995646,
+      "counts": {
+        "select": 19,
+        "move": 17,
+        "wall": 21,
+        "demolition": 2,
+        "jump": 1,
+        "discard": 1,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 5,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 78,
+      "turns": 29,
+      "score": {
+        "A": 2,
+        "B": 78,
+        "empty": 1,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 50.172400000010384,
+      "counts": {
+        "select": 17,
+        "move": 28,
+        "wall": 29,
+        "jump": 2,
+        "demolition": 1,
+        "extraWall": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 6,
+      "selfPlay": false,
+      "completed": true,
+      "actions": 66,
+      "turns": 23,
+      "score": {
+        "A": 2,
+        "B": 79,
+        "empty": 0,
+        "shared": 0
+      },
+      "winners": [
+        "B"
+      ],
+      "maxMs": 54.78879999999481,
+      "counts": {
+        "select": 18,
+        "wall": 23,
+        "move": 21,
+        "jump": 1,
+        "extraWall": 1,
+        "discard": 2
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 7,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 213,
+      "turns": 77,
+      "score": {
+        "A": 46,
+        "B": 20,
+        "empty": 15,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 90.6869000000006,
+      "counts": {
+        "select": 17,
+        "move": 110,
+        "wall": 77,
+        "extraWall": 1,
+        "demolition": 4,
+        "discard": 3,
+        "jump": 1
+      }
+    },
+    {
+      "policy": "team",
+      "cpuTeam": "B",
+      "seed": 8,
+      "selfPlay": true,
+      "completed": true,
+      "actions": 212,
+      "turns": 77,
+      "score": {
+        "A": 42,
+        "B": 19,
+        "empty": 20,
+        "shared": 0
+      },
+      "winners": [
+        "A"
+      ],
+      "maxMs": 90.8017000000109,
+      "counts": {
+        "select": 17,
+        "move": 109,
+        "wall": 77,
+        "extraWall": 1,
+        "demolition": 4,
+        "discard": 3,
+        "jump": 1
+      }
+    }
+  ]
+}

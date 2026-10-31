@@ -116,7 +116,61 @@ const {chromium}=require(process.env.CERCONEXO_PLAYWRIGHT_PATH||'playwright');
   }finally{await c.close();}
   }
  }
+ async function manualDiscardChecks(){
+  const {createArena,applyArena}=await import('../src/engine.mjs'),{arenaNeighbors,arenaWall,analyzeArena}=await import('../src/geometry.mjs');
+  const engine=await fs.readFile(path.resolve('arena/src/engine.mjs'),'utf8');
+  const scenarios=[];
+  for(const [width,height] of [[1440,900],[1366,768],[1366,600],[1280,560],[390,844],[360,740],[740,360]])scenarios.push({name:'pickup-team',policy:'team',width,height});
+  scenarios.push({name:'pickup-piece',policy:'piece',width:360,height:740},{name:'pickup-four',policy:'piece',mode:'ffa',width:390,height:844});
+  for(const [width,height] of [[360,740],[740,360]])scenarios.push({name:'capacity-human',policy:'team',width,height});
+  for(const cfg of scenarios){
+   const {width,height,policy}=cfg,capacity=cfg.name==='capacity-human';
+   let seed=createArena({policy,mode:cfg.mode??'duo'});
+   if(capacity){
+    seed.drops=[];seed.pieces=[{id:'A1',team:'A',pos:10},{id:'B1',team:'B',pos:9},{id:'A2',team:'A',pos:70},{id:'B2',team:'B',pos:64}];
+    seed.walls=[...new Set([9,10].flatMap(c=>arenaNeighbors(c).filter(n=>![9,10].includes(n)).map(n=>arenaWall(c,n))))];
+    seed.turn={team:'A',actor:'A1',steps:0,path:[10],committed:false,actions:0};seed.inventories.A=[{id:'j',type:'jump'}];seed.inventories.B=[{id:'keep',type:'jump'},{id:'other',type:'demolition'}];
+    seed=applyArena(seed,{type:'jump',to:11,power:'j'});
+   }else{
+    const actor=seed.turn.actor??'A1',owner=policy==='team'?'A':actor;
+    if(!seed.turn.actor){seed.turn.actor=actor;seed.turn.path=[10];}
+    seed.inventories[owner]=[{id:'keep',type:'demolition'},...(policy==='team'?[{id:'other',type:'extraWall'}]:[])];
+    seed.drops=[{id:'picked',type:'jump',cell:11}];seed=applyArena(seed,{type:'move',to:11});
+   }
+   assert.ok(seed.pending);const owner=seed.pending.owner,original=JSON.stringify(seed),view=analyzeArena(seed);
+   const ctx=await browser.newContext({viewport:{width,height},hasTouch:width<800,isMobile:width<800,reducedMotion:width===360?'reduce':'no-preference'});
+   try{
+    await ctx.route('**/arena/src/engine.mjs',route=>route.fulfill({contentType:'text/javascript',body:engine.replace('export function createArena(','function fixtureOriginalCreateArena(')+`\nexport function createArena(options={}){fixtureOriginalCreateArena(options);return structuredClone(${JSON.stringify(seed)});}`}));
+    const p=await ctx.newPage();p.on('pageerror',e=>report.errors.push(e.message));await p.goto(site.url+'?new=1');
+    await p.check(`[name=opponent][value=${capacity?'cpu':'local'}]`);if(cfg.mode==='ffa')await p.check('[name=mode][value=ffa]');else await p.check(`[name=policy][value=${policy}]`);
+    if(capacity)await p.check('[name=humanTeam][value=B]');await p.click('#startArena');
+    await p.waitForFunction(()=>document.querySelector('.arena-app').classList.contains('manual-discard'));
+    assert.equal(await p.locator('#discardNotice').innerText(),'¡Debes descartar un poder!');assert.equal(await p.locator('#decisionTitle').innerText(),`Decide ${owner}`);assert.equal(await p.locator('#decisionDescription').innerText(),'Selecciona qué poder deseas descartar para continuar jugando.');
+    const panel=await p.locator('#decisionPanel').boundingBox(),box=await p.locator('#arenaBoard').boundingBox();assert.ok(panel.y>=0&&panel.y+panel.height<=height,JSON.stringify({cfg,panel}));
+    for(const b of await p.locator('[data-discard]').all()){
+     const r=await b.boundingBox();assert.ok(r.y>=0&&r.y+r.height<=height&&r.height>=44);assert.equal(await b.isEnabled(),true);
+     assert.ok(await b.evaluate(n=>n.scrollWidth<=n.clientWidth&&n.scrollHeight<=n.clientHeight),'Texto de descarte completo');
+    }
+    assert.deepEqual(await p.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.scrollHeight]),[width,height],JSON.stringify(cfg));
+    const saved=await raw(p);assert.equal((await state(p)).commands.length,0);assert.equal(await p.evaluate(()=>document.activeElement.id),'discardNotice');
+    await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));assert.equal(await raw(p),saved,'No descartar automáticamente');
+    if(width===360)assert.equal(await p.locator('#decisionPanel').evaluate(n=>n.getAnimations().length),0);
+    await p.screenshot({path:path.join(out,`descarte-${cfg.name}-${width}x${height}.png`)});
+    await p.reload();await p.waitForFunction(()=>document.querySelector('.arena-app').classList.contains('manual-discard'));assert.equal(await raw(p),saved);
+    await p.keyboard.press('Tab');assert.equal(await p.evaluate(()=>document.activeElement.dataset.discard),'keep');await p.keyboard.press('Enter');
+    await p.waitForFunction(()=>document.querySelector('#decisionPanel').hidden&&!document.querySelector('.arena-app').classList.contains('manual-discard'));
+    if(capacity)await waitHuman(p);
+    const after=await state(p);assert.deepEqual(after.commands[0],{type:'discard',owner,power:'keep'});assert.equal(after.commands.filter(a=>a.type==='discard').length,1);
+    if(!capacity){assert.equal(after.commands.length,1);assert.equal(await p.evaluate(()=>!!document.activeElement.dataset.action||document.activeElement.id==='turnBanner'),true);}
+    assert.equal((await p.locator('#arenaBoard').boundingBox()).width,box.width,'No reducir el tablero');
+    assert.equal(JSON.stringify(seed),original);assert.equal(view.score.shared,analyzeArena(seed).score.shared);
+    (report.manualDiscards??=[]).push({name:cfg.name,policy,viewport:[width,height],panel,board:box,owner,options:seed.inventories[owner].length,commands:after.commands,restored:true});
+   }finally{await ctx.close();}
+  }
+ }
  try{
+ await manualDiscardChecks();
+ if(process.argv.includes('--discard')){assert.deepEqual(report.errors,[]);report.ok=true;await fs.writeFile(path.join(out,'discard-results.json'),JSON.stringify(report,null,2));console.log('PASS descarte manual: once vistas, recolección/capacidad, cuatro equipos, CPU interrumpida, teclado y recarga.');return;}
  await nativeCloseFocusRegression();
  await presentationChecks();
  for(const [width,height] of [[1440,900],[1366,768],[1366,600],[1280,560],[390,844],[360,740],[740,360]]){

@@ -191,6 +191,33 @@ h1 { grid-column:1; grid-row:1; font-size:21px; margin:0; }
   .replay-actions button { font-size:13px; }
 }
 /* M5-A: controles del rival; el tablero mantiene su geometría. */
+.manual-discard .turn-banner { display:none; }
+.manual-discard .decision { border:2px solid var(--gold)!important; background:linear-gradient(130deg,#28394a,#102a43); padding:10px!important; }
+.manual-discard .decision>.eyebrow { display:block; font-size:11px; line-height:15px; letter-spacing:0; text-transform:none; }
+.manual-discard .decision h2 { color:var(--gold); font-size:17px; line-height:22px; margin:3px 0; }
+.manual-discard .decision h2:focus-visible { outline:2px solid var(--gold); outline-offset:2px; border-radius:3px; }
+.manual-discard .decision p { font-size:13px; line-height:17px; margin:0 0 8px; }
+.manual-discard .discard-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.manual-discard .discard-options button { min-width:0; min-height:44px; border-color:var(--gold); background:#ffd16612; padding:5px 6px; line-height:17px; font-size:13px; }
+.manual-discard .discard-options button:last-child:nth-child(odd) { grid-column:1/-1; }
+@media(prefers-reduced-motion:no-preference) {
+ .manual-discard .decision { animation:discard-arrival 500ms ease-out; }
+ .manual-discard .discard-options button { transition:background-color 120ms; }
+ @keyframes discard-arrival { from { box-shadow:0 0 0 4px #ffd16630; } to { box-shadow:0 0 0 0 #ffd16600; } }
+}
+@media(max-width:760px) and (min-height:481px) {
+ .arena-app.manual-discard .side-panel { order:1; margin-bottom:5px; }
+ .arena-app.manual-discard .event-notice { display:none; }
+}
+@media(max-height:480px) and (min-width:620px) {
+ .arena-app.manual-discard { grid-template-rows:auto auto minmax(0,1fr) 44px; }
+ .arena-app.manual-discard .board-wrap { grid-row:1/5; }
+ .arena-app.manual-discard .side-panel { grid-row:3; max-height:none; overflow-y:auto; }
+ .arena-app.manual-discard .board-tools { grid-row:4; margin:0; }
+ .arena-app.manual-discard .event-notice { display:none; }
+ .manual-discard .decision { padding:7px!important; }
+ .manual-discard .decision h2 { font-size:16px; line-height:20px; }
+}
 .team-choice-a,.team-choice-b{font-weight:800;flex:0 0 auto}
 .team-choice-a{color:#F59E0B}.team-choice-b{color:#38BDF8}
 .setup-options label:has(input:disabled){opacity:.5}
