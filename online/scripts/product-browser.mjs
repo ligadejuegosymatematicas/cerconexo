@@ -3,15 +3,17 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { root } from './runtime.mjs';
-import { testTarget } from './test-target.mjs';
+import { testTarget, authorizeTarget } from './test-target.mjs';
 const target = testTarget() ?? testTarget(['--base', 'http://127.0.0.1:8800']);
 const report = { stage: 'M6.3', checkedAt: new Date().toISOString(), target: target.base, https: target.publicServer, scenarios: [], pageErrors: [], failedResources: [] };
 let browser, currentPage;
 try {
+  await authorizeTarget(target);
   await mkdir(path.join(root, 'evidence'), { recursive: true });
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const width of [390, 1440]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600, reducedMotion: 'reduce' });
+    if (target.cookies) await context.addCookies(target.cookies);
     const page = await context.newPage(); currentPage = page; page.setDefaultTimeout(25000);
     page.on('pageerror', error => report.pageErrors.push(error.message));
     page.on('response', response => { if (response.status() >= 400) report.failedResources.push({ path: new URL(response.url()).pathname, status: response.status() }); });

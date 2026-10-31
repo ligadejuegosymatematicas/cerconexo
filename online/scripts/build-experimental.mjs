@@ -48,6 +48,7 @@ export async function experimentalPayload({ origin = 'http://127.0.0.1:8800' } =
   result.set('online/index.html', Buffer.from(lobby));
   result.set('online/config.mjs', Buffer.from('export const API_BASE = location.origin;\n'));
   result.set('online/integrated.css', await readFile(path.join(onlineRoot, 'public/integrated.css')));
+  result.set('pilot-login.mjs', await readFile(path.join(onlineRoot, 'public/pilot-login.mjs')));
   for (const name of OFFICIAL_FILES) result.set('official/' + name, await readFile(path.join(repo, name)));
   const hashes = new Set();
   for (const [name, bytes] of result) if (name.endsWith('.html')) {

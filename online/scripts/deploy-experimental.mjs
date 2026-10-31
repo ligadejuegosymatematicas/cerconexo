@@ -1,25 +1,20 @@
-import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { buildExperimental, onlineRoot, experimentalAssets } from './build-experimental.mjs';
+import { deploymentPolicy } from './deployment-policy.mjs';
 
 const args = process.argv.slice(2), value = name => args[args.indexOf(name) + 1];
 if (args.includes('--help')) {
-  console.log('Preparar (sin publicar): node scripts/deploy-experimental.mjs --account-id ID --origin https://cerconexo-m6-experimental.SUBDOMINIO.workers.dev\nPublicar: añadir --publish --free-plan-confirmed, únicamente tras comprobar Workers Free en la cuenta.');
+  console.log('Preparar (sin publicar): node scripts/deploy-experimental.mjs --account-id ID --origin https://cerconexo-m6-experimental.SUBDOMINIO.workers.dev\nSubida privada sin URL pública: añadir --publish --free-plan-confirmed.\nHabilitar HTTPS: añadir también --enable-https --pilot-access-reviewed, solo después de instalar y revisar los secretos del acceso privado.');
 } else {
   const account = value('--account-id'), origin = value('--origin'), publish = args.includes('--publish');
-  assert.ok(args.includes('--account-id') && /^[a-f0-9]{32}$/.test(account ?? ''), 'Se necesita el identificador de cuenta, nunca un token.');
-  const url = new URL(origin);
-  assert.ok(url.origin === origin && url.protocol === 'https:' && /^cerconexo-m6-experimental\.[a-z0-9-]+\.workers\.dev$/.test(url.hostname), 'Solo se permite el Worker experimental independiente.');
-  if (publish) assert.ok(args.includes('--free-plan-confirmed'), 'Comprueba Workers Free en el panel; este script no cambia el plan.');
+  const template = JSON.parse(await readFile(path.join(onlineRoot, 'wrangler.experimental.jsonc'), 'utf8'));
+  const config = deploymentPolicy(template, { account: args.includes('--account-id') ? account : null, origin, publish,
+    enableHttps: args.includes('--enable-https'), pilotAccessReviewed: args.includes('--pilot-access-reviewed'), freePlanConfirmed: args.includes('--free-plan-confirmed') });
   await buildExperimental({ origin });
-  const config = JSON.parse(await readFile(path.join(onlineRoot, 'wrangler.experimental.jsonc'), 'utf8'));
-  assert.equal(config.name, 'cerconexo-m6-experimental'); assert.ok(!config.routes && !config.route);
-  config.account_id = account; config.workers_dev = true;
+  config.vars.STATIC_CSP = /^  Content-Security-Policy: (.+)$/m.exec(await readFile(path.join(experimentalAssets, '_headers'), 'utf8'))[1];
   config.main = path.join(onlineRoot, 'src/worker.mjs'); config.assets.directory = experimentalAssets;
-  config.vars = { INTEGRATED_SITE: 'true', LOCAL_DEMO: 'false', PUBLIC_DEMO: 'true', PUBLIC_ORIGIN: origin };
-  delete config.$schema;
   const directory = path.join(onlineRoot, '.experimental/deploy'); await mkdir(directory, { recursive: true });
   const configPath = path.join(directory, 'wrangler.jsonc'); await writeFile(configPath, JSON.stringify(config, null, 2));
   const env = { ...process.env, WRANGLER_SEND_METRICS: 'false', NODE_USE_SYSTEM_CA: '1', WRANGLER_LOG_PATH: path.join(onlineRoot, '.state/deploy-logs') };

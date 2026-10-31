@@ -6,7 +6,7 @@ import { SocketClient } from './socket-client.mjs';
 import { makeCode } from '../src/protocol.mjs';
 import { initialState, applyTurn, availableMoves, wallOptions, territory, activeIds } from '../../src/engine.mjs';
 import { beginDraft, advanceDraft } from '../../src/turnDraft.mjs';
-import { testTarget } from './test-target.mjs';
+import { testTarget, authorizeTarget } from './test-target.mjs';
 const target = testTarget();
 
 // The oracle imports the protected, offline engine directly. No result, path,
@@ -19,7 +19,7 @@ function token() { const value = Buffer.from(crypto.getRandomValues(new Uint8Arr
 function redact(value) { for (const secret of credentials) value = value.split(secret).join('[redacted]'); return value; }
 function assertPrivate(value, label) { const text = typeof value === 'string' ? value : JSON.stringify(value); for (const secret of credentials) assert.ok(!text.includes(secret), label); }
 async function api(route, body = {}, credential) {
-  const response = await fetch(runtime.base + route, { method: 'POST', headers: { 'content-type': 'application/json', ...(credential ? { authorization: `Bearer ${credential}` } : {}) }, body: JSON.stringify(body) });
+  const response = await fetch(runtime.base + route, { method: 'POST', headers: { 'content-type': 'application/json', ...target?.headers, ...(credential ? { authorization: `Bearer ${credential}` } : {}) }, body: JSON.stringify(body) });
   const data = await response.json(); assertPrivate(data, 'Una respuesta HTTP expuso una credencial'); return { response, data };
 }
 async function shared(revision) { await eventually(() => group.every(c => c.state?.revision >= revision), 'Las cuatro vistas no alcanzaron la revisión compartida'); }
@@ -54,7 +54,7 @@ async function lobby() {
   for (let i = 0; i < 4; i++) {
     const credential = token(), result = await api(i ? `/api/rooms/${code}/join` : '/api/rooms', { code, credential, name: ['Ana', 'Beto', 'Carla', 'Diego'][i], mode: 'classic', policy: 'piece' });
     assert.equal(result.response.status, i ? 200 : 201);
-    const c = await new SocketClient(runtime.base, code, credential).connect(); group.push(c); clients.push(c);
+    const c = await new SocketClient(runtime.base, code, credential, target?.headers).connect(); group.push(c); clients.push(c);
     if (i) {
       await eventually(() => group[0].state.requests.some(p => p.id === result.data.state.self.id), 'No llegó la solicitud de admisión');
       const ack = await group[0].command('admit', { playerId: result.data.state.self.id, seat: group[0].state.config.seats[i] }); await shared(ack.receipt.revision);
@@ -82,7 +82,7 @@ async function recoverCommittedStep(actor) {
   const old = group[actor], expected = structuredClone(old.state.classic), beforeClock = { ...old.state.clock.remainingMs };
   await old.abort();
   await eventually(() => group.filter((_, i) => i !== actor).every(c => c.state.clock.graceUntil && !c.state.participants.find(p => p.seat === old.state.self.seat).online), 'La desconexión del actor no abrió la gracia');
-  const recovered = await new SocketClient(runtime.base, old.code, old.credential).connect(); clients.push(recovered); group[actor] = recovered;
+  const recovered = await new SocketClient(runtime.base, old.code, old.credential, target?.headers).connect(); clients.push(recovered); group[actor] = recovered;
   await eventually(() => group.every(c => c.state.clock.graceUntil === null && c.state.participants.every(p => p.online)), 'La reconexión no recuperó la decisión');
   assert.deepEqual(recovered.state.classic, expected); assert.equal(recovered.state.self.id, old.state.self.id); assert.equal(recovered.state.self.seat, 'A2');
   for (const team of ['A', 'B']) assert.ok(recovered.state.clock.remainingMs[team] <= beforeClock[team]); assertBoard();
@@ -97,7 +97,7 @@ async function recoverCommittedStep(actor) {
     combinedLog += runtime.logs(); await runtime.stop(); runtime = await startRuntime({ stateDir }); report.runtimeStarts++;
   }
   group = [];
-  for (const oldClient of previous) { const c = await new SocketClient(runtime.base, oldClient.code, oldClient.credential).connect(); group.push(c); clients.push(c); }
+  for (const oldClient of previous) { const c = await new SocketClient(runtime.base, oldClient.code, oldClient.credential, target?.headers).connect(); group.push(c); clients.push(c); }
   await eventually(() => group.every(c => c.state.participants.every(p => p.online) && c.state.clock.graceUntil === null), 'No se recuperaron las cuatro sesiones tras reiniciar');
   assertBoard();
   for (const c of group) for (const team of ['A', 'B']) assert.ok(c.state.clock.remainingMs[team] <= checkpoint.data.state.clock.remainingMs[team], 'El reinicio devolvió tiempo a un equipo');
@@ -105,8 +105,9 @@ async function recoverCommittedStep(actor) {
   report.scenarios.push(target ? 'Cuatro conexiones sustituidas y recuperadas: estado, reloj y recibo idempotente conservados; no se fuerza un reinicio del proveedor' : 'Reinicio real de Wrangler/workerd con SQLite: cuatro sesiones, draft comprometido, muros, territorio, reloj y recibo idempotente persistidos');
 }
 try {
+  await authorizeTarget(target);
   runtime = target ?? await startRuntime(); if (!target) report.runtimeStarts++;
-  const health = await (await fetch(runtime.base + '/api/health', { signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.stage, target ? 'M6.3' : 'M6.2'); assert.equal(health.engines.classic.pieces, 4);
+  const health = await (await fetch(runtime.base + '/api/health', { headers: target?.headers, signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.stage, target ? 'M6.3' : 'M6.2'); assert.equal(health.engines.classic.pieces, 4);
   if (target) { report.stage = 'M6.3'; report.target = target.base; report.https = target.publicServer; report.wss = target.publicServer; report.runtimeLogsInspected = false; assert.equal(health.localOnly, !target.publicServer); }
   await lobby(); report.scenarios.push('Cuatro clientes reales, posiciones A1/B1/A2/B2, admisión, preparación, cuenta atrás de tres segundos y reloj por equipo de ocho minutos');
   await reject(group[1], 'classic.step', { to: 9 });

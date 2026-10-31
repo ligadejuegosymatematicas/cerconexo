@@ -6,6 +6,7 @@ import { PROTOCOL_VERSION, SCHEMA_VERSION, BASE_SHA, AUTH_MS, LEASE_MS, HEARTBEA
   Fault, requireThat, roomCode, credential, nameOf, configuration, commandEnvelope, canonical, digest, errorMessage } from './protocol.mjs';
 import { createRoom, joinRoom, findPlayer, publicRoom, reconcileRoom, presence, applyCommand, nextWake } from './room-model.mjs';
 import { apiAccess, boundedJson as bodyOf } from './access-policy.mjs';
+import { pilotGate } from './pilot-gate.mjs';
 
 const utf8 = new TextEncoder();
 const PARAMS = { admit: ['playerId', 'seat'], reject: ['playerId'], ready: ['ready'], start: [],
@@ -27,6 +28,7 @@ export default {
     const url = new URL(request.url), origin = request.headers.get('origin');
     let cors = {};
     try {
+      const pilot = await pilotGate(request, env); if (pilot) return pilot;
       if (url.pathname.startsWith('/api/')) {
         const access = apiAccess(url, env, origin), { allowed, publicSite } = access; cors = access.cors;
         if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...cors,
@@ -70,7 +72,8 @@ export default {
       const response = new Response(asset.body, asset);
       response.headers.set('cache-control', 'no-store'); response.headers.set('referrer-policy', 'no-referrer');
       response.headers.set('x-content-type-options', 'nosniff');
-      response.headers.set('content-security-policy', `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8787 http://localhost:8787 ws://127.0.0.1:8787 ws://localhost:8787 ws://${url.host}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`);
+      if (env.STATIC_CSP) response.headers.set('content-security-policy', env.STATIC_CSP);
+      else if (!response.headers.has('content-security-policy')) response.headers.set('content-security-policy', `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8787 http://localhost:8787 ws://127.0.0.1:8787 ws://localhost:8787 ${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`);
       return response;
     } catch (error) { return json({ error: errorMessage(error) }, error instanceof Fault ? error.status : 503, cors); }
   }
@@ -83,7 +86,8 @@ export class AdmissionGate extends DurableObject {
     const { kind, ipHash } = await request.json(), now = Date.now();
     const minute = Math.floor(now / 60_000), hour = Math.floor(now / 3_600_000), day = Math.floor(now / 86_400_000);
     const buckets = kind === 'create' ? [[`create:${ipHash}:${hour}`, 20, (hour + 1) * 3_600_000], [`rooms:${day}`, this.dailyRooms, (day + 1) * 86_400_000]]
-      : [[`${kind}:${ipHash}:${minute}`, kind === 'socket' ? 80 : 40, (minute + 1) * 60_000]];
+      : [[`${kind}:${ipHash}:${minute}`, kind === 'socket' ? 80 : kind === 'pilot-login' ? 10 : 40, (minute + 1) * 60_000],
+        ...(kind === 'pilot-login' ? [[`pilot-logins:${day}`, 1000, (day + 1) * 86_400_000]] : [])];
     const accepted = this.ctx.storage.transactionSync(() => {
       this.ctx.storage.sql.exec('DELETE FROM limits WHERE expires <= ?', now);
       for (const [key, limit] of buckets) if ((this.ctx.storage.sql.exec('SELECT count FROM limits WHERE key = ?', key).toArray()[0]?.count ?? 0) >= limit) return false;

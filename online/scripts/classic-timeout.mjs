@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { root, eventually } from './runtime.mjs';
-import { testTarget } from './test-target.mjs';
+import { testTarget, authorizeTarget } from './test-target.mjs';
 
 // An isolated room on the running local demo: no clock overrides or test hooks.
 const target = testTarget(), base = target?.base ?? 'http://127.0.0.1:8787';
@@ -14,13 +14,15 @@ const states = () => Promise.all(pages.map(state));
 const all = (predicate, message) => eventually(async () => (await states()).every(predicate), message, 25000);
 let browser;
 try {
+  await authorizeTarget(target);
   await mkdir(path.join(root, 'evidence'), { recursive: true });
-  const health = await (await fetch(base + '/api/health', { signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.stage, target ? 'M6.3' : 'M6.2');
+  const health = await (await fetch(base + '/api/health', { headers: target?.headers, signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.stage, target ? 'M6.3' : 'M6.2');
   if (target) { report.stage = 'M6.3'; report.target = target.base; report.https = target.publicServer; }
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (let i = 0; i < 4; i++) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
     contexts.push(context); const page = await context.newPage(); pages.push(page);
+    if (target?.cookies) await context.addCookies(target.cookies);
     page.setDefaultTimeout(20000); page.on('pageerror', error => report.pageErrors.push(error.message));
   }
   await pages[0].goto(target?.entry ?? base);

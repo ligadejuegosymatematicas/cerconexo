@@ -3,11 +3,11 @@ import { once } from 'node:events';
 import { eventually } from './runtime.mjs';
 
 export class SocketClient {
-  constructor(base, code, credential) { this.base = base; this.code = code; this.credential = credential; this.state = null; this.messages = []; this.waiters = new Map(); }
+  constructor(base, code, credential, headers = {}) { this.base = base; this.code = code; this.credential = credential; this.headers = headers; this.state = null; this.messages = []; this.waiters = new Map(); }
   async connect() {
     const endpoint = new URL(`/api/rooms/${this.code}/socket`, this.base);
     endpoint.protocol = endpoint.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(endpoint, { origin: this.base }); this.ws = ws;
+    const ws = new WebSocket(endpoint, { origin: this.base, headers: this.headers }); this.ws = ws;
     ws.on('message', data => {
       const text = data.toString(); if (text === 'm6:pong') return;
       let message; try { message = JSON.parse(text); } catch { return; }

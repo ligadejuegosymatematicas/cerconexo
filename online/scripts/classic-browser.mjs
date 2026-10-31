@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import { root, startRuntime, eventually } from './runtime.mjs';
 import { initialState, applyTurn, availableMoves, wallOptions, territory, activeIds } from '../../src/engine.mjs';
 import { beginDraft, advanceDraft } from '../../src/turnDraft.mjs';
-import { testTarget } from './test-target.mjs';
+import { testTarget, authorizeTarget } from './test-target.mjs';
 const target = testTarget();
 
 const report = { stage: 'M6.2', checkedAt: new Date().toISOString(), scenarios: [], screenshots: [], viewports: [], pageErrors: [], latenciesMs: [], socketCloses: [] };
@@ -130,15 +130,17 @@ async function recoverStep(index) {
 }
 
 try {
+  await authorizeTarget(target);
   await mkdir(path.join(root, 'evidence'), { recursive: true });
   runtime = target ?? await startRuntime({ port: 8789 });
   console.log('Clásico browser: runtime listo en 8789');
-  const health = await (await fetch(runtime.base + '/api/health', { signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.stage, target ? 'M6.3' : 'M6.2');
+  const health = await (await fetch(runtime.base + '/api/health', { headers: target?.headers, signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.stage, target ? 'M6.3' : 'M6.2');
   if (target) { report.stage = 'M6.3'; report.target = target.base; report.https = target.publicServer; report.runtimeLogsInspected = false; }
   browser = await chromium.launch({ channel: process.env.CERCONEXO_BROWSER_CHANNEL ?? 'msedge', headless: true });
   for (let i = 0; i < 4; i++) {
     const viewport = viewports[i], context = await browser.newContext({ viewport, isMobile: viewport.width < 650, hasTouch: viewport.width < 650, reducedMotion: 'reduce' });
     contexts.push(context); const page = await context.newPage(); pages.push(page); page.setDefaultTimeout(20000);
+    if (target?.cookies) await context.addCookies(target.cookies);
     page.on('pageerror', error => report.pageErrors.push(error.message));
     page.on('request', request => urls.push(request.url()));
     page.on('response', response => {
