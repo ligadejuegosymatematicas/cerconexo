@@ -1,0 +1,444 @@
+{
+  "base": "67b07908c486ab72d5ef3e85f53659f0b881fac2",
+  "branch": "m5d-tactica",
+  "date": "2026-10-31",
+  "automated": {
+    "passed": 311,
+    "failed": 0,
+    "skipped": 0,
+    "log": "validation/m5d/unit-final.log"
+  },
+  "integrity": {
+    "ok": true,
+    "baseline": "0bb5e7609fec05b1e30ca14af290bc7f0d451957",
+    "protectedFiles": 32,
+    "classicEngine": "ee7982394c38dbdee738f04bb7811590e70dc4d9d6e3b39bea44aac8844b3a90",
+    "arenaEngine": "4f4527c9ba3153f0c760def8e5b89f748a82b320a6e9df9592d9789be49fe158"
+  },
+  "suites": [
+    {
+      "file": "tests/unified.browser.cjs",
+      "code": 0,
+      "seconds": 101.6
+    },
+    {
+      "file": "arena/tests/cpu.browser.cjs",
+      "code": 0,
+      "seconds": 88.5
+    }
+  ],
+  "tacticalBrowser": {
+    "views": [
+      {
+        "policy": "piece",
+        "width": 390,
+        "height": 844,
+        "commands": [
+          {
+            "type": "extraWall",
+            "to": 41,
+            "power": "audit-power"
+          },
+          {
+            "type": "wall",
+            "to": 49
+          }
+        ],
+        "score": {
+          "A": 9,
+          "B": 0,
+          "empty": 0,
+          "shared": 72
+        },
+        "board": {
+          "x": 16,
+          "y": 142,
+          "width": 358,
+          "height": 358
+        },
+        "reload": true
+      },
+      {
+        "policy": "piece",
+        "width": 740,
+        "height": 360,
+        "commands": [
+          {
+            "type": "extraWall",
+            "to": 41,
+            "power": "audit-power"
+          },
+          {
+            "type": "wall",
+            "to": 49
+          }
+        ],
+        "score": {
+          "A": 9,
+          "B": 0,
+          "empty": 0,
+          "shared": 72
+        },
+        "board": {
+          "x": 18,
+          "y": 13.5,
+          "width": 338,
+          "height": 338
+        },
+        "reload": true
+      },
+      {
+        "policy": "piece",
+        "width": 1366,
+        "height": 600,
+        "commands": [
+          {
+            "type": "extraWall",
+            "to": 41,
+            "power": "audit-power"
+          },
+          {
+            "type": "wall",
+            "to": 49
+          }
+        ],
+        "score": {
+          "A": 9,
+          "B": 0,
+          "empty": 0,
+          "shared": 72
+        },
+        "board": {
+          "x": 264,
+          "y": 93,
+          "width": 478,
+          "height": 478
+        },
+        "reload": true
+      },
+      {
+        "policy": "team",
+        "width": 390,
+        "height": 844,
+        "commands": [
+          {
+            "type": "select",
+            "actor": "A1"
+          },
+          {
+            "type": "extraWall",
+            "to": 41,
+            "power": "audit-power"
+          },
+          {
+            "type": "wall",
+            "to": 49
+          }
+        ],
+        "score": {
+          "A": 9,
+          "B": 0,
+          "empty": 0,
+          "shared": 72
+        },
+        "board": {
+          "x": 16,
+          "y": 142,
+          "width": 358,
+          "height": 358
+        },
+        "reload": true
+      },
+      {
+        "policy": "team",
+        "width": 740,
+        "height": 360,
+        "commands": [
+          {
+            "type": "select",
+            "actor": "A1"
+          },
+          {
+            "type": "extraWall",
+            "to": 41,
+            "power": "audit-power"
+          },
+          {
+            "type": "wall",
+            "to": 49
+          }
+        ],
+        "score": {
+          "A": 9,
+          "B": 0,
+          "empty": 0,
+          "shared": 72
+        },
+        "board": {
+          "x": 18,
+          "y": 13.5,
+          "width": 338,
+          "height": 338
+        },
+        "reload": true
+      },
+      {
+        "policy": "team",
+        "width": 1366,
+        "height": 600,
+        "commands": [
+          {
+            "type": "select",
+            "actor": "A1"
+          },
+          {
+            "type": "extraWall",
+            "to": 41,
+            "power": "audit-power"
+          },
+          {
+            "type": "wall",
+            "to": 49
+          }
+        ],
+        "score": {
+          "A": 9,
+          "B": 0,
+          "empty": 0,
+          "shared": 72
+        },
+        "board": {
+          "x": 264,
+          "y": 93,
+          "width": 478,
+          "height": 478
+        },
+        "reload": true
+      }
+    ],
+    "offline": [
+      {
+        "worker": true,
+        "commands": [
+          {
+            "type": "wall",
+            "to": 1
+          }
+        ]
+      },
+      {
+        "worker": false,
+        "commands": [
+          {
+            "type": "wall",
+            "to": 1
+          }
+        ]
+      }
+    ],
+    "errors": []
+  },
+  "historicalCpuBrowser": {
+    "ok": true,
+    "layouts": [
+      {
+        "viewport": [
+          1440,
+          900
+        ],
+        "board": {
+          "x": 151,
+          "y": 93,
+          "width": 778,
+          "height": 778
+        },
+        "frames": 157
+      },
+      {
+        "viewport": [
+          1366,
+          768
+        ],
+        "board": {
+          "x": 180,
+          "y": 93,
+          "width": 646,
+          "height": 646
+        },
+        "frames": 157
+      },
+      {
+        "viewport": [
+          1366,
+          600
+        ],
+        "board": {
+          "x": 264,
+          "y": 93,
+          "width": 478,
+          "height": 478
+        },
+        "frames": 161
+      },
+      {
+        "viewport": [
+          1280,
+          560
+        ],
+        "board": {
+          "x": 241,
+          "y": 93,
+          "width": 438,
+          "height": 438
+        },
+        "frames": 143
+      },
+      {
+        "viewport": [
+          390,
+          844
+        ],
+        "board": {
+          "x": 16,
+          "y": 142,
+          "width": 358,
+          "height": 358
+        },
+        "frames": 158
+      },
+      {
+        "viewport": [
+          360,
+          740
+        ],
+        "board": {
+          "x": 16,
+          "y": 142,
+          "width": 328,
+          "height": 328
+        },
+        "frames": 159
+      },
+      {
+        "viewport": [
+          740,
+          360
+        ],
+        "board": {
+          "x": 18,
+          "y": 13.5,
+          "width": 338,
+          "height": 338
+        },
+        "frames": 144
+      }
+    ],
+    "errors": [],
+    "workerRoundTrip": {
+      "samples": 21,
+      "median": 133.5,
+      "p95": 388,
+      "max": 391.6999999284744
+    }
+  },
+  "simulations": {
+    "environment": {
+      "platform": "win32",
+      "node": "v24.20.0"
+    },
+    "completed": 32,
+    "errors": 0,
+    "illegal": 0,
+    "types": {
+      "move": 1342,
+      "wall": 1075,
+      "discard": 45,
+      "extraWall": 27,
+      "demolition": 50,
+      "jump": 24,
+      "select": 252
+    },
+    "cpuTypes": {
+      "move": 1160,
+      "wall": 826,
+      "discard": 45,
+      "extraWall": 27,
+      "demolition": 46,
+      "jump": 20,
+      "select": 159
+    },
+    "performance": {
+      "decisions": 2283,
+      "p50": 38.764100000000326,
+      "p95": 72.93929999999818,
+      "p99": 90.35759999999982,
+      "max": 91.64619999999968
+    }
+  },
+  "comparison": {
+    "M5-C": {
+      "count": 120,
+      "median": 90.41319999999905,
+      "p95": 91.11989999999969,
+      "max": 92.80110000000059,
+      "medianNodes": 106,
+      "maxNodes": 157,
+      "slowest": {
+        "version": "M5-C",
+        "case": "cierre-9-inmediato",
+        "repeat": 7,
+        "milliseconds": 92.80110000000059,
+        "reportedMilliseconds": 92.78450000000157,
+        "nodes": 116,
+        "ownNodes": 43,
+        "replyNodes": 73,
+        "tacticalNodes": 0,
+        "action": {
+          "type": "move",
+          "to": 39
+        }
+      }
+    },
+    "M5-D": {
+      "count": 120,
+      "median": 90.33020000000033,
+      "p95": 91.04690000000119,
+      "max": 91.6755000000012,
+      "medianNodes": 97,
+      "maxNodes": 155,
+      "slowest": {
+        "version": "M5-D",
+        "case": "defensa-puente-piece",
+        "repeat": 6,
+        "milliseconds": 91.6755000000012,
+        "reportedMilliseconds": 91.65850000000137,
+        "nodes": 110,
+        "ownNodes": 46,
+        "replyNodes": 64,
+        "tacticalNodes": 0,
+        "action": {
+          "type": "demolition",
+          "to": 31,
+          "power": "defense-d"
+        }
+      }
+    }
+  },
+  "packageResult": "Se entrega por separado EXTRACCION_LIMPIA.json del verificador existente.",
+  "pending": [
+    "Android físico",
+    "Linux/Chromium CI",
+    "Aprobación de publicación"
+  ],
+  "unchanged": [
+    "32 archivos protegidos",
+    "evaluador y pesos",
+    "animaciones",
+    "formatos y claves de guardado",
+    "reglas y motores",
+    "Clásico",
+    "M6",
+    "main y Pages"
+  ],
+  "scope": "Candidata local; sin push, PR, merge ni publicación."
+}
