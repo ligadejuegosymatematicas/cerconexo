@@ -38,7 +38,7 @@ export async function experimentalPayload({ origin = 'http://127.0.0.1:8800' } =
   result.set('experimental.css', Buffer.from('.experimental-note{margin:8px auto 18px;text-align:center;color:#B4C4D5;font:11px/1.5 system-ui}.experimental-online-choice{display:flex;margin:10px 0;color:#FFD166;border-color:#D4A64A;text-decoration:none}\n'));
   for (const name of ONLINE_FILES) result.set('online/' + name, await readFile(path.join(onlineRoot, 'public', name)));
   let lobby = result.get('online/index.html').toString();
-  lobby = lobby.replace('href="/styles.css"', 'href="/online/styles.css"').replace('src="/app.mjs"', 'src="/online/app.mjs"');
+  lobby = lobby.replace('href="/styles.css"', 'href="/online/styles.css"').replace('href="/classic.css"', 'href="/online/classic.css"').replace('src="/app.mjs"', 'src="/online/app.mjs"');
   lobby = lobby.replace('<body>', '<body class="integrated-online">');
   lobby = lobby.replace(/<header class="top">[\s\S]*?<\/header>/, '<header class="top"><a href="/" class="online-brand"><img src="/assets/Cerconexo_wordmark_transparente.png" alt="CERCONEXO"></a><nav aria-label="Navegación"><a href="/">Inicio</a><a href="/clasico/">Clásico</a><a href="/arena/">Arena</a></nav></header>');
   lobby = lobby.replace('<h1>CERCONEXO Clásico online.</h1>', '<h1>Clásico online</h1>');

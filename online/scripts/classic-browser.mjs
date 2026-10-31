@@ -133,7 +133,7 @@ try {
   await authorizeTarget(target);
   await mkdir(path.join(root, 'evidence'), { recursive: true });
   runtime = target ?? await startRuntime({ port: 8789 });
-  console.log('Clásico browser: runtime listo en 8789');
+  console.log(`Clásico browser: servidor listo en ${runtime.base}`);
   const health = await (await fetch(runtime.base + '/api/health', { headers: target?.headers, signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.stage, target ? 'M6.3' : 'M6.2');
   if (target) { report.stage = 'M6.3'; report.target = target.base; report.https = target.publicServer; report.runtimeLogsInspected = false; }
   browser = await chromium.launch({ channel: process.env.CERCONEXO_BROWSER_CHANNEL ?? 'msedge', headless: true });

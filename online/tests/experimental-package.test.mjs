@@ -16,6 +16,7 @@ test('M6.3: el paquete conserva el juego completo y modifica solo su HTML genera
     assert.doesNotMatch(text, /Arena online|arena-online/);
   }
   assert.match(payload.get('clasico/index.html').toString(), /Online · Cuatro personas/);
+  assert.match(payload.get('online/index.html').toString(), /href="\/online\/classic.css" data-classic-styles/);
   assert.match(payload.get('_headers').toString(), /sha256-/);
   assert.doesNotMatch(payload.get('_headers').toString(), /script-src[^;]*unsafe-inline/);
   assert.ok([...payload.keys()].every(name => !/(node_modules|worker\.mjs|\.state|\.env|wrangler|evidence)/.test(name)));

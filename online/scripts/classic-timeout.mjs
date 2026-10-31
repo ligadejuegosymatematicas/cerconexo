@@ -90,7 +90,7 @@ try {
   assert.deepEqual(report.pageErrors, []);
   report.ok = true; report.browsers = 4; report.winner = 'B'; report.partialPath = [8, 9];
   report.scenarios = ['Ocho minutos reales, cuatro navegadores conectados y un paso parcial persistente', 'Alarma del servidor, victoria B y resultado visible idéntico sin acciones habilitadas', 'Recarga final sin recuperar tiempo ni perder el recorrido'];
-} catch (error) { report.ok = false; report.error = error.message; process.exitCode = 1; }
+} catch (error) { report.ok = false; report.error = error.stack ?? error.message; process.exitCode = 1; }
 finally {
   for (const context of contexts) await context.close().catch(() => {});
   await browser?.close().catch(() => {});
