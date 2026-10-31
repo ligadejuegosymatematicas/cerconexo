@@ -19,6 +19,7 @@ const haptics=createHaptics();
 let session=null,selectedPower=null,boardActions=new Map(),busy=false,dialogOpener=null,hasSaved=false,loadBlocked=false,newConfirmed=false;
 let control={...LOCAL_ARENA_CONTROL},cpuFault=false;
 let presentationEffects=[],presentationContext=null;
+let discardFocusKey=null;
 const presentation=createCpuPresentation({show:showCpuStep,clear:clearCpuEffects,onFinish:()=>{presentationContext=null;render();}});
 const storage={setItem(key,value){saveArenaControl(localStorage,key,value,control);}};
 const cpu=createArenaCpuController({getSession:()=>session,getControl:()=>control,
@@ -129,12 +130,24 @@ function renderInventory(s,view,legal){
   $('cancelTool').hidden=!selectedPower;
   $('toolHelp').hidden=true;
   document.querySelector('.powers').hidden=s.over||!!s.pending;
+  const manual=!!s.pending&&!cpu.owns(s),ready=manual&&!presentation.active&&!inspection.enabled;
+  document.querySelector('.arena-app').classList.toggle('manual-discard',ready);
+  const focusedDiscard=document.activeElement?.dataset.discard;
   $('decisionPanel').hidden=!s.pending;const discards=$('discardOptions');discards.replaceChildren();
   if(s.pending){
-    $('decisionTitle').textContent=`Decide ${s.pending.owner}`;
-    $('decisionDescription').textContent=s.pending.reason==='pickup'?'Puedes rechazar el poder recién recogido.':`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}.`;
-    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=presentation.active||inspection.enabled||cpu.owns(s);btn.addEventListener('click',()=>dispatch({type:'discard',owner:s.pending.owner,power:item.id}));discards.append(btn);}
-  }
+    const title=manual?'¡Debes descartar un poder!':`Decide ${s.pending.owner}`;
+    if($('decisionTitle').textContent!==title)$('decisionTitle').textContent=title;
+    $('decisionOwner').textContent=`${s.pending.owner} · Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}`;
+    $('decisionDescription').textContent=manual?'Selecciona qué poder deseas descartar para continuar jugando.':s.pending.reason==='pickup'?'Puedes rechazar el poder recién recogido.':`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}.`;
+    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.type='button';btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=presentation.active||inspection.enabled||cpu.owns(s);btn.addEventListener('click',event=>dispatch({type:'discard',owner:s.pending.owner,power:item.id},event.detail===0));discards.append(btn);}
+    const key=`${s.pending.owner}:${s.pending.capacity}:${s.inventories[s.pending.owner].map(p=>p.id).join(',')}`;
+    if(ready&&!document.querySelector('.arena-app').hidden&&!document.querySelector('dialog[open]')){
+      const retained=[...discards.children].find(b=>b.dataset.discard===focusedDiscard);
+      if(retained)retained.focus({preventScroll:true});
+      else if(discardFocusKey!==key)$('decisionTitle').focus({preventScroll:true});
+      discardFocusKey=key;
+    }
+  }else discardFocusKey=null;
 
 }
 function render(){
@@ -235,7 +248,7 @@ function dispatch(action,keyboard=false,automated=false){
     }else render();
     if(action.type==='wall')haptics.committed();
     const message=eventText(session.game);if(message&&!automated)$('eventNotice').textContent=message;
-    if(keyboard){const target=session.game.pending?$('discardOptions').querySelector('button'):board.querySelector('[data-action]');target?.focus();}
+    if(keyboard){const target=session.game.pending?$('discardOptions').querySelector('button'):board.querySelector('[data-action]')??$('turnBanner');target?.focus({preventScroll:true});}
   }catch(e){setProblem(`No se aplicó la acción. ${e.message}`);if(automated)throw e;}finally{busy=false;}
 }
 $('inspectToggle').addEventListener('click',()=>{cpu.cancel();cancelCpuPresentation();inspection.toggle();selectedPower=null;render();});
@@ -353,6 +366,9 @@ if(!session)session=new ArenaSession(storage);
 render();
 function showArenaGame(){
   $('homeScreen').hidden=true;document.querySelector('.arena-app').hidden=false;document.documentElement.dataset.entry='game';
+  // Una partida recuperada puede entrar directamente con un descarte pendiente.
+  // Enfocar su aviso solo después de que la vista sea visible, sin desplazarla.
+  if(session?.game.pending)render();
   cpu.tick();
 }
 function showArenaPortal(){
