@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer"><title>CERCONEXO · Clásico online</title>
+  <link rel="stylesheet" href="/styles.css"><script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <header class="top"><a href="/" class="brand">CERCO<span>NEXO</span><small>CLÁSICO ONLINE</small></a><span class="stage">M6.2 · LOCAL</span></header>
+  <main>
+    <section class="intro"><div class="eyebrow">CUATRO PERSONAS. UNA PARTIDA.</div><h1>CERCONEXO Clásico online.</h1><p>Crea una sala, invita a tus compañeros y juega con tu propia ficha. Dos equipos, cuatro participantes y ocho minutos por equipo.</p></section>
+    <div id="problem" class="problem" role="status" hidden></div>
+    <section id="entry" class="entry-grid">
+      <form id="createForm" class="card"><div class="card-number">01</div><h2>Crear una sala</h2><label>Tu nombre<input name="name" required maxlength="32" autocomplete="nickname" placeholder="¿Cómo te llamas?"></label>
+        <input type="hidden" name="mode" value="classic"><input type="hidden" name="policy" value="piece">
+        <p class="hint">Clásico 2 vs. 2 · turnos por ficha.<br>Cada persona controla A1, B1, A2 o B2.</p>
+        <button class="primary" type="submit">Crear sala privada <span aria-hidden="true">↗</span></button>
+      </form>
+      <div class="card"><form id="joinForm"><div class="card-number">02</div><h2>Entrar con un código</h2><label>Tu nombre<input name="name" required maxlength="32" autocomplete="nickname" placeholder="Tu nombre en la sala"></label><label>Código de invitación<input name="code" class="code-input" required minlength="10" maxlength="10" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXXXXXXXX"></label><button type="submit" class="secondary">Solicitar entrada <span aria-hidden="true">→</span></button></form>
+        <details class="recovery"><summary>Recuperar una sesión en este navegador</summary><p>La credencial es personal. Escríbela aquí; nunca forma parte de la invitación.</p><form id="recoverForm"><label>Código de sala<input name="code" required maxlength="10" autocomplete="off"></label><label>Credencial privada<input name="credential" type="password" required minlength="43" maxlength="43" autocomplete="off"></label><button type="submit" class="secondary">Recuperar mi posición</button></form></details>
+      </div>
+    </section>
+    <section id="roomPanel" hidden>
+      <div id="classicPanel" hidden></div>
+      <div class="room-heading"><div><div class="eyebrow" id="modeLabel"></div><h2>Sala <span id="roomCode"></span></h2><p id="selfLabel"></p></div><div class="room-tools"><span id="connection" class="connection" role="status">Conectando</span><button id="copyInvite" class="small">Copiar invitación</button></div></div>
+      <div class="workspace"><div class="main-column">
+        <div class="card lobby"><div class="section-line"><h3>Participantes</h3><span id="seatCount" class="muted">0 / 4</span></div><div id="seats" class="seats"></div><div id="requests" class="requests"></div><div class="actions"><button id="readyButton" class="secondary">Estoy listo</button><button id="startButton" class="primary">Iniciar prueba</button></div><p id="lobbyHint" class="hint"></p></div>
+        <div class="card probe"><div class="eyebrow">ESTADO COMPARTIDO</div><div class="probe-top"><h3 id="decisionTitle">Esperando participantes</h3><span class="counter" id="completed">00</span></div><p id="decisionHint">El anfitrión asignará las cuatro posiciones.</p><div id="graceNotice" class="grace" hidden></div><div class="actions"><button id="completeButton" class="primary" disabled>Completar decisión de prueba</button><button id="discardButton" class="secondary" hidden>Simular descarte rival</button><button id="resolveButton" class="primary" hidden>Resolver descarte de prueba</button></div><ol id="history" class="history"></ol><p class="hint">Las decisiones son sondas de infraestructura. No mueven fichas, construyen muros ni simulan una partida.</p></div>
+      </div><aside>
+        <div class="card clock-card"><div class="section-line"><h3>Tiempo de los equipos</h3><span class="live-dot" aria-hidden="true"></span></div><div id="clocks"></div><p class="hint">El servidor controla el tiempo. No hay límite adicional por turno ni incremento.</p></div>
+        <div class="card session-card"><h3>Tu sesión</h3><p id="sessionHint">La credencial queda guardada en este navegador.</p><div class="session-actions"><button id="disconnectButton" class="small">Desconectar</button><button id="reconnectButton" class="small">Reconectar</button><button id="copyCredential" class="text-button">Copiar credencial privada</button></div><p id="revision" class="revision"></p><details><summary>Estado público de la sala</summary><pre id="publicState"></pre></details></div>
+      </aside></div>
+    </section>
+    <footer><span>Entorno de prueba independiente de CERCONEXO publicado.</span><nav aria-label="Perfiles para prueba local"><span>Perfiles locales:</span><a data-profile="1" href="?profile=1">1</a><a data-profile="2" href="?profile=2">2</a><a data-profile="3" href="?profile=3">3</a><a data-profile="4" href="?profile=4">4</a></nav></footer>
+  </main>
+</body>
+</html>

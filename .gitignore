@@ -210,3 +210,19 @@
 !/tests/m42-offline-probe.cjs
 !/tests/m42.browser.cjs
 !/M42.md
+
+# M6.1: laboratorio local y backend; nunca se copian a GitHub Pages.
+!/online/
+!/M61.md
+/online/node_modules/
+/online/.wrangler/
+/online/.state/
+/online/evidence/
+/online/.dev.vars*
+/online/.env*
+/online/*.log
+/online/test-results/
+/online/public/official/
+!/M62.md
+!/M63.md
+/online/.experimental/

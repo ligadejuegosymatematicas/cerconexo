@@ -1,0 +1,5 @@
+/*
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8787 http://localhost:8787 ws://127.0.0.1:8787 ws://localhost:8787 ws://127.0.0.1:8788 ws://127.0.0.1:8789; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'

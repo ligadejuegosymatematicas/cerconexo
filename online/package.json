@@ -1,0 +1,27 @@
+{
+  "name": "cerconexo-m6-local",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:integration": "node scripts/classic-integration.mjs",
+    "test:browser": "node scripts/classic-browser.mjs",
+    "prepare:static": "node scripts/prepare-static.mjs",
+    "lan": "node scripts/lan.mjs",
+    "check": "node scripts/check-isolation.mjs",
+    "build:experimental": "node scripts/build-experimental.mjs",
+    "dev:experimental": "node scripts/experimental-dev.mjs",
+    "test:product": "node scripts/product-browser.mjs",
+    "deploy:experimental": "node scripts/deploy-experimental.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "ws": "8.21.0",
+    "wrangler": "4.156.0"
+  }
+}

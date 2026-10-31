@@ -1,0 +1,19 @@
+:root{--bg:#071A2F;--panel:#0D223A;--panel2:#102A43;--line:#42607A;--text:#FBF7EF;--muted:#B4C4D5;--mint:#FFD166;--gold:#FFD166;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body.integrated-online{background:#071A2F}
+.integrated-online .top{padding:16px 28px;max-width:1180px}
+.online-brand img{display:block;width:180px;max-width:40vw;padding:5px 9px;background:#F6EEDB;border-radius:9px}
+.top nav{display:flex;gap:16px;font-size:13px}
+.top nav a{text-decoration:none;min-height:44px;display:flex;align-items:center}
+.integrated-online .intro{padding:28px 0 24px}
+.integrated-online h1{font-size:32px;letter-spacing:0}
+.integrated-online .card{border-radius:14px;background:#0D223A}
+.integrated-online .primary{background:#FFD166;color:#071A2F}
+.integrated-online .probe,.integrated-online .revision,.integrated-online .session-card details,.integrated-online footer nav,.integrated-online footer>span{display:none}
+.integrated-online .seat[data-self=true]{border-color:#D4A64A;background:#D4A64A0A}
+.integrated-online .seat-token{border-radius:50%;color:#F59E0B}
+.integrated-online .clock-row[data-running=true]{border-color:#D4A64A;background:#102A43}
+.integrated-online.playing-classic .top{display:none}
+.integrated-online footer{display:block}
+.integrated-online footer>a{display:inline-flex;min-height:44px;align-items:center;text-decoration:none}
+.classic-session-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 12px;border:1px solid #47617a;border-radius:9px;background:#102a43;color:#f6f5ee;font-size:12px;font-weight:650;text-decoration:none}
+@media(max-width:600px){.integrated-online .top{padding:12px 16px;gap:12px}.top nav{gap:12px;font-size:12px}.online-brand img{width:130px}.integrated-online .intro{padding:22px 0}.integrated-online h1{font-size:28px}.classic-session-actions a{padding:7px;font-size:10px}}

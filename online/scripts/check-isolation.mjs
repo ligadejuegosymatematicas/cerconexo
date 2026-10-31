@@ -1,0 +1,25 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import { root } from './runtime.mjs';
+import { BASE_SHA } from '../src/protocol.mjs';
+const run = promisify(execFile), repo = path.dirname(root);
+const git = async args => (await run('git', ['--no-optional-locks', '-C', repo, ...args], { windowsHide: true })).stdout.trim();
+assert.equal(await git(['merge-base', 'HEAD', BASE_SHA]), BASE_SHA);
+assert.equal(await git(['branch', '--show-current']), 'm6-salas-conexiones');
+const changed = (await git(['diff', '--name-only', BASE_SHA])).split(/\r?\n/).filter(Boolean);
+const untracked = (await git(['ls-files', '--others', '--exclude-standard'])).split(/\r?\n/).filter(Boolean);
+assert.ok([...changed, ...untracked].every(file => file === '.gitignore' || file === 'M61.md' || file === 'M62.md' || file === 'M63.md' || file.startsWith('online/')), 'Hay cambios fuera del alcance aislado de M6');
+for (const file of [...changed, ...untracked]) assert.ok(!/(?:node_modules|\.state|\.wrangler|\.experimental|evidence|\.env|\.dev\.vars)(?:\/|$)/.test(file), 'Un archivo privado o generado no está ignorado');
+for (const file of ['docs', 'src', 'arena', 'scripts/pages-files.json', 'scripts/project-files.json', '.github']) assert.equal(await git(['diff', '--name-only', BASE_SHA, '--', file]), '');
+const config = JSON.parse(await readFile(path.join(root, 'wrangler.jsonc'), 'utf8'));
+assert.equal(config.workers_dev, false); assert.equal(config.preview_urls, false); assert.equal(config.vars.LOCAL_DEMO, 'true');
+assert.ok(!config.account_id && !config.routes && !config.route, 'Se añadió una configuración de publicación');
+assert.equal(await git(['rev-parse', 'main']), '2ece078f5b2563c35016ade18327e75daa4b2f55');
+assert.equal(await git(['rev-parse', 'desarrollo']), '96c8a470c1c31f3ad552e0998bcdd02e72484954');
+const version = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+assert.equal(version.scripts.deploy, undefined);
+console.log(JSON.stringify({ ok: true, baseSha: BASE_SHA, branch: 'm6-salas-conexiones', protectedTreesUnchanged: true,
+  mainAndDesarrolloUnchanged: true, publicPackageUnchanged: true, changed: [...changed, ...untracked] }, null, 2));
