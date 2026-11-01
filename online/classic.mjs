@@ -37,7 +37,7 @@ function loadStyles() {
 export function mountClassic(container, session) {
   loadStyles();
   const root = node('section', 'classic-online');
-  root.setAttribute('aria-label', 'Cerconexo Clásico online');
+  root.setAttribute('aria-label', 'Cerconexo Clásico Online Beta');
   root.dataset.classicView = '';
   root.innerHTML = `
     <header class="classic-header topbar">
@@ -199,7 +199,7 @@ export function mountClassic(container, session) {
     $('reconnect').disabled = ['connecting', 'reconnecting'].includes(session.phase);
     $('disconnect').hidden = !['connected', 'connecting', 'reconnecting'].includes(session.phase);
     $('invite').disabled = !(state.code ?? session.code);
-    write($('format'), `ONLINE · ${(state.config.playerCount ?? state.config.seats.length) === 2 ? '1 VS. 1' : '2 VS. 2'} · ${state.config.policy === 'team' ? 'POR EQUIPO' : 'POR FICHA'}`);
+    write($('format'), `ONLINE BETA · ${(state.config.playerCount ?? state.config.seats.length) === 2 ? '1 VS. 1' : '2 VS. 2'} · ${state.config.policy === 'team' ? 'POR EQUIPO' : 'POR FICHA'}`);
     write($('self'), seat ? `Tú: ${state.self.name ?? 'Participante'} · ${owned().join(' y ')} · Equipo ${seat[0]}${owned().every(id => !active.has(id)) ? ' · Fichas aseguradas ✓' : ''}` : 'Observas esta partida');
     write($('turn-heading'), finished ? 'PARTIDA FINALIZADA' : 'AHORA JUEGA');
     write($('progress'), finished ? `${state.classic?.game?.moves ?? 0} muros` : `${steps} / 2 pasos`);

@@ -15,7 +15,7 @@ const all = (predicate, message) => eventually(async () => (await states()).ever
 let browser;
 try {
   await mkdir(path.join(root, 'evidence'), { recursive: true });
-  const health = await (await fetch(base + '/api/health', { headers: { Origin: target.origin }, signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.serviceMode, 'beta-staging');
+  const health = await (await fetch(base + '/api/health', { headers: { Origin: target.origin }, signal: AbortSignal.timeout(15000) })).json(); assert.equal(health.serviceMode, process.argv.includes('--live-pages') ? 'beta-public' : 'beta-staging');
   if (target) { report.stage = 'M6.3'; report.target = target.base; report.https = target.publicServer; }
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (let i = 0; i < 4; i++) {

@@ -3,6 +3,13 @@ import { readFile } from 'node:fs/promises';
 import { API_BASE } from '../config.mjs';
 import { betaOperator } from './beta-operator.mjs';
 export async function betaPagesTarget() {
+  if (process.argv.includes('--live-pages')) return {
+    base: 'https://ligadejuegosymatematicas.github.io/cerconexo',
+    entry: 'https://ligadejuegosymatematicas.github.io/cerconexo/online/', backend: API_BASE,
+    origin: 'https://ligadejuegosymatematicas.github.io', headers: {}, suffix: 'public-pages',
+    publicServer: true, frontendIntercepted: false, operatorAdmission: false,
+    async install() { /* Actual Pages and public API: no routes, cookies or injected headers. */ }
+  };
   const operator = await betaOperator(); assert.equal(operator.origin, API_BASE);
   const origin = 'https://ligadejuegosymatematicas.github.io', prefix = '/cerconexo/';
   const allowed = new Set(JSON.parse(await readFile(new URL('../../scripts/pages-files.json', import.meta.url), 'utf8')));
