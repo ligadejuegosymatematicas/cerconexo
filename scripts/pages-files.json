@@ -72,5 +72,8 @@
   "online/continue.css",
   "online/navigation.mjs",
   "online/configuration-rules.mjs",
-  "src/finalPresentation.mjs"
+  "src/finalPresentation.mjs",
+  "online/arena.mjs",
+  "online/arena.css",
+  "online/arena-entry.mjs"
 ]

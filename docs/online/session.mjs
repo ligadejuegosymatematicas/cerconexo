@@ -53,7 +53,7 @@ export class OnlineSession extends EventTarget {
     this.setPhase('connecting');
     const url = new URL(`/api/rooms/${this.code}/socket`, this.base); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(url); this.socket = ws; let authenticated = false;
-    ws.addEventListener('open', () => { if (this.socket === ws) ws.send(JSON.stringify({ type: 'authenticate', protocolVersion: VERSION, roomId: this.code, credential: this.credential, features: ['rematch-v1', 'classic-config-v2', 'ux-simplified-v1'] })); });
+    ws.addEventListener('open', () => { if (this.socket === ws) ws.send(JSON.stringify({ type: 'authenticate', protocolVersion: VERSION, roomId: this.code, credential: this.credential, features: ['rematch-v1', 'classic-config-v2', 'ux-simplified-v1', 'arena-duo-v1'] })); });
     ws.addEventListener('message', event => {
       if (this.socket !== ws) return;
       if (event.data === 'm6:pong') { this.lastPong = performance.now(); return; }
@@ -123,7 +123,7 @@ export class OnlineSession extends EventTarget {
   }
   command(type, params = {}) {
     if (this.phase !== 'connected' || !this.state || this.pending) throw new Error('Espera la conexión y la confirmación anterior.');
-    if (type.startsWith('classic.') && this.state.matchId) params = { ...params, matchId: this.state.matchId };
+    if ((type.startsWith('classic.')||type.startsWith('arena.')) && this.state.matchId) params = { ...params, matchId: this.state.matchId };
     this.pending = { protocolVersion: VERSION, roomId: this.code, actionId: newActionId(), expectedRevision: this.state.revision, type, params };
     try { this.persist(); } catch { this.pending = null; throw new Error('No se pudo guardar la intención. Revisa el almacenamiento del navegador.'); }
     this.emit('pending', true); this.sendPending();

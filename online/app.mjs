@@ -1,6 +1,7 @@
-import { API_BASE } from './config.mjs';
+import { API_BASE, ARENA_DUO_ENABLED } from './config.mjs';
 import { OnlineSession, apiRequest, newCredential, newCode, loadSession, storageKey } from './session.mjs';
 import { mountClassic } from './classic.mjs';
+import {mountArena} from './arena.mjs';
 import { rememberOnline, dismissOnline } from './session-index.mjs';
 import { bindOnlineHome } from './navigation.mjs';
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from './configuration-rules.mjs';
@@ -10,6 +11,15 @@ const profile = /^[1-4]$/.test(url.searchParams.get('profile')) ? url.searchPara
 const phases = {idle:'Sin conexión',connecting:'Conectando…',connected:'Conectado',reconnecting:'Reconectando…',disconnected:'Desconectado',replaced:'Abierta en otra pestaña',rejected:'Acceso no disponible',expired:'Sala finalizada'};
 let session = null, state = null, classic = null, busy = false, problemCode = null;
 const seatChoices = new Map(), create = $('createForm');
+const arenaRequested=url.searchParams.get('mode')==='arena-duo'&&ARENA_DUO_ENABLED;
+function arenaText(){
+  document.querySelector('.intro h1').textContent='Arena online';document.title='CERCONEXO · Arena Online';
+  document.querySelectorAll('.lobby-time,#createForm>.hint').forEach(n=>n.textContent='10 minutos por equipo');
+  const help=document.querySelector('.online-help');help.querySelector('summary').setAttribute('aria-label','Ayuda de Arena online');help.querySelector('strong').textContent='Arena online';
+  help.querySelector('p').textContent='Cuatro personas, una ficha por persona y diez minutos por equipo. Los movimientos y poderes aceptados no pueden deshacerse.';
+  const rules=help.querySelector('a');rules.href='../arena/';rules.textContent='Consultar las reglas de Arena';
+}
+if(arenaRequested){create.elements.mode.value='arena-duo';create.elements.players.value='4';create.elements.players.closest('label').hidden=true;document.querySelector('.choice-help').hidden=true;arenaText();}
 function problem(text = '', code = null) { problemCode=code; $('problem').textContent=text; $('problem').hidden=!text; }
 function el(tag,text,className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
 function chooseEntry(kind) {
@@ -37,8 +47,9 @@ async function submit(form,action) {
   try{await action(new FormData(form));}catch(e){problem(e.message,e.code);}finally{busy=false;b.disabled=false;}
 }
 create.addEventListener('submit',e=>{e.preventDefault();submit(create,async data=>{
+  if(url.searchParams.get('mode')==='arena-duo'&&!ARENA_DUO_ENABLED)throw new Error('Arena Online todavía no está habilitada en este entorno.');
   configurationForm();let code;do{code=newCode();}while(loadSession(localStorage,code,profile));
-  const credential=newCredential(),registration={type:'create',name:data.get('name'),mode:'classic',policy:create.elements.policy.value,players:Number(data.get('players'))};
+  const credential=newCredential(),registration={type:'create',name:data.get('name'),mode:arenaRequested?'arena-duo':'classic',policy:arenaRequested?'piece':create.elements.policy.value,players:arenaRequested?4:Number(data.get('players'))};
   saveInitial(code,credential,registration);rememberRoom(code);await apiRequest(API_BASE,'/api/rooms',{code,credential,...registration});attach(code,credential);
 });});
 $('joinForm').addEventListener('submit',e=>{e.preventDefault();submit(e.currentTarget,async data=>{
@@ -57,16 +68,17 @@ $('startButton').addEventListener('click',()=>act('start'));
 $('disconnectButton').addEventListener('click',()=>session?.disconnect());
 $('reconnectButton').addEventListener('click',()=>{problem();session?.connect();});
 async function copy(value,text) { try{await navigator.clipboard.writeText(value);problem(text);}catch{problem('No se pudo copiar. Inténtalo de nuevo.');} }
-$('copyInvite').addEventListener('click',()=>{const invite=new URL(entryPath,location.origin);invite.searchParams.set('room',state.code);copy(invite.href,'Invitación copiada');});
+$('copyInvite').addEventListener('click',()=>{const invite=new URL(entryPath,location.origin);invite.searchParams.set('room',state.code);if(state.arena)invite.searchParams.set('mode','arena-duo');copy(invite.href,'Invitación copiada');});
 $('copyCredential').addEventListener('click',()=>copy(session.credential,'Acceso privado copiado. Consérvalo solo para recuperar tu posición.'));
 function render() {
   $('connection').textContent=phases[session?.phase]??'Sin conexión';$('connection').dataset.phase=session?.phase??'idle';
   if(!state)return;$('publicState').textContent=JSON.stringify(state,null,2);
-  const playing=!!state.classic&&['active','finished'].includes(state.status)&&state.self.admitted;
+  const playing=!!(state.classic||state.arena)&&['active','finished'].includes(state.status)&&state.self.admitted;
   document.body.classList.toggle('playing-classic',playing);$('classicPanel').hidden=!playing;$('lobbyPanel').hidden=playing;
-  if(playing){classic??=mountClassic($('classicPanel'),session);classic.update(state);return;}
+  if(playing){classic??=(state.arena?mountArena:mountClassic)($('classicPanel'),session);classic.update(state);return;}
   const enabled=session.phase==='connected'&&!session.pending,count=state.config.playerCount??state.config.seats.length;
-  $('modeLabel').textContent=`Clásico · ${count===2?'1 vs. 1':'2 vs. 2'}${count===2?' · '+(state.config.policy==='team'?'Por equipo':'Por ficha'):''}`;
+  $('modeLabel').textContent=`${state.config.mode==='arena-duo'?'Arena':'Clásico'} · ${count===2?'1 vs. 1':'2 vs. 2'}${count===2?' · '+(state.config.policy==='team'?'Por equipo':'Por ficha'):''}`;
+  if(state.arena)arenaText();
   $('roomCode').textContent=state.code;$('selfLabel').textContent=`${state.self.name} · ${state.self.seat??'Esperando aprobación'}${state.self.host?' · Anfitrión':''}`;
   $('seatCount').textContent=`${state.participants.length}/${count}`;
   $('seats').replaceChildren(...state.config.seats.map(seat=>{
@@ -86,7 +98,7 @@ function render() {
   const self=state.participants.find(p=>p.id===state.self.id),lobby=state.status==='lobby',retired=retiredClassicConfiguration(state.config);
   $('readyButton').hidden=!state.self.admitted||!lobby||retired;$('readyButton').textContent=self?.ready?'Listo ✓':'Estoy listo';$('readyButton').disabled=!enabled;
   $('startButton').hidden=!state.self.host||!lobby||retired;
-  $('startButton').disabled=!enabled||state.participants.length!==count||state.participants.some(p=>!p.online||!p.ready||((count===2||state.config.policy==='team')&&!p.classicConfigCapable));
+  $('startButton').disabled=!enabled||state.participants.length!==count||state.participants.some(p=>!p.online||!p.ready||(state.arena&&!p.arenaCapable)||((count===2||state.config.policy==='team')&&!p.classicConfigCapable));
   $('copyInvite').hidden=!lobby||retired;$('requests').hidden=retired;
   $('retiredNotice').hidden=!retired;$('retiredNotice').textContent=retired?RETIRED_MESSAGE:'';document.querySelector('.new-room-link').hidden=!retired;
   $('lobbyHint').textContent=!state.self.admitted?'Esperando la aprobación del anfitrión.':lobby?(state.participants.length<count?'Comparte la invitación para completar la sala.':state.participants.some(p=>!p.ready)?'Falta que todos estén listos.':state.self.host?'Todo listo para comenzar.':'Esperando al anfitrión.') : '';
