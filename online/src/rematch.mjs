@@ -1,5 +1,6 @@
 import { requireThat, randomId, participantCount, needsConfigClient, CONFIG_UPDATE_MESSAGE } from './protocol.mjs';
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
+import {isArenaRoom,ARENA_UPDATE} from './arena-adapter.mjs';
 
 export const REMATCH_MS = 120000;
 export const MAX_MATCHES = 20;
@@ -14,7 +15,7 @@ export function normalizeMatch(room) {
   return room;
 }
 export function decisionFingerprint(decision) {
-  return decision ? JSON.stringify([decision.kind, decision.team, decision.actor, decision.eligible]) : null;
+  return decision ? JSON.stringify([decision.kind, decision.team, decision.actor, decision.eligible,...(decision.key?[decision.key]:[])]) : null;
 }
 export function checkMatch(room, supplied, { legacy = false } = {}) {
   requireThat(supplied === matchId(room) || legacy && supplied === undefined && (room.matchNumber ?? 1) === 1,
@@ -25,7 +26,8 @@ export function rematchCommand(room, player, command, now, participants) {
   checkMatch(room, args.matchId);
   requireThat(player.rematchCapable === true, 'UPDATE_REQUIRED', UPDATE_MESSAGE, 409);
   requireThat(!needsConfigClient(room.config) || player.classicConfigCapable, 'UPDATE_REQUIRED', CONFIG_UPDATE_MESSAGE, 409);
-  requireThat(room.status === 'finished' && room.classic && player.admitted && player.seat, 'REMATCH', 'La revancha solo se propone al finalizar Clásico.', 409);
+  requireThat(room.status === 'finished' && (room.classic||room.arena) && player.admitted && player.seat, 'REMATCH', 'La revancha solo se propone al finalizar la partida.', 409);
+  requireThat(!isArenaRoom(room)||player.arenaCapable,'UPDATE_REQUIRED',ARENA_UPDATE,409);
   requireThat(!retiredClassicConfiguration(room.config), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
   if (command.type === 'rematch.propose') {
     requireThat(player.id === room.hostId, 'PERMISSION', 'Solo el anfitrión puede proponer la revancha.', 403);
@@ -53,7 +55,7 @@ export function rematchProgress(room, participants, now, countdownMs) {
   if (now >= proposal.expiresAt) { proposal.status = 'expired'; proposal.startsAt = null; return 'rematch-expired'; }
   const consent = participants.length === participantCount(room.config) && participants.every(p => proposal.votes[p.id] === true);
   const connected = participants.every(p => p.online);
-  const compatible = participants.every(p => p.rematchCapable === true && (!needsConfigClient(room.config) || p.classicConfigCapable));
+  const compatible = participants.every(p => p.rematchCapable === true && (!isArenaRoom(room)||p.arenaCapable) && (!needsConfigClient(room.config) || p.classicConfigCapable));
   if ((!connected || !compatible) && proposal.status === 'countdown') { proposal.status = 'pending'; proposal.startsAt = null; return 'rematch-paused'; }
   if (consent && connected && compatible && proposal.status === 'pending') {
     proposal.status = 'countdown'; proposal.startsAt = now + countdownMs; return 'rematch-countdown';
