@@ -53,5 +53,18 @@
   "src/liveInspection.mjs",
   "src/experience.css",
   "src/contextHelp.mjs",
-  "src/illustratedManual.mjs"
+  "src/illustratedManual.mjs",
+  "online/index.html",
+  "online/app.mjs",
+  "online/session.mjs",
+  "online/config.mjs",
+  "online/styles.css",
+  "online/classic.css",
+  "online/classic.mjs",
+  "online/integrated.css",
+  "online/decision-notice.mjs",
+  "online/final-inspection.mjs",
+  "online/rematch-panel.mjs",
+  "online/new-game.mjs",
+  "online/new-game.css"
 ]

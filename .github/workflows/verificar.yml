@@ -2,7 +2,7 @@ name: Comprobar Cerconexo
 
 on:
   push:
-    branches: [main, desarrollo, m5c-integracion]
+    branches: [main, desarrollo, m5c-integracion, m6-beta-integracion]
   pull_request:
     branches: [main]
 
@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -29,6 +30,10 @@ jobs:
         run: node scripts/check-integrity.mjs
       - name: Comprobar motor, interacción geométrica y ruta de Pages
         run: node --test tests/*.test.mjs arena/tests/*.test.mjs
+      - name: Comprobar autoridad online, sesiones y política del backend beta
+        run: |
+          npm ci --prefix online --ignore-scripts
+          node --test online/tests/*.test.mjs
       - name: Reconstruir HTML autónomos y ensayo de rutas
         run: |
           python3 scripts/build_offline.py

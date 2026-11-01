@@ -1,0 +1,19 @@
+#newDialog .control-options { grid-template-columns:repeat(3,minmax(0,1fr)); }
+[data-online-control][aria-pressed=true] { border-color:#d4a64a; background:#203b50; }
+#newDialog[data-online=true] .selector-content { display:block; }
+#newDialog[data-online=true] #localDescription { position:static!important; width:auto!important; height:auto!important; margin:8px 0!important; clip-path:none!important; white-space:normal!important; }
+#newDialog [data-online-players] { margin:8px 0; }
+.online-player-options { border:0; padding:0; }
+.online-player-options:not([hidden]) { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.online-player-options legend { font-size:13px; margin-bottom:8px; }
+.online-player-options p { grid-column:1/-1; }
+#newDialog [data-online-players] small { display:block; font-size:11px; }
+#newDialog [data-online-help] { font-size:12px; line-height:1.45; color:#b4c4d5; }
+.online-pending { opacity:.6; cursor:default!important; }
+#newDialog .online-pending small { display:block; font-size:11px; }
+#newDialog fieldset:first-child .setup-options { grid-template-columns:repeat(3,minmax(0,1fr)); }
+@media(max-width:420px) {
+  #newDialog .control-options .control-icon { display:none; }
+  #newDialog .control-options button { grid-template-columns:1fr; font-size:12px; padding:8px 4px; }
+  #newDialog .control-options .option-name { font-size:13px; }
+}

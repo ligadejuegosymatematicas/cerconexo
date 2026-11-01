@@ -210,3 +210,16 @@
 !/tests/m42-offline-probe.cjs
 !/tests/m42.browser.cjs
 !/M42.md
+
+# Candidata M5-D + M6. No incluir estado privado o dependencias.
+!/online/
+/online/node_modules/
+/online/.state/
+/online/.wrangler/
+/online/.experimental/
+/online/evidence/
+/online/.env*
+/online/.dev.vars*
+!/docs/online/
+!/M6_BETA.md
+!/scripts/online_offline.py

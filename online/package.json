@@ -1,0 +1,23 @@
+{
+  "name": "cerconexo-m6-beta-candidate",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:configurations": "node --use-system-ca scripts/configurations-browser.mjs",
+    "test:timeout": "node --use-system-ca scripts/classic-timeout.mjs",
+    "test:security": "node --use-system-ca scripts/beta-security.mjs",
+    "check": "node scripts/check-isolation.mjs",
+    "test:product": "node scripts/product-browser.mjs",
+    "prepare:staging": "node --use-system-ca scripts/deploy-beta-staging.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "ws": "8.21.0",
+    "wrangler": "4.156.0"
+  }
+}
