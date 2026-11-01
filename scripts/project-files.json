@@ -178,6 +178,8 @@
   "online/scripts/review-beta-staging.mjs",
   "online/scripts/runtime.mjs",
   "online/scripts/socket-client.mjs",
+  "online/scripts/ux-local.mjs",
+  "online/scripts/ux-stage1-browser.mjs",
   "online/session.mjs",
   "online/src/access-policy.mjs",
   "online/src/beta-admission.mjs",

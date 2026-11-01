@@ -37,14 +37,14 @@ function loadStyles() {
 export function mountClassic(container, session) {
   loadStyles();
   const root = node('section', 'classic-online');
-  root.setAttribute('aria-label', 'Cerconexo Clásico Online Beta');
+  root.setAttribute('aria-label', 'Cerconexo Clásico online');
   root.dataset.classicView = '';
   root.innerHTML = `
     <header class="classic-header topbar">
       <div class="classic-brand branding"><img class="official-logo" src="${new URL('../assets/Cerconexo_wordmark_transparente.png', import.meta.url).href}" alt="CERCONEXO"><span>CLÁSICO <small data-classic-format>ONLINE</small></span></div>
       <div class="classic-room-tools">
         <div class="classic-room-meta"><span>Sala <strong data-classic-code></strong></span><span class="classic-connection" data-classic-connection role="status"></span></div>
-        <button type="button" data-classic-invite>Invitar</button><details class="classic-actions-menu" data-classic-actions-menu><summary aria-label="Acciones de sala">⋯</summary><div class="classic-session-actions"><button type="button" data-classic-reconnect>Reconectar</button><button type="button" data-classic-disconnect>Desconectar</button></div></details>
+        <button type="button" data-classic-invite hidden>Invitar</button><details class="classic-actions-menu" data-classic-actions-menu><summary aria-label="Opciones de la partida">⋯</summary><div class="classic-session-actions"><button type="button" data-classic-reconnect>Reconectar</button><details class="classic-access"><summary>Mi acceso</summary><button type="button" data-classic-copy-access>Copiar mi acceso privado</button><button type="button" data-classic-disconnect>Desconectar este navegador</button></details></div></details>
       </div>
     </header>
     <div class="classic-table">
@@ -65,8 +65,8 @@ export function mountClassic(container, session) {
         <section class="classic-clocks panel" aria-label="Tiempo de los equipos">
           <div class="classic-clock-grid" data-classic-clocks></div>
           <p class="classic-grace" data-classic-grace role="status" aria-live="polite" hidden></p>
-          <p class="classic-clock-note">Tiempo del servidor · sin incremento</p>
-          <p class="classic-clock-note" data-classic-idle-warning role="status" hidden>La decisión lleva más de un minuto sin una acción confirmada. El reloj continúa.</p>
+          <p class="classic-clock-note" hidden>8 minutos por equipo</p>
+          <p class="classic-clock-note" data-classic-idle-warning role="status" hidden>Tu reloj sigue corriendo.</p>
         </section>
         <details class="classic-secondary panel" data-classic-secondary><summary><strong data-classic-summary-score>A 0 · 0 B</strong><span data-classic-summary-presence>Jugadores</span><span>Detalles</span></summary><section class="classic-scores score-panel" aria-label="Marcadores y participantes">
           <div class="classic-score-heading section-heading"><h2 class="micro" data-classic-score-heading>CASILLAS ASEGURADAS</h2><span class="subtle">49 en total</span></div>
@@ -86,7 +86,7 @@ export function mountClassic(container, session) {
   const board = $('board'), view = createBoardView(board);
   const inspection = createFinalInspection({ board, info: $('inspection-info') }), haptics = createHaptics();
   const mobile = matchMedia('(max-width:700px)');
-  const adapt = () => { $('secondary').open = !mobile.matches; $('actions-menu').open = !mobile.matches; };
+  const adapt = () => { $('secondary').open = !mobile.matches; $('actions-menu').open = false; };
   adapt(); mobile.addEventListener('change', adapt);
   let keyboard = !(matchMedia('(pointer:coarse)').matches || navigator.maxTouchPoints > 0);
   const modeKey = event => { if (['Tab', 'Enter', ' '].includes(event.key) || event.key.startsWith('Arrow')) { keyboard = true; help(); } };
@@ -198,8 +198,8 @@ export function mountClassic(container, session) {
     $('reconnect').hidden = session.phase === 'connected';
     $('reconnect').disabled = ['connecting', 'reconnecting'].includes(session.phase);
     $('disconnect').hidden = !['connected', 'connecting', 'reconnecting'].includes(session.phase);
-    $('invite').disabled = !(state.code ?? session.code);
-    write($('format'), `ONLINE BETA · ${(state.config.playerCount ?? state.config.seats.length) === 2 ? '1 VS. 1' : '2 VS. 2'} · ${state.config.policy === 'team' ? 'POR EQUIPO' : 'POR FICHA'}`);
+    $('invite').hidden = true;
+    write($('format'), `ONLINE · ${(state.config.playerCount ?? state.config.seats.length) === 2 ? '1 VS. 1' : '2 VS. 2'}${(state.config.playerCount ?? state.config.seats.length) === 2 ? ' · '+(state.config.policy === 'team' ? 'POR EQUIPO' : 'POR FICHA') : ''}`);
     write($('self'), seat ? `Tú: ${state.self.name ?? 'Participante'} · ${owned().join(' y ')} · Equipo ${seat[0]}${owned().every(id => !active.has(id)) ? ' · Fichas aseguradas ✓' : ''}` : 'Observas esta partida');
     write($('turn-heading'), finished ? 'PARTIDA FINALIZADA' : 'AHORA JUEGA');
     write($('progress'), finished ? `${state.classic?.game?.moves ?? 0} muros` : `${steps} / 2 pasos`);
@@ -218,15 +218,15 @@ export function mountClassic(container, session) {
       return;
     }
     let prompt;
-    if (session.phase !== 'connected') prompt = 'Espera a recuperar la conexión para actuar. Los relojes siguen el estado del servidor.';
-    else if (session.pending) prompt = 'Confirmando tu acción con el servidor…';
-    else if (canControl() && state.decision.selecting) prompt = 'Toca una de tus fichas activas para elegirla. La selección se confirma en el servidor.';
-    else if (canAct()) prompt = steps === 2 ? 'Dos pasos confirmados. Construye un muro dorado para cerrar tu turno.'
-      : steps === 1 ? 'Primer paso confirmado. Da otro paso o construye un muro dorado.'
+    if (session.phase !== 'connected') prompt = 'Reconecta para continuar. Tu partida sigue en curso.';
+    else if (session.pending) prompt = 'Enviando jugada…';
+    else if (canControl() && state.decision.selecting) prompt = 'Selecciona una de tus fichas para jugar.';
+    else if (canAct()) prompt = steps === 2 ? 'Construye un muro para terminar tu turno.'
+      : steps === 1 ? 'Puedes dar otro paso o construir un muro.'
       : 'Construye un muro dorado o da hasta dos pasos por los puntos turquesa.';
     else if (seat && owned().every(id => !active.has(id))) prompt = 'Tus fichas tienen territorio asegurado. Sigue la partida de tu equipo.';
     else if (state.config.policy === 'team' && actor && actor[0] === seat?.[0]) prompt = `Turno reservado para ${participant?.name ?? actor} · ${actor}. Espera a que complete su muro.`;
-    else prompt = actor ? `Observa la jugada de ${participant?.name ?? actor}. Sus pasos se confirman para toda la sala.` : 'La partida comenzará cuando estén las cuatro personas listas.';
+    else prompt = actor ? `Turno de ${participant?.name ?? actor} · ${actor}` : 'Esperando para comenzar.';
     write($('prompt'), prompt);
   }
   function paintScores() {
@@ -347,9 +347,14 @@ export function mountClassic(container, session) {
   }
   function reconnect() { message(); session.connect(); }
   function disconnect() { session.disconnect(); }
+  async function copyAccess() {
+    try { await navigator.clipboard.writeText(session.credential); message('Acceso privado copiado. Consérvalo para recuperar tu posición.'); }
+    catch { message('No se pudo copiar. Inténtalo de nuevo.'); }
+  }
   const onState = event => update(event.detail), onControl = () => render();
   board.addEventListener('click', act); board.addEventListener('keydown', act);
   $('invite').addEventListener('click', invite); $('reconnect').addEventListener('click', reconnect); $('disconnect').addEventListener('click', disconnect);
+  root.querySelector('[data-classic-copy-access]').addEventListener('click', copyAccess);
   session.addEventListener('state', onState); session.addEventListener('phase', onControl); session.addEventListener('pending', onControl);
   document.addEventListener('visibilitychange', onControl);
   const timer = setInterval(paintClocks, 200);
