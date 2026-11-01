@@ -110,12 +110,17 @@ export function advanceRoom(room, now) {
   }
   return events;
 }
-export function presence(room, id, online, now) {
+export function presence(room, id, online, now, { voluntary = false } = {}) {
   normalizeMatch(room);
   const player = room.participants[id];
   if (!player || player.rejected || player.online === online) return false;
   player.online = online; player.lastSeenAt = now; room.presenceRevision++;
-  if (!online) beginDisconnect(room.clock, id);
+  if (!online) {
+    beginDisconnect(room.clock, id);
+    // Leaving the view is not a network incident and cannot request a pause.
+    // Keep the existing incident/budget representation and all normal grace rules.
+    if (voluntary) room.clock.players[id].until = now;
+  }
   if (!online && room.status === 'countdown' && player.admitted) { room.status = 'lobby'; room.startsAt = null; room.expiresAt = now + RETENTION_MS; room.revision++; }
   if (room.status === 'active') {
     const previous = JSON.stringify(room.clock.grace);
@@ -124,6 +129,10 @@ export function presence(room, id, online, now) {
   }
   if (room.status === 'finished') progressRematch(room, now);
   return true;
+}
+export function leaveView(room, id, now) {
+  advanceRoom(room, now);
+  return presence(room, id, false, now, { voluntary: true });
 }
 export function clientFeatures(room, id, features, now) {
   const player = room.participants[id], capable = Array.isArray(features) && features.includes('rematch-v1'), configured = Array.isArray(features) && features.includes('classic-config-v2');
@@ -210,7 +219,7 @@ export function publicRoom(room, playerId, now) {
   return { protocolVersion: room.protocolVersion, stage: isClassicRoom(room) ? 'M6.2' : 'M6.1', code: room.code, config: room.config, status: room.status,
     revision: room.revision, presenceRevision: room.presenceRevision, serverNow: now, startsAt: room.startsAt, expiresAt: room.expiresAt,
     matchId: matchId(room), matchNumber: room.matchNumber, decisionId: room.decision ? `${matchId(room)}:${room.decisionSerial}` : null,
-    rematch: room.rematch, previousResults: room.previousResults, features: { rematch: isClassicRoom(room), scopedMatches: true },
+    rematch: room.rematch, previousResults: room.previousResults, features: { rematch: isClassicRoom(room), scopedMatches: true, viewAway: true },
     self: { id: self.id, name: self.name, admitted: self.admitted, seat: self.seat, host: self.id === room.hostId, generation: self.generation,
       ...(isClassicRoom(room) ? { controlledPieces: controlledPieces(room.config, self.seat) } : {}) },
     participants: visible, requests: self.id === room.hostId ? Object.values(room.participants).filter(p => !p.admitted && !p.rejected).map(p => ({ id: p.id, name: p.name, online: p.online })) : [],

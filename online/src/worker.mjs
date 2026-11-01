@@ -4,7 +4,7 @@ import { createArena } from '../../arena/src/engine.mjs';
 import { analyzeArena } from '../../arena/src/geometry.mjs';
 import { PROTOCOL_VERSION, SCHEMA_VERSION, BASE_SHA, AUTH_MS, LEASE_MS, HEARTBEAT_MS, MAX_MESSAGE_BYTES,
   Fault, requireThat, roomCode, credential, nameOf, configuration, participantCount, needsConfigClient, CONFIG_UPDATE_MESSAGE, commandEnvelope, canonical, digest, errorMessage } from './protocol.mjs';
-import { createRoom, joinRoom, findPlayer, publicRoom, reconcileRoom, presence, clientFeatures, applyCommand, nextWake } from './room-model.mjs';
+import { createRoom, joinRoom, findPlayer, publicRoom, reconcileRoom, presence, leaveView, clientFeatures, applyCommand, nextWake } from './room-model.mjs';
 import { apiAccess, boundedJson as bodyOf } from './access-policy.mjs';
 import { pilotGate } from './pilot-gate.mjs';
 import { normalizeMatch, UPDATE_MESSAGE } from './rematch.mjs';
@@ -270,6 +270,16 @@ export class Room extends DurableObject {
         }
         const player = room.participants[a.playerId];
         requireThat(player && !player.rejected && player.generation === a.generation, 'REPLACED', 'Otra conexión recuperó esta sesión.', 401);
+        if (message.type === 'view-away') {
+          requireThat(message.protocolVersion === PROTOCOL_VERSION && message.roomId === room.code
+            && typeof message.requestId === 'string' && /^[A-Za-z0-9_-]{16,80}$/.test(message.requestId)
+            && Object.keys(message).every(k => ['type','protocolVersion','roomId','requestId'].includes(k)), 'MESSAGE', 'No se pudo volver a Inicio.');
+          const changed = leaveView(room, player.id, now);
+          this.write(room, changed ? [{ type: 'view-left', playerId: player.id, at: now }] : []);
+          await this.schedule(room, now);
+          send(ws, { type: 'view-left', requestId: message.requestId });
+          this.broadcast(room, now); return;
+        }
         // An expired lease must be recovered by opening a fresh, authenticated socket.
         requireThat(player.online, 'RECONNECT', 'Reconecta tu sesión para continuar.', 409);
         a.seenAt = now; ws.serializeAttachment(a);

@@ -58,6 +58,9 @@ export class OnlineSession extends EventTarget {
       if (this.socket !== ws) return;
       if (event.data === 'm6:pong') { this.lastPong = performance.now(); return; }
       let message; try { message = JSON.parse(event.data); } catch { return; }
+      if (message.type === 'view-left' && message.requestId === this.leaving?.requestId) {
+        clearTimeout(this.leaving.timer); this.leaving.resolve(); this.leaving = null; return;
+      }
       if (message.type === 'session-replaced' || message.type === 'expired') {
         this.stopped = true; this.setPhase(message.type === 'expired' ? 'expired' : 'replaced'); ws.close(); return;
       }
@@ -130,7 +133,18 @@ export class OnlineSession extends EventTarget {
       this.socket.send(JSON.stringify({ type: 'sync', protocolVersion: VERSION, roomId: this.code }));
     else if (!this.stopped) this.connect();
   }
+  leaveView() {
+    if (this.leaving) return this.leaving.promise;
+    if (this.phase !== 'connected' || this.socket?.readyState !== WebSocket.OPEN || !this.state?.features?.viewAway) return Promise.resolve();
+    const requestId = newActionId(); let resolve, reject;
+    const promise = new Promise((yes,no) => { resolve=yes; reject=no; });
+    const timer = setTimeout(() => { if(this.leaving?.requestId===requestId){this.leaving=null;this.connect();reject(new Error('No se pudo conectar.'));} },5000);
+    this.leaving={requestId,promise,resolve,reject,timer};
+    this.socket.send(JSON.stringify({type:'view-away',protocolVersion:VERSION,roomId:this.code,requestId}));
+    return promise;
+  }
   disconnect() {
+    if(this.leaving){clearTimeout(this.leaving.timer);this.leaving.reject(new Error('Conexión cerrada.'));this.leaving=null;}
     this.stopped = true; clearTimeout(this.retryTimer); clearTimeout(this.ackTimer); clearInterval(this.pingTimer);
     const ws = this.socket; this.socket = null; ws?.close(1000, 'Manual disconnect'); this.setPhase('disconnected');
   }

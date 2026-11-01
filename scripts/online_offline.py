@@ -8,4 +8,5 @@ def local_only(html):
     html = re.sub(r'<fieldset data-online-players[\s\S]*?</fieldset>', '', html)
     html = re.sub(r'<label class="online-pending"[\s\S]*?</label>', '', html)
     html = re.sub(r'<p id="arenaOnlinePending"[\s\S]*?</p>', '', html)
+    html = re.sub(r'<script type="module" src="\.\.?/online/continue\.mjs"></script>', '', html)
     return html

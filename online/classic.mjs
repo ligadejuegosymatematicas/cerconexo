@@ -3,6 +3,7 @@ import { createHaptics } from '../src/haptics.mjs';
 import { createDecisionNotice, decisionNoticeKey } from './decision-notice.mjs';
 import { createFinalInspection } from './final-inspection.mjs';
 import { mountRematch } from './rematch-panel.mjs';
+import { bindOnlineHome } from './navigation.mjs';
 
 const PHASES = {
   idle: 'Sin conexión', connecting: 'Conectando', connected: 'Conectado',
@@ -124,9 +125,11 @@ export function mountClassic(container, session) {
   const units = Array.from({ length: 49 }, () => {
     const unit = node('span', 'territory-unit unit-mixed'); unit.setAttribute('aria-hidden', 'true'); $('meter').append(unit); return unit;
   });
+  let unbindHome = () => {};
   if (document.body.classList.contains('integrated-online')) {
     const home = node('a', '', 'Inicio'); home.href = new URL('../', import.meta.url).href; home.setAttribute('aria-label', 'Volver al inicio de Cerconexo');
     root.querySelector('.classic-session-actions').prepend(home);
+    unbindHome = bindOnlineHome(home, () => session, text => message(text));
   }
   let state = null, receivedAt = performance.now(), boardKey = '', destroyed = false, lastGrace = false;
   let noticeTimer, historyKey = '';
@@ -360,7 +363,7 @@ export function mountClassic(container, session) {
   const timer = setInterval(paintClocks, 200);
   if (session.state) update(session.state);
   return { update, destroy() {
-    if (destroyed) return; destroyed = true; clearInterval(timer); clearTimeout(noticeTimer); haptics.stop(); inspection.destroy(); rematch.destroy();
+    if (destroyed) return; destroyed = true; clearInterval(timer); clearTimeout(noticeTimer); haptics.stop(); inspection.destroy(); rematch.destroy(); unbindHome();
     mobile.removeEventListener('change', adapt); document.removeEventListener('keydown', modeKey, true); root.removeEventListener('pointerdown', modePointer); document.removeEventListener('visibilitychange', onControl);
     session.removeEventListener('state', onState); session.removeEventListener('phase', onControl); session.removeEventListener('pending', onControl);
     board.removeEventListener('click', act); board.removeEventListener('keydown', act);

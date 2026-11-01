@@ -95,3 +95,12 @@ test('M6.2.1: error de red cambia de fase y la instantánea válida anuncia recu
   assert.equal(session.phase, 'connected'); assert.equal(recovered.length, 1); assert.equal(recovered[0].resumed, true);
   ws.message({ type: 'snapshot', state: { revision: 8, serverNow: 4001 } }); assert.equal(recovered.length, 1);
 });
+
+test('Inicio espera su aviso autenticado y conserva una jugada pendiente', async t => {
+  const {session,ws,storage}=fixture(t);session.state.features={viewAway:true};session.command('classic.step',{to:9});
+  const pending=structuredClone(session.pending),leaving=session.leaveView(),message=JSON.parse(ws.sent.at(-1));
+  assert.equal(message.type,'view-away');assert.equal(message.roomId,session.code);assert.ok(!('credential' in message));
+  let done=false;leaving.then(()=>{done=true;});ws.message({type:'view-left',requestId:'wrong'});await Promise.resolve();assert.equal(done,false);
+  ws.message({type:'view-left',requestId:message.requestId});await leaving;
+  assert.deepEqual(session.pending,pending);assert.deepEqual(JSON.parse(storage.getItem(storageKey(session.code))).pending,pending);
+});

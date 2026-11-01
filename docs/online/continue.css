@@ -1,0 +1,3 @@
+.online-continue{width:min(100%,960px);margin:0 auto 14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#0d223a;border:1px solid #42607a;border-radius:12px;color:#fbf7ef}
+.online-continue p{font-size:13px;line-height:1.5;margin:0}.online-continue a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:9px;background:#ffd166;color:#071a2f;text-decoration:none;font-size:14px;font-weight:700}.online-continue a:focus-visible{outline:3px solid #fbf7ef;outline-offset:3px}
+@media(max-width:600px){.online-continue{display:block;padding:10px 12px}.online-continue p{margin-bottom:8px}.online-continue a{width:100%}}

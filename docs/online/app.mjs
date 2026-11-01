@@ -1,6 +1,8 @@
 import { API_BASE } from './config.mjs';
 import { OnlineSession, apiRequest, newCredential, newCode, loadSession, storageKey } from './session.mjs';
 import { mountClassic } from './classic.mjs';
+import { rememberOnline, dismissOnline } from './session-index.mjs';
+import { bindOnlineHome } from './navigation.mjs';
 
 const $ = id => document.getElementById(id), url = new URL(location.href), entryPath = new URL('./',import.meta.url).pathname;
 const profile = /^[1-4]$/.test(url.searchParams.get('profile')) ? url.searchParams.get('profile') : '1';
@@ -22,8 +24,9 @@ function rememberRoom(code) { url.searchParams.set('room',code);url.searchParams
 function attach(code,credential) {
   classic?.destroy();classic=null;session?.disconnect();state=null;
   document.body.classList.add('in-room');session=new OnlineSession({base:API_BASE,code,credential,profile});
+  rememberOnline(localStorage,{code,profile});
   session.addEventListener('state',e=>{state=e.detail;render();});
-  session.addEventListener('phase',render);session.addEventListener('pending',render);
+  session.addEventListener('phase',()=>{if(['expired','rejected'].includes(session.phase))dismissOnline(localStorage,{code,profile});render();});session.addEventListener('pending',render);
   session.addEventListener('problem',e=>problem(e.detail.message,e.detail.code));
   session.addEventListener('recovered',()=>{if(['NETWORK','UNAVAILABLE'].includes(problemCode))problem();});
   rememberRoom(code);$('entry').hidden=true;$('roomPanel').hidden=false;session.connect();render();
@@ -92,6 +95,9 @@ function render() {
 }
 function paintTime(){if(!state)return;$('countdown').hidden=state.status!=='countdown';if(state.status==='countdown')$('countdown').textContent=`Comenzamos en ${Math.max(0,Math.ceil((state.startsAt-state.serverNow-performance.now()+session.receivedAt)/1000))}…`;}
 setInterval(paintTime,200);document.addEventListener('visibilitychange',()=>{if(!document.hidden)session?.sync();});
+bindOnlineHome(document.querySelector('.online-home'),()=>session,text=>problem(text));
+window.addEventListener('pagehide',()=>session?.disconnect());
+window.addEventListener('pageshow',event=>{if(event.persisted&&session&&session.phase!=='replaced')session.connect();});
 if(url.searchParams.get('action')==='create')chooseEntry('create');
 if(url.searchParams.has('room')){
   try{const code=codeOf(url.searchParams.get('room'));chooseEntry('join');$('joinForm').elements.code.value=code;$('recoverForm').elements.code.value=code;$('joinCodeField').hidden=true;$('inviteCode').hidden=false;$('inviteCode').textContent=`Sala ${code}`;

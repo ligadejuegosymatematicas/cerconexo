@@ -25,7 +25,7 @@ def build():
     script+='const {replayArenaSave,ARENA_SAVE_KEY}=(()=>{'+arena+'\nreturn {replayArenaSave,ARENA_SAVE_KEY};})();\n'
     script+=inline('src/launchData.mjs')+'\n'+inline('src/portal.mjs')
     script=script.replace("'./clasico/'","'./Cerconexo_Clasico.html'").replace("'./arena/'","'./Cerconexo_Arena.html'")
-    html=(ROOT/'index.html').read_text(encoding='utf-8')
+    html=runpy.run_path(str(ROOT/'scripts/online_offline.py'))['local_only']((ROOT/'index.html').read_text(encoding='utf-8'))
     html=html.replace('<link rel="stylesheet" href="./src/portal.css">','<style>\n'+(ROOT/'src/portal.css').read_text(encoding='utf-8')+'\n</style>')
     html=html.replace('<script type="module" src="./src/portal.mjs"></script>','<script type="module">\n'+script+'\n</script>')
     logo=base64.b64encode((ROOT/'assets/Cerconexo_logo_v3_transparente.png').read_bytes()).decode('ascii')
