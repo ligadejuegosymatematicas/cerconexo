@@ -1,5 +1,6 @@
 import { createBoardView } from '../src/boardView.mjs';
 import { createHaptics } from '../src/haptics.mjs';
+import { createFinalPresenter } from '../src/finalPresentation.mjs';
 import { createDecisionNotice, decisionNoticeKey } from './decision-notice.mjs';
 import { createFinalInspection } from './final-inspection.mjs';
 import { mountRematch } from './rematch-panel.mjs';
@@ -78,15 +79,16 @@ export function mountClassic(container, session) {
           <p class="classic-regions" data-classic-regions></p>
         </section></details>
         <details class="classic-history panel" data-classic-history hidden><summary>Resultados anteriores</summary><ul data-classic-history-list></ul></details>
-        <details class="classic-guide legend-panel panel"><summary>Guía del tablero</summary><div class="legend-content board-legend"><div><span class="legend-dot" aria-hidden="true"></span><span>Punto turquesa <b>Dar un paso · máximo dos</b></span></div><div><span class="legend-gold" aria-hidden="true"></span><span>Borde dorado <b>Construir y cerrar el turno</b></span></div><div><span class="legend-solid" aria-hidden="true"></span><span>Muro construido <b>No se puede atravesar</b></span></div><div><span class="classic-secured-symbol" aria-hidden="true">✓</span><span>Ficha asegurada <b>Su región ya es de su equipo</b></span></div></div><p>Los pasos se confirman al instante. Puedes construir sin desplazarte. Cada persona controla solo su ficha.</p></details>
+        <details class="classic-guide legend-panel panel"><summary>Guía del tablero</summary><div class="legend-content board-legend"><div><span class="legend-dot" aria-hidden="true"></span><span>Punto turquesa <b>Dar un paso · máximo dos</b></span></div><div><span class="legend-gold" aria-hidden="true"></span><span>Borde dorado <b>Construir y cerrar el turno</b></span></div><div><span class="legend-solid" aria-hidden="true"></span><span>Muro construido <b>No se puede atravesar</b></span></div><div><span class="classic-secured-symbol" aria-hidden="true">✓</span><span>Ficha asegurada <b>Su región ya es de su equipo</b></span></div></div><p>Los pasos se confirman al instante. Puedes construir sin desplazarte. </p></details>
       </aside>
     </div>
-    <details class="classic-preferences panel"><summary>Preferencias</summary><label><input type="checkbox" data-classic-vibration> Vibración de turno</label><p data-classic-vibration-info></p></details>
+    <details class="classic-preferences panel"><summary>Preferencias</summary><label><input type="checkbox" data-classic-vibration> Vibración</label><p data-classic-vibration-info></p></details>
     <p class="classic-message" data-classic-message role="status" aria-live="polite" hidden></p>`;
   container.append(root);
   const $ = name => root.querySelector(`[data-classic-${name}]`);
   const board = $('board'), view = createBoardView(board);
   const inspection = createFinalInspection({ board, info: $('inspection-info') }), haptics = createHaptics();
+  const resultSkin = createFinalPresenter({element:$('result'),title:$('result-title'),haptics});
   const mobile = matchMedia('(max-width:700px)');
   const adapt = () => { $('secondary').open = !mobile.matches; $('actions-menu').open = false; };
   adapt(); mobile.addEventListener('change', adapt);
@@ -295,6 +297,7 @@ export function mountClassic(container, session) {
   function render() {
     if (destroyed || !state?.classic) return;
     paintTurn(); paintScores(); paintBoard(); paintClocks(); help();
+    resultSkin.render({finished:isFinished(state),winners:state.outcome?.winners,viewerTeam:state.self?.seat?.[0]});
     inspection.update(state.classic, isFinished(state), state.outcome);
     rematch.update(state, now());
     if (!decisionNoticeKey(state) || session.phase !== 'connected' || document.hidden) {
@@ -310,11 +313,13 @@ export function mountClassic(container, session) {
   }
   function update(nextState) {
     if (destroyed || !nextState) return;
+    const liveFinish=state?.status==='active'&&nextState.status==='finished'&&state.matchId===nextState.matchId&&session.phase==='connected';
     if (state !== nextState) {
       state = nextState;
       receivedAt = Number.isFinite(session.receivedAt) && session.state === nextState ? session.receivedAt : performance.now();
     }
     render();
+    if(liveFinish)resultSkin.celebrate();
   }
   function act(event) {
     const target = event.target.closest?.('[data-to], [data-wall], [data-actor]');
@@ -365,7 +370,7 @@ export function mountClassic(container, session) {
   const timer = setInterval(paintClocks, 200);
   if (session.state) update(session.state);
   return { update, destroy() {
-    if (destroyed) return; destroyed = true; clearInterval(timer); clearTimeout(noticeTimer); haptics.stop(); inspection.destroy(); rematch.destroy(); unbindHome();
+    if (destroyed) return; destroyed = true; clearInterval(timer); clearTimeout(noticeTimer); haptics.stop(); inspection.destroy(); rematch.destroy(); unbindHome(); resultSkin.destroy();
     mobile.removeEventListener('change', adapt); document.removeEventListener('keydown', modeKey, true); root.removeEventListener('pointerdown', modePointer); document.removeEventListener('visibilitychange', onControl);
     session.removeEventListener('state', onState); session.removeEventListener('phase', onControl); session.removeEventListener('pending', onControl);
     board.removeEventListener('click', act); board.removeEventListener('keydown', act);

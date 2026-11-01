@@ -12,6 +12,8 @@ try{
   const request=a.locator('#requests .request');await request.locator('select').selectOption('B');await request.getByRole('button',{name:'Admitir',exact:true}).click();await b.locator('#readyButton:visible').waitFor();
   await a.locator('#readyButton').click();await b.locator('#readyButton').click();await a.locator('#startButton:enabled').click();await a.locator('[data-classic-connection][data-phase=connected]').waitFor();
   await a.locator('[data-to="9"] .move-hit').click();await a.waitForFunction(()=>JSON.parse(document.querySelector('#publicState').textContent).classic.draft.path.join(',')==='8,9');const before=await state(a);
+  await a.screenshot({path:new URL('../evidence/ux-active-mobile.png',import.meta.url).pathname.replace(/^\/(\w:)/,'$1'),fullPage:true});
+  await a.setViewportSize({width:1440,height:1000});await a.screenshot({path:new URL('../evidence/ux-active-desktop.png',import.meta.url).pathname.replace(/^\/(\w:)/,'$1'),fullPage:true});await a.setViewportSize({width:390,height:844});
   await a.locator('[data-classic-actions-menu]>summary').click();await a.locator('.classic-session-actions>a').click();await a.locator('[data-online-continue]').waitFor();
   await a.screenshot({path:new URL('../evidence/ux-continue-home-mobile.png',import.meta.url).pathname.replace(/^\/(\w:)/,'$1'),fullPage:true});
   // A read-only resume cannot steal the other browser's connection.

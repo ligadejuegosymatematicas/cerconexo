@@ -71,5 +71,6 @@
   "online/continue.mjs",
   "online/continue.css",
   "online/navigation.mjs",
-  "online/configuration-rules.mjs"
+  "online/configuration-rules.mjs",
+  "src/finalPresentation.mjs"
 ]

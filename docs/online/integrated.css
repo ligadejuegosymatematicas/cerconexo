@@ -5,7 +5,7 @@ body.integrated-online{background:#071A2F}
 .top nav{display:flex;gap:16px;font-size:13px}
 .top nav a{text-decoration:none;min-height:44px;display:flex;align-items:center}
 .integrated-online .intro{padding:28px 0 24px}
-.integrated-online h1{font-size:32px;letter-spacing:0}
+.integrated-online h1{font-size:32px;letter-spacing:0;background:transparent;padding:0;box-shadow:none}
 .integrated-online .card{border-radius:14px;background:#0D223A}
 .integrated-online .primary{background:#FFD166;color:#071A2F}
 .integrated-online .probe,.integrated-online .revision,.integrated-online .session-card details,.integrated-online footer nav,.integrated-online footer>span{display:none}
