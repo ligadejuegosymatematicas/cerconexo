@@ -9,6 +9,7 @@ import { apiAccess, boundedJson as bodyOf } from './access-policy.mjs';
 import { pilotGate } from './pilot-gate.mjs';
 import { normalizeMatch, UPDATE_MESSAGE } from './rematch.mjs';
 import { authorizeCreation } from './beta-admission.mjs';
+import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
 
 const utf8 = new TextEncoder();
 const PARAMS = { admit: ['playerId', 'seat'], reject: ['playerId'], ready: ['ready'], start: [],
@@ -174,6 +175,10 @@ export class Room extends DurableObject {
       if (!p || p.rejected) { close(ws, 4003, 'Admission rejected'); continue; }
       if (p.generation !== a.generation) { send(ws, { type: 'session-replaced' }); close(ws, 4001, 'Session replaced'); continue; }
       send(ws, { type: 'snapshot', state: publicRoom(room, p.id, now) });
+      if (retiredClassicConfiguration(room.config) && ['lobby','finished'].includes(room.status) && !a.simplifiedUX) {
+        const notice=`${room.status}:${room.matchNumber}`;
+        if(a.retiredNotice!==notice){send(ws,{type:'error',error:{code:'CONFIG_RETIRED',message:RETIRED_MESSAGE}});a.retiredNotice=notice;ws.serializeAttachment(a);}
+      }
       const incompatibleConfig = needsConfigClient(room.config) && !p.classicConfigCapable;
       if (p.admitted && p.seat && (incompatibleConfig || !p.rematchCapable && (room.matchNumber > 1 || ['pending', 'countdown'].includes(room.rematch?.status)))) {
         const noticeId = `${incompatibleConfig ? 'config' : 'rematch'}:${room.matchNumber}:${room.rematch?.id}`;
@@ -204,6 +209,7 @@ export class Room extends DurableObject {
           if (room) {
             requireThat(room.participants[room.hostId].tokenHash === tokenHash && room.creationFingerprint === fingerprint, 'EXISTS', 'Ese código ya está ocupado.', 409);
           } else {
+            requireThat(!retiredClassicConfiguration(requested), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
             room = createRoom({ code, name: input.name, mode: input.mode, policy: input.policy, players: input.players, tokenHash }, now); room.creationFingerprint = fingerprint;
             this.write(room, [{ type: 'created', at: now }]);
           }
@@ -263,7 +269,7 @@ export class Room extends DurableObject {
           p.generation++;
           clientFeatures(room, p.id, message.features, now);
           // Tags are fixed at acceptWebSocket. The authoritative identity lives in the attachment.
-          ws.serializeAttachment({ playerId: p.id, generation: p.generation, seenAt: now, rateStart: now, rateCount: 0 });
+          ws.serializeAttachment({ playerId: p.id, generation: p.generation, seenAt: now, rateStart: now, rateCount: 0, simplifiedUX: Array.isArray(message.features) && message.features.includes('ux-simplified-v1') });
           presence(room, p.id, true, now);
           this.write(room, [{ type: 'connected', playerId: p.id, at: now }]);
           await this.schedule(room, now); this.broadcast(room, now); return;

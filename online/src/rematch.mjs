@@ -1,4 +1,5 @@
 import { requireThat, randomId, participantCount, needsConfigClient, CONFIG_UPDATE_MESSAGE } from './protocol.mjs';
+import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
 
 export const REMATCH_MS = 120000;
 export const MAX_MATCHES = 20;
@@ -25,6 +26,7 @@ export function rematchCommand(room, player, command, now, participants) {
   requireThat(player.rematchCapable === true, 'UPDATE_REQUIRED', UPDATE_MESSAGE, 409);
   requireThat(!needsConfigClient(room.config) || player.classicConfigCapable, 'UPDATE_REQUIRED', CONFIG_UPDATE_MESSAGE, 409);
   requireThat(room.status === 'finished' && room.classic && player.admitted && player.seat, 'REMATCH', 'La revancha solo se propone al finalizar Clásico.', 409);
+  requireThat(!retiredClassicConfiguration(room.config), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
   if (command.type === 'rematch.propose') {
     requireThat(player.id === room.hostId, 'PERMISSION', 'Solo el anfitrión puede proponer la revancha.', 403);
     requireThat(room.matchNumber < MAX_MATCHES, 'MATCH_LIMIT', 'La sala llegó a su límite de veinte partidas. Conserva los resultados y crea otra sala.', 409);
@@ -47,6 +49,7 @@ export function rematchCommand(room, player, command, now, participants) {
 export function rematchProgress(room, participants, now, countdownMs) {
   const proposal = room.rematch;
   if (room.status !== 'finished' || !proposal || !['pending', 'countdown'].includes(proposal.status)) return null;
+  if (retiredClassicConfiguration(room.config)) { proposal.status='retired';proposal.startsAt=null;return 'rematch-retired'; }
   if (now >= proposal.expiresAt) { proposal.status = 'expired'; proposal.startsAt = null; return 'rematch-expired'; }
   const consent = participants.length === participantCount(room.config) && participants.every(p => proposal.votes[p.id] === true);
   const connected = participants.every(p => p.online);

@@ -1,0 +1,196 @@
+{
+  "base": "0eb4d274ddf109df07daa4d57176f99fc7196be8",
+  "room": {
+    "schemaVersion": 1,
+    "protocolVersion": 1,
+    "code": "ABCDEFGH23",
+    "config": {
+      "mode": "classic",
+      "policy": "team",
+      "playerCount": 4,
+      "ruleset": "classic-online-v1",
+      "teams": [
+        "A",
+        "B"
+      ],
+      "seats": [
+        "A1",
+        "B1",
+        "A2",
+        "B2"
+      ],
+      "clockMs": 480000,
+      "graceIncidentMs": 30000,
+      "graceTotalMs": 60000,
+      "countdownMs": 3000
+    },
+    "baseSha": "cd22390f9571e6b6f03a43b84922a825ec823def",
+    "status": "lobby",
+    "revision": 11,
+    "presenceRevision": 8,
+    "hostId": "20ed914a-fd07-4adb-aad9-820d44c3b439",
+    "createdAt": 0,
+    "lastActivityAt": 0,
+    "expiresAt": 86400000,
+    "startsAt": null,
+    "participants": {
+      "20ed914a-fd07-4adb-aad9-820d44c3b439": {
+        "id": "20ed914a-fd07-4adb-aad9-820d44c3b439",
+        "name": "Ana",
+        "tokenHash": "host",
+        "admitted": true,
+        "seat": "A1",
+        "ready": true,
+        "online": true,
+        "generation": 0,
+        "joinedAt": 0,
+        "lastSeenAt": 0,
+        "rejected": false,
+        "rematchCapable": true,
+        "classicConfigCapable": true
+      },
+      "60ce29c8-2741-4bec-abff-3e24f7271327": {
+        "id": "60ce29c8-2741-4bec-abff-3e24f7271327",
+        "name": "Persona 2",
+        "tokenHash": "token-1",
+        "admitted": true,
+        "seat": "B1",
+        "ready": true,
+        "online": true,
+        "generation": 0,
+        "joinedAt": 0,
+        "lastSeenAt": 0,
+        "rejected": false,
+        "rematchCapable": true,
+        "classicConfigCapable": true
+      },
+      "2e61712e-48d2-4847-b8d3-9587184d171d": {
+        "id": "2e61712e-48d2-4847-b8d3-9587184d171d",
+        "name": "Persona 3",
+        "tokenHash": "token-2",
+        "admitted": true,
+        "seat": "A2",
+        "ready": true,
+        "online": true,
+        "generation": 0,
+        "joinedAt": 0,
+        "lastSeenAt": 0,
+        "rejected": false,
+        "rematchCapable": true,
+        "classicConfigCapable": true
+      },
+      "1346e11a-5115-4958-9d9f-2c398bf61bf2": {
+        "id": "1346e11a-5115-4958-9d9f-2c398bf61bf2",
+        "name": "Persona 4",
+        "tokenHash": "token-3",
+        "admitted": true,
+        "seat": "B2",
+        "ready": true,
+        "online": true,
+        "generation": 0,
+        "joinedAt": 0,
+        "lastSeenAt": 0,
+        "rejected": false,
+        "rematchCapable": true,
+        "classicConfigCapable": true
+      }
+    },
+    "clock": {
+      "remainingMs": {
+        "A": 480000,
+        "B": 480000
+      },
+      "owner": null,
+      "anchoredAt": null,
+      "grace": null,
+      "players": {
+        "20ed914a-fd07-4adb-aad9-820d44c3b439": {
+          "usedMs": 0,
+          "incident": 0,
+          "until": null
+        },
+        "60ce29c8-2741-4bec-abff-3e24f7271327": {
+          "usedMs": 0,
+          "incident": 0,
+          "until": null
+        },
+        "2e61712e-48d2-4847-b8d3-9587184d171d": {
+          "usedMs": 0,
+          "incident": 0,
+          "until": null
+        },
+        "1346e11a-5115-4958-9d9f-2c398bf61bf2": {
+          "usedMs": 0,
+          "incident": 0,
+          "until": null
+        }
+      }
+    },
+    "decision": null,
+    "probe": {
+      "completed": 0,
+      "actorIndex": 0,
+      "eliminatedTeams": [],
+      "decisions": []
+    },
+    "outcome": null,
+    "classic": {
+      "game": {
+        "version": 2,
+        "moves": 0,
+        "walls": [],
+        "pieces": [
+          {
+            "id": "A1",
+            "team": "A",
+            "start": 8,
+            "pos": 8
+          },
+          {
+            "id": "B1",
+            "team": "B",
+            "start": 12,
+            "pos": 12
+          },
+          {
+            "id": "A2",
+            "team": "A",
+            "start": 40,
+            "pos": 40
+          },
+          {
+            "id": "B2",
+            "team": "B",
+            "start": 36,
+            "pos": 36
+          }
+        ],
+        "turnTeam": "A",
+        "lastActed": {
+          "A": null,
+          "B": null
+        },
+        "currentActor": null,
+        "over": false,
+        "winner": null,
+        "lastMove": null,
+        "turnMode": "team"
+      },
+      "draft": {
+        "actor": null,
+        "path": []
+      }
+    },
+    "matchNumber": 1,
+    "previousResults": [],
+    "rematch": null,
+    "decisionSerial": 0,
+    "decisionFingerprint": null
+  },
+  "ids": [
+    "20ed914a-fd07-4adb-aad9-820d44c3b439",
+    "60ce29c8-2741-4bec-abff-3e24f7271327",
+    "2e61712e-48d2-4847-b8d3-9587184d171d",
+    "1346e11a-5115-4958-9d9f-2c398bf61bf2"
+  ]
+}

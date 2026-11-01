@@ -70,5 +70,6 @@
   "online/session-index.mjs",
   "online/continue.mjs",
   "online/continue.css",
-  "online/navigation.mjs"
+  "online/navigation.mjs",
+  "online/configuration-rules.mjs"
 ]

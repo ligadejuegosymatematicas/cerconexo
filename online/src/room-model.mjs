@@ -2,6 +2,7 @@ import { configuration, nameOf, requireThat, randomId, participantCount, needsCo
 import { createClock, registerClockPlayer, beginDisconnect, settleClock, chooseDecision, publicClock, clockDeadline } from './clocks.mjs';
 import { isClassicRoom, createClassic, classicDecision, classicView, applyClassic, classicOutcome, controlledPieces } from './classic-adapter.mjs';
 import { normalizeMatch, matchId, checkMatch, decisionFingerprint, rematchCommand, rematchProgress, UPDATE_MESSAGE } from './rematch.mjs';
+import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
 
 export function createRoom({ code, name, mode, policy, players, tokenHash, probeOnly = false }, now) {
   const config = configuration(mode, policy, players), id = randomId();
@@ -80,6 +81,9 @@ function finish(room, now, outcome) {
 export function advanceRoom(room, now) {
   normalizeMatch(room);
   const events = [];
+  if (retiredClassicConfiguration(room.config) && room.status === 'countdown') {
+    room.status='lobby';room.startsAt=null;touch(room,now);events.push({type:'configuration-retired'});
+  }
   if ((room.status === 'lobby' || room.status === 'finished') && now >= room.expiresAt) {
     room.status = 'expired'; room.decision = null; chooseDecision(room.clock, null, room.participants, now);
     touch(room, now); events.push({ type: 'expired' }); return events;
@@ -176,6 +180,7 @@ export function applyCommand(room, playerId, command, now) {
     p.ready = args.ready;
   } else if (command.type === 'start') {
     requireThat(host && room.status === 'lobby', 'PERMISSION', 'Solo el anfitrión puede iniciar la partida.', 403);
+    requireThat(!retiredClassicConfiguration(room.config), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
     requireThat(seated(room).length === participantCount(room.config) && seated(room).every(q => q.online && q.ready), 'NOT_READY', `Se necesitan ${participantCount(room.config)} personas conectadas y listas.`, 409);
     requireThat(!needsConfigClient(room.config) || seated(room).every(q => q.classicConfigCapable), 'UPDATE_REQUIRED', CONFIG_UPDATE_MESSAGE, 409);
     room.status = 'countdown'; room.startsAt = now + COUNTDOWN_MS;
@@ -219,7 +224,8 @@ export function publicRoom(room, playerId, now) {
   return { protocolVersion: room.protocolVersion, stage: isClassicRoom(room) ? 'M6.2' : 'M6.1', code: room.code, config: room.config, status: room.status,
     revision: room.revision, presenceRevision: room.presenceRevision, serverNow: now, startsAt: room.startsAt, expiresAt: room.expiresAt,
     matchId: matchId(room), matchNumber: room.matchNumber, decisionId: room.decision ? `${matchId(room)}:${room.decisionSerial}` : null,
-    rematch: room.rematch, previousResults: room.previousResults, features: { rematch: isClassicRoom(room), scopedMatches: true, viewAway: true },
+    rematch: room.rematch, previousResults: room.previousResults, configurationRetired: retiredClassicConfiguration(room.config),
+    features: { rematch: isClassicRoom(room) && !retiredClassicConfiguration(room.config), scopedMatches: true, viewAway: true },
     self: { id: self.id, name: self.name, admitted: self.admitted, seat: self.seat, host: self.id === room.hostId, generation: self.generation,
       ...(isClassicRoom(room) ? { controlledPieces: controlledPieces(room.config, self.seat) } : {}) },
     participants: visible, requests: self.id === room.hostId ? Object.values(room.participants).filter(p => !p.admitted && !p.rejected).map(p => ({ id: p.id, name: p.name, online: p.online })) : [],

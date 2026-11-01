@@ -4,6 +4,7 @@ import { createDecisionNotice, decisionNoticeKey } from './decision-notice.mjs';
 import { createFinalInspection } from './final-inspection.mjs';
 import { mountRematch } from './rematch-panel.mjs';
 import { bindOnlineHome } from './navigation.mjs';
+import { retiredClassicConfiguration, RETIRED_MESSAGE } from './configuration-rules.mjs';
 
 const PHASES = {
   idle: 'Sin conexión', connecting: 'Conectando', connected: 'Conectado',
@@ -61,7 +62,7 @@ export function mountClassic(container, session) {
           <div class="classic-turn-identity"><span class="turn-disc" data-classic-actor></span><div><strong data-classic-turn-name></strong><span data-classic-turn-seat></span></div></div>
           <p class="classic-self" data-classic-self></p>
           <p class="classic-prompt" data-classic-prompt role="status" aria-live="polite" aria-atomic="true"></p>
-          <div class="classic-result" data-classic-result role="status" aria-live="polite" aria-atomic="true" hidden><h2 data-classic-result-title></h2><p data-classic-result-detail></p><strong data-classic-result-score></strong><button data-classic-propose-rematch hidden>Proponer revancha</button><p data-classic-rematch-status role="status" hidden></p></div>
+          <div class="classic-result" data-classic-result role="status" aria-live="polite" aria-atomic="true" hidden><h2 data-classic-result-title></h2><p data-classic-result-detail></p><strong data-classic-result-score></strong><button data-classic-propose-rematch hidden>Proponer revancha</button><p data-classic-rematch-status role="status" hidden></p><p data-classic-retired hidden></p><a data-classic-new-room href="./?action=create" hidden>Crear otra sala</a></div>
         </section>
         <section class="classic-clocks panel" aria-label="Tiempo de los equipos">
           <div class="classic-clock-grid" data-classic-clocks></div>
@@ -218,6 +219,7 @@ export function mountClassic(container, session) {
       write($('result-title'), winners.length === 1 ? `Gana el equipo ${winners[0]}` : 'Empate');
       write($('result-detail'), outcome.reason === 'timeout' ? `El equipo ${outcome.timedOutTeam ?? outcome.losers?.[0] ?? '?'} agotó su tiempo.` : 'Todas las regiones están resueltas.');
       write($('result-score'), `Equipo A ${score.A} · ${score.B} Equipo B`);
+      const retired=retiredClassicConfiguration(state.config);$('retired').hidden=!retired;write($('retired'),retired?RETIRED_MESSAGE:'');$('new-room').hidden=!retired;
       return;
     }
     let prompt;

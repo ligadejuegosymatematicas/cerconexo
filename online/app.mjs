@@ -3,6 +3,7 @@ import { OnlineSession, apiRequest, newCredential, newCode, loadSession, storage
 import { mountClassic } from './classic.mjs';
 import { rememberOnline, dismissOnline } from './session-index.mjs';
 import { bindOnlineHome } from './navigation.mjs';
+import { retiredClassicConfiguration, RETIRED_MESSAGE } from './configuration-rules.mjs';
 
 const $ = id => document.getElementById(id), url = new URL(location.href), entryPath = new URL('./',import.meta.url).pathname;
 const profile = /^[1-4]$/.test(url.searchParams.get('profile')) ? url.searchParams.get('profile') : '1';
@@ -82,12 +83,14 @@ function render() {
     admit.addEventListener('click',()=>act('admit',{playerId:request.id,seat:select.value}));reject.addEventListener('click',()=>act('reject',{playerId:request.id}));
     row.append(el('span',request.name+' solicita entrar'),select,admit,reject);$('requests').append(row);
   }
-  const self=state.participants.find(p=>p.id===state.self.id),lobby=state.status==='lobby';
-  $('readyButton').hidden=!state.self.admitted||!lobby;$('readyButton').textContent=self?.ready?'Listo ✓':'Estoy listo';$('readyButton').disabled=!enabled;
-  $('startButton').hidden=!state.self.host||!lobby;
+  const self=state.participants.find(p=>p.id===state.self.id),lobby=state.status==='lobby',retired=retiredClassicConfiguration(state.config);
+  $('readyButton').hidden=!state.self.admitted||!lobby||retired;$('readyButton').textContent=self?.ready?'Listo ✓':'Estoy listo';$('readyButton').disabled=!enabled;
+  $('startButton').hidden=!state.self.host||!lobby||retired;
   $('startButton').disabled=!enabled||state.participants.length!==count||state.participants.some(p=>!p.online||!p.ready||((count===2||state.config.policy==='team')&&!p.classicConfigCapable));
-  $('copyInvite').hidden=!lobby;
+  $('copyInvite').hidden=!lobby||retired;$('requests').hidden=retired;
+  $('retiredNotice').hidden=!retired;$('retiredNotice').textContent=retired?RETIRED_MESSAGE:'';document.querySelector('.new-room-link').hidden=!retired;
   $('lobbyHint').textContent=!state.self.admitted?'Esperando la aprobación del anfitrión.':lobby?(state.participants.length<count?'Comparte la invitación para completar la sala.':state.participants.some(p=>!p.ready)?'Falta que todos estén listos.':state.self.host?'Todo listo para comenzar.':'Esperando al anfitrión.') : '';
+  if(retired)$('lobbyHint').textContent='';
   $('sessionHint').textContent=session.phase==='replaced'?'La partida está abierta en otra pestaña. Puedes continuar aquí.':'Tu acceso está guardado en este navegador.';
   $('reconnectButton').hidden=session.phase==='connected';$('reconnectButton').textContent=session.phase==='replaced'?'Continuar aquí':'Reconectar';$('reconnectButton').disabled=['connecting','reconnecting'].includes(session.phase);
   $('disconnectButton').hidden=!['connected','connecting','reconnecting'].includes(session.phase);

@@ -5,10 +5,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { eventually } from './runtime.mjs';
 const online=fileURLToPath(new URL('../',import.meta.url)),repo=path.dirname(online);
-export async function startUX({port=8815,apiPort=8820,stateDir=path.join(online,'.state/ux-local')}={}) {
+export async function startUX({port=8815,apiPort=8820,stateDir=path.join(online,'.state/ux-local'),worker=path.join(online,'src/worker.mjs')}={}) {
   await mkdir(stateDir,{recursive:true});
   const origin=`http://127.0.0.1:${port}`,api=`http://127.0.0.1:${apiPort}`;
-  const config={name:'cerconexo-ux-local',main:path.join(online,'src/worker.mjs'),compatibility_date:'2026-10-23',workers_dev:false,preview_urls:false,send_metrics:false,durable_objects:{bindings:[{name:'ROOMS',class_name:'Room'},{name:'ADMISSION',class_name:'AdmissionGate'}]},migrations:[{tag:'ux-local-1',new_sqlite_classes:['Room','AdmissionGate']}],vars:{LOCAL_DEMO:'true',ALLOWED_ORIGINS:origin+','+api}};
+  const config={name:'cerconexo-ux-local',main:worker,compatibility_date:'2026-10-23',workers_dev:false,preview_urls:false,send_metrics:false,durable_objects:{bindings:[{name:'ROOMS',class_name:'Room'},{name:'ADMISSION',class_name:'AdmissionGate'}]},migrations:[{tag:'ux-local-1',new_sqlite_classes:['Room','AdmissionGate']}],vars:{LOCAL_DEMO:'true',ALLOWED_ORIGINS:origin+','+api}};
   const configPath=path.join(stateDir,'wrangler.jsonc');await writeFile(configPath,JSON.stringify(config));
   const env={...process.env,CI:'1',NODE_USE_SYSTEM_CA:'1',WRANGLER_SEND_METRICS:'false',XDG_CONFIG_HOME:path.join(stateDir,'config'),WRANGLER_LOG_PATH:path.join(stateDir,'logs')};
   for(const key of ['CLOUDFLARE_API_TOKEN','CLOUDFLARE_API_KEY','CLOUDFLARE_EMAIL','CLOUDFLARE_ACCOUNT_ID'])delete env[key];
