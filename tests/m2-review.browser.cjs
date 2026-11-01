@@ -14,7 +14,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'validation/m2-review
  async function capture(p,name){await p.waitForTimeout(180);await p.screenshot({path:path.join(out,name+'.png')});}
  try{
   for(const [width,height,size] of [[1440,900,734],[1366,768,602],[1366,600,440],[390,844,366],[360,740,336],[740,360,294],[1440,700,540],[1366,650,490],[1280,560,400]]){
-   const {p,context}=await page(width,height);await p.locator('#play').click();assert.equal(await p.locator('.control-icon').count(),2);await capture(p,`local-${width}x${height}`);
+   const {p,context}=await page(width,height);await p.locator('#play').click();assert.equal(await p.locator('.control-icon').count(),3);assert.equal(await p.locator('[data-control]').count(),2);assert.equal(await p.locator('[data-online-control]').count(),1);await capture(p,`local-${width}x${height}`);
    await p.locator('[data-control=cpu]').click();assert.equal(await p.locator('[name=difficulty]:checked').inputValue(),'intermediate');await capture(p,`cpu-${width}x${height}`);
    await p.locator('.selector-content').evaluate(n=>n.scrollTop=n.scrollHeight);await capture(p,`cpu-opciones-${width}x${height}`);
    const metrics=await p.evaluate(()=>{const d=document.getElementById('newDialog').getBoundingClientRect(),r=document.querySelector('.selector-content').getBoundingClientRect(),b=document.getElementById('startLocal').getBoundingClientRect();return {page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],dialog:[d.x,d.y,d.width,d.height],contentBottom:r.bottom,buttonTop:b.y,buttonBottom:b.bottom};});assert.deepEqual(metrics.page,[width,height]);assert.ok(metrics.contentBottom<=metrics.buttonTop);assert.ok(metrics.buttonBottom<=height);

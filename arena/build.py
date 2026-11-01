@@ -3,9 +3,11 @@ from pathlib import Path
 import base64
 import re
 import json
+from runpy import run_path
 
 root = Path(__file__).resolve().parent
 html = (root / 'index.html').read_text(encoding='utf-8')
+html = run_path(str(root.parent/'scripts/online_offline.py'))['local_only'](html)
 css = (root / 'src/styles.css').read_text(encoding='utf-8')+'\n'+(root.parent/'src/gameShell.css').read_text(encoding='utf-8')+'\n'+(root.parent/'src/experience.css').read_text(encoding='utf-8')
 html=html.replace('<link rel="stylesheet" href="../src/gameShell.css">','').replace('<link rel="stylesheet" href="../src/experience.css">','')
 modules = [(root.parent/'src/contextHelp.mjs').read_text(encoding='utf-8').replace('export function ', 'function ')]

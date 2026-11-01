@@ -2,9 +2,11 @@
 from pathlib import Path
 import base64
 import json
+from runpy import run_path
 
 root = Path(__file__).resolve().parent
 html = (root / 'clasico/index.html').read_text(encoding='utf-8')
+html = run_path(str(root/'scripts/online_offline.py'))['local_only'](html)
 css = (root / 'src/styles.css').read_text(encoding='utf-8')+'\n'+(root/'src/gameShell.css').read_text(encoding='utf-8')+'\n'+(root/'src/experience.css').read_text(encoding='utf-8')
 def inline_module(name):
     source = (root / f'src/{name}.mjs').read_text(encoding='utf-8')

@@ -1,45 +1,41 @@
-# Publicación de Cerconexo · propuesta pendiente
+# Publicación beta de Clásico Online — pendiente de autorización final
 
-Esta candidata se prepara únicamente en `desarrollo`. Durante su elaboración no se hace push, no se abre PR, no se fusiona `main` y no se publica Pages.
+Esta candidata se prepara en `m6-beta-integracion`, partiendo exactamente de M5-D `cd22390f9571e6b6f03a43b84922a825ec823def`. No se ha fusionado, hecho push ni actualizado GitHub Pages. El informe de integración y las evidencias están en [M6_BETA.md](M6_BETA.md).
 
-## Estructura propuesta
+## Rutas y paquete
 
-| URL | Contenido |
+| Ruta | Contenido de la candidata |
 |---|---|
-| `/cerconexo/` | Portada común |
-| `/cerconexo/clasico/` | Clásico 7×7, local y contra CPU |
-| `/cerconexo/arena/` | Arena M3-B 9×9, experimental |
+| `/cerconexo/` | Portada con Clásico y Arena |
+| `/cerconexo/clasico/` | Nueva partida: Local, Contra CPU y Online |
+| `/cerconexo/arena/` | M5-D Local/CPU; Online deshabilitado y pendiente |
+| `/cerconexo/online/` | Sala de Clásico Online, dos/cuatro personas, ambas políticas |
 
-Conservar el mismo origen `https://ligadejuegosymatematicas.github.io` mantiene accesibles las claves existentes de `localStorage`. No se renombran claves ni formatos. No trasladar a otro dominio como parte de esta publicación. Clásico y Arena recuperan sus propios guardados; la portada solo los consulta.
+`scripts/pages-files.json` genera 69 recursos en `docs/`, incluida `.nojekyll`. Los 50 módulos canónicos de `src/` y `arena/src/` se conservan byte por byte respecto de M5-D. Los 32 hashes protegidos no cambian. Los HTML autónomos conservan Local/CPU sin ofrecer un servidor online en `file://`.
 
-## Preparar el candidato local
+El frontend usa HTTPS/WSS hacia un Worker independiente. No contiene secretos, credenciales del piloto ni dependencias del servidor. Las claves y formatos Local/CPU no se renombran. La portada mantiene el origen público habitual y permite continuar los guardados existentes.
 
-```sh
-python scripts/build_pages.py
-python scripts/build_pages.py --check
-python scripts/build_offline.py
-node scripts/check-integrity.mjs
-node --test tests/*.test.mjs arena/tests/*.test.mjs
-node tests/browser-runner.cjs
-python scripts/package.py
-python scripts/check-package.py
-```
+## Backend preparado, todavía cerrado
 
-El manifiesto `scripts/pages-files.json` produce 47 recursos exactos en `docs/`, incluida `.nojekyll`. No copiar a `docs/` a mano. El ZIP de Pages contiene exclusivamente ese inventario; el ZIP completo incluye fuentes, pruebas y tres HTML autónomos enlazados. Consultar [INTEGRACION.md](INTEGRACION.md) para detalles y limitaciones.
+Worker: `cerconexo-m6-beta-staging`. API: `https://cerconexo-m6-beta-staging.cerconexo-piloto-h89.workers.dev`. Almacenamiento: dos namespaces SQLite propios. No se comparten con `cerconexo-m6-experimental`.
 
-Para pruebas de navegador se necesita Playwright y un navegador instalado. El workflow usa Playwright 1.62.1 y Chromium; localmente se puede indicar `CERCONEXO_PLAYWRIGHT_PATH` y `CERCONEXO_BROWSER_CHANNEL=msedge`. No son dependencias del juego.
+La configuración versionada `online/wrangler.beta.jsonc` tiene `workers_dev=false`, previews deshabilitadas, sin assets ni rutas del sitio estable. El script de preparación solo habilita el entorno de pruebas cerrado: exige una candidata registrada y limpia sobre M5-D, Workers Free confirmado y revisión explícita del secreto independiente de admisión. La URL de pruebas ya habilitada devuelve `BETA_NOT_OPEN` ante intentos normales de crear salas. Solo el arnés del operador admite las creaciones de prueba; la credencial no llega al frontend ni a su almacenamiento.
 
-## Pasos después de una autorización nueva
+No ejecutar herramientas de despliegue de la antigua rama del piloto para publicar esta candidata. El piloto privado y sus secretos deben permanecer intactos.
 
-1. Confirmar el commit de `desarrollo`, el árbol limpio y las evidencias aprobadas.
-2. Subir exclusivamente esa candidata al repositorio `ligadejuegosymatematicas/cerconexo`.
-3. Abrir PR hacia `main`. Esperar el control obligatorio `verificar`, que comprueba integridad, pruebas, navegador y empaquetado. No activar auto-merge ni omitir protecciones.
-4. Fusionar únicamente la candidata aprobada. Conservar la configuración existente de Pages: rama `main`, carpeta `/docs`.
-5. Esperar Actions y Pages; comparar los 47 recursos públicos con las fuentes aprobadas.
-6. Verificar las tres URLs, Inicio/Continuar, ambas políticas de Clásico y la CPU, las tres configuraciones de Arena, repetición rápida, inspección, recarga y los guardados existentes. Probar también un Android físico.
+## Secuencia después de una autorización nueva
 
-La raíz dejará de abrir directamente el juego original y mostrará la portada. Los enlaces antiguos a la raíz seguirán funcionando. El juego original continuará en `/clasico/` sin perder el almacenamiento del mismo origen. Los enlaces directos a Arena seguirán disponibles.
+1. Volver a comprobar `origin/main`. Si avanzó respecto de M5-D, integrar y validar sus cambios antes de proponer la publicación. No copiar directorios completos de la rama antigua M6 sobre el sitio actual.
+2. Revisar el commit candidato, los artefactos, los resultados completos y el presupuesto gratuito compartido con el piloto. Confirmar una ventana de prueba real con participantes.
+3. Preparar una configuración explícita para abrir exclusivamente el backend nuevo: `SERVICE_MODE=beta-public`, `PUBLIC_CREATION=true`, `LOCAL_DEMO=false`, `PUBLIC_DEMO=false`, origen permitido exclusivamente `https://ligadejuegosymatematicas.github.io`; sin loopback, cookies del piloto ni credencial global para visitantes. Retirar el secreto de admisión de pruebas cuando ya no sea necesario. Esta promoción no está ejecutada ni disponible como un comando de publicación automática en la candidata.
+4. Mantener los namespaces SQLite del backend nuevo; no borrar ni migrar el piloto. Verificar salud, admisión pública controlada, HTTPS/WSS, límites y revisión de permisos sin cambiar Free ni activar facturación. La versión estable Local/CPU todavía no depende de esta API.
+5. Subir exclusivamente la rama candidata y abrir una PR hacia `main`. Esperar `verificar`, con las 311 pruebas de M5-D, pruebas online y las 21 suites históricas. No omitir protecciones ni habilitar auto-merge.
+6. Tras aprobación de la PR y autorización de publicación, fusionar y conservar la configuración existente de Pages (`main`, `/docs`). No cambiar dominios ni permisos del repositorio.
+7. Cuando Pages termine, comprobar desde la URL real los 69 recursos, las cuatro rutas, ausencia de secretos, guardados Local/CPU, descarte de Arena, dos/cuatro jugadores, ambas políticas, reconexión, reloj e invitación. Esta comprobación del despliegue real complementa la validación previa del paquete bajo el origen público simulado en navegadores aislados.
+8. Realizar partidas físicas en Android y otras redes. No considerar cuatro contextos automatizados como cuatro personas o dispositivos físicos. Observar lecturas/escrituras y errores de cuota antes de ampliar el uso.
 
-No se necesita otro repositorio, cambio de dominio ni un workflow de despliegue desde `desarrollo`. El workflow conserva permisos de lectura y no publica. La protección remota de `main` y la elección `main /docs` continúan siendo configuraciones de GitHub; esta entrega no las modifica.
+## Contingencia
 
-Si una validación requiere cambiar motores o reglas, detener la publicación y solicitar revisión. Para retirar una versión, usar una reversión aprobada mediante PR, sin reescribir el historial y sin `push --force`.
+Si el backend falla, conservar sus datos y cerrar nuevas creaciones mediante `PUBLIC_CREATION=false`; no destruir namespaces ni borrar sesiones. Los modos Local/CPU siguen funcionando. Si el frontend requiere reversión, usar una PR de reversión al commit estable, conservando el almacenamiento de los navegadores y el backend. No usar `push --force` ni sustituir archivos M5-D por copias de M6.
+
+Las cuotas gratuitas son de la cuenta, no una reserva separada por Worker. Treinta salas nuevas diarias es un límite de admisión, no una garantía de treinta partidas o de veinte revanchas por sala sin alcanzar cuota. Mantener vigilados los lobbies conectados durante mucho tiempo y las alarmas. No activar un plan de pago automáticamente ante errores de capacidad.
