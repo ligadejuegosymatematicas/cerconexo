@@ -7,6 +7,7 @@ import {ArenaSession,ARENA_SAVE_KEY} from './session.mjs';
 import {setupContextHelp} from '../../src/contextHelp.mjs';
 import {mountIllustratedManual} from '../../src/illustratedManual.mjs';
 import {createHaptics} from '../../src/haptics.mjs';
+import {createFinalPresenter} from '../../src/finalPresentation.mjs';
 import {arenaControl,restoreArenaControl,saveArenaControl,LOCAL_ARENA_CONTROL} from './cpuConfig.mjs';
 import {createArenaCpuController} from './cpuController.mjs';
 import {arenaCpuPresentation,createCpuPresentation} from './cpuPresentation.mjs';
@@ -16,6 +17,7 @@ const TEAM_COLORS={A:'#F59E0B',B:'#38BDF8',C:'#B79AFF',D:'#59D6A4'};
 const inspection=new RegionInspection();
 // Preferencia compartida con Clásico, independiente del guardado de Arena.
 const haptics=createHaptics();
+const resultSkin=createFinalPresenter({element:$('turnBanner'),title:$('turnTitle'),haptics});let finalResultPending=false;
 let session=null,selectedPower=null,boardActions=new Map(),busy=false,dialogOpener=null,hasSaved=false,loadBlocked=false,newConfirmed=false;
 let control={...LOCAL_ARENA_CONTROL},cpuFault=false;
 let presentationEffects=[],presentationContext=null;
@@ -156,6 +158,7 @@ function render(){
   inspection.update(view.components,9);
   if(selectedPower&&!legal.some(a=>a.power===selectedPower))selectedPower=null;
   renderScores(s,view);renderTurn(s,view);renderInventory(s,view,legal);renderBoard(s,view,legal);
+  if(s.over)$('turnHint').textContent='Territorios cerrados.';
   $('arenaReplayActions').hidden=!s.over||loadBlocked;
   $('inspectToggle').disabled=loadBlocked;
   $('inspectToggle').setAttribute('aria-pressed',String(inspection.enabled));
@@ -165,6 +168,7 @@ function render(){
   board.setAttribute('aria-busy',String(presentation.active));
   board.setAttribute('aria-label',inspection.enabled?'Inspección de regiones. Flechas para recorrer casillas; Enter o Espacio para seleccionar.': 'Tablero Arena de 9 por 9. Toca casillas para mover y bordes para construir.');
   if(loadBlocked){$('turnKicker').textContent='Recuperación segura';$('turnTitle').textContent='Guardado de Arena no válido';$('turnHint').textContent='Se conserva sin sobrescribir. Usa Nueva partida si decides reemplazarlo.';}
+  if(!presentation.active){resultSkin.render({finished:s.over,winners:s.winners,viewerTeam:control.opponent==='cpu'?control.humanTeam:null,shared:control.opponent!=='cpu'});if(finalResultPending){resultSkin.celebrate();finalResultPending=false;}}
   cpu.tick();
 }
 function eventText(s){
@@ -240,6 +244,7 @@ function dispatch(action,keyboard=false,automated=false){
   try{
     const before=session.game;
     session.dispatch(action);hasSaved=true;selectedPower=null;setProblem('');
+    if(!before.over&&session.game.over)finalResultPending=true;
     if(automated){
       presentationContext={before,after:session.game,action};
       // Activa la barrera antes del render: tampoco se puede actuar por el humano
@@ -313,7 +318,7 @@ function updateCpuSelector(){
   $('humanTeamField').hidden=!cpuMode;
   $('policyField').hidden=form.elements.mode.value==='ffa';
   $('arenaCpuHint').hidden=!cpuMode;
-  $('arenaCpuHint').textContent=form.elements.humanTeam.value==='A'?'Tú comienzas · CPU experimental':'Comienza la CPU · CPU experimental';
+  $('arenaCpuHint').textContent=form.elements.humanTeam.value==='A'?'Tú comienzas':'Comienza la CPU';
 }
 $('newForm').addEventListener('change',e=>{if(e.target.matches('input[type=radio]'))haptics.pulse('turn');if(e.target.name==='mode')resetExperiment();updateCpuSelector();});
 $('restorePreset').addEventListener('click',resetExperiment);
@@ -339,6 +344,7 @@ function startArena(setup,nextControl=control){
   let next;try{next=new ArenaSession(storage,setup);next.save();}catch(error){control=prior;throw error;}
   cpu.cancel();cancelCpuPresentation();cpuFault=false;
   session=next;inspection.reset();selectedPower=null;hasSaved=true;loadBlocked=false;
+  finalResultPending=false;
   setProblem('');$('eventNotice').textContent='';render();
 }
 $('arenaReplay').addEventListener('click',()=>{

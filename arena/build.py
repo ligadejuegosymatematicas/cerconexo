@@ -13,6 +13,7 @@ html=html.replace('<link rel="stylesheet" href="../src/gameShell.css">','').repl
 modules = [(root.parent/'src/contextHelp.mjs').read_text(encoding='utf-8').replace('export function ', 'function ')]
 modules.append((root.parent/'src/illustratedManual.mjs').read_text(encoding='utf-8').replace('export function ', 'function '))
 modules.append(re.sub(r'\bexport (const|function)\b', r'\1', (root.parent/'src/haptics.mjs').read_text(encoding='utf-8')))
+modules.append(re.sub(r'\bexport (const|function)\b', r'\1', (root.parent/'src/finalPresentation.mjs').read_text(encoding='utf-8')))
 def worker_source():
     parts=[]
     for name in ['geometry','config','engine','cpuEvaluation','cpuStrategy','cpuWorker']:

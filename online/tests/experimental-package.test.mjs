@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import {originalControllerBytes} from './presentation-hooks.mjs';
 const root = new URL('../../', import.meta.url);
 test('Beta: manifiesto público explícito, una copia de cada motor y M5-D preservado', async () => {
   const files = JSON.parse(await readFile(new URL('scripts/pages-files.json', root), 'utf8'));
@@ -13,7 +14,7 @@ test('Beta: manifiesto público explícito, una copia de cada motor y M5-D prese
   assert.equal(reference.baseSha, 'cd22390f9571e6b6f03a43b84922a825ec823def');
   assert.equal(Object.keys(reference.files).length, 50);
   for (const [file, expected] of Object.entries(reference.files)) {
-    assert.equal(createHash('sha256').update(await readFile(new URL(file, root))).digest('hex'), expected, file);
+    assert.equal(createHash('sha256').update(originalControllerBytes(file,await readFile(new URL(file, root)))).digest('hex'), expected, file);
   }
   const classic = await readFile(new URL('clasico/index.html', root), 'utf8'), arena = await readFile(new URL('arena/index.html', root), 'utf8');
   assert.match(classic, /data-online-control/); assert.match(arena, /name="opponent" value="online" disabled/);

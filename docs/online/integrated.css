@@ -5,7 +5,7 @@ body.integrated-online{background:#071A2F}
 .top nav{display:flex;gap:16px;font-size:13px}
 .top nav a{text-decoration:none;min-height:44px;display:flex;align-items:center}
 .integrated-online .intro{padding:28px 0 24px}
-.integrated-online h1{font-size:32px;letter-spacing:0}
+.integrated-online h1{font-size:32px;letter-spacing:0;background:transparent;padding:0;box-shadow:none}
 .integrated-online .card{border-radius:14px;background:#0D223A}
 .integrated-online .primary{background:#FFD166;color:#071A2F}
 .integrated-online .probe,.integrated-online .revision,.integrated-online .session-card details,.integrated-online footer nav,.integrated-online footer>span{display:none}
@@ -17,3 +17,21 @@ body.integrated-online{background:#071A2F}
 .integrated-online footer>a{display:inline-flex;min-height:44px;align-items:center;text-decoration:none}
 .classic-session-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 12px;border:1px solid #47617a;border-radius:9px;background:#102a43;color:#f6f5ee;font-size:12px;font-weight:650;text-decoration:none}
 @media(max-width:600px){.integrated-online .top{padding:12px 16px;gap:12px}.top nav{gap:12px;font-size:12px}.online-brand img{width:130px}.integrated-online .intro{padding:22px 0}.integrated-online h1{font-size:28px}.classic-session-actions a{padding:7px;font-size:10px}}
+
+/* Compact access and lobby; the board keeps its existing desktop/mobile layout. */
+.integrated-online:not(.playing-classic)>main{max-width:760px;padding:12px 16px 24px}
+.integrated-online .top{max-width:760px;padding:8px 16px;gap:10px}
+.online-home{display:inline-flex;align-items:center;min-height:44px;white-space:nowrap;text-decoration:none;font-size:14px}
+.online-brand img{width:145px;max-width:40vw}
+.online-help{position:relative;font-size:14px}.online-help>summary{display:grid;place-items:center;list-style:none;width:44px;min-height:44px;border:1px solid var(--line);border-radius:50%;cursor:pointer;color:var(--gold)}
+.online-help>div{position:absolute;right:0;top:48px;z-index:50;width:min(310px,calc(100vw - 32px));max-height:75dvh;overflow:auto;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px #0008}
+.online-help p{font-size:13px;line-height:1.5}
+.integrated-online .intro{padding:4px 0 12px}.integrated-online .intro h1{font-size:25px;margin:8px 0}.in-room .intro{display:none}
+.entry-grid{display:block;max-width:480px;margin:auto}.entry-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px}.entry-choices button{padding:10px 8px;gap:8px}.entry-choices button[aria-pressed=true]{outline:2px solid var(--gold);outline-offset:2px}
+.entry-grid .card{padding:18px}.entry-grid h2{margin:0 0 12px;font-size:20px}.entry-grid label{margin:12px 0}.entry-grid input,.entry-grid select{margin-top:5px}.choice-help{font-size:13px;line-height:1.5}.choice-help summary{cursor:pointer;min-height:44px;display:flex;align-items:center}.choice-help p{margin:0;color:var(--muted)}
+.room-heading{gap:10px;margin:4px 0 12px;display:flex;align-items:center}.room-heading h1{font-size:22px;margin:0 0 4px;overflow-wrap:anywhere}.room-heading h1 span{color:var(--gold);letter-spacing:1px}.room-heading p{font-size:12px;line-height:1.5;margin:2px 0}
+#lobbyPanel .card{padding:16px}#lobbyPanel .section-line{margin-bottom:12px;gap:8px}#lobbyPanel h2{font-size:16px;margin:0}#lobbyPanel .seats{gap:8px}#lobbyPanel .seat{padding:10px 8px;grid-template-columns:30px minmax(0,1fr);column-gap:7px;min-height:70px}#lobbyPanel .seat-name{white-space:normal;overflow-wrap:anywhere}#lobbyPanel .seat-status{font-size:11px}
+#lobbyPanel .hint{margin:10px 0 0;line-height:1.4}#lobbyPanel .actions{margin-top:12px;gap:8px}#lobbyPanel .actions button{flex:1;padding:10px 8px}#lobbyPanel .request{gap:6px}#lobbyPanel .request span{flex-basis:100%}#lobbyPanel .request button{min-height:44px}#lobbyPanel .lobby-time{text-align:center}#countdown{color:var(--gold);font-weight:700;margin:12px 0 0;text-align:center}
+.recovery{margin-top:14px;padding-top:8px}.recovery>summary{min-height:44px;display:flex;align-items:center;cursor:pointer}.recovery p{margin:8px 0}.recovery .session-actions button{min-height:44px}.new-room-link{display:inline-flex;min-height:44px;align-items:center}
+.classic-access{font-size:12px}.classic-access>summary{min-height:44px;display:flex;align-items:center;cursor:pointer}.classic-access button{display:block;width:100%;margin-top:6px}.classic-session-actions{max-height:70dvh;overflow:auto}
+@media(max-width:420px){.integrated-online .top{padding:6px 12px}.integrated-online:not(.playing-classic)>main{padding:8px 12px 20px}.room-heading{align-items:flex-start}.room-heading .connection{font-size:11px}.room-heading h1{font-size:20px}#lobbyPanel .card{padding:12px}#lobbyPanel .seat-status{font-size:10px}}

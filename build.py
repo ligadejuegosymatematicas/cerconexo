@@ -16,6 +16,7 @@ def inline_module(name):
 worker = '\n'.join(inline_module(name) for name in ['turnPolicies','engine','cpuMoves','cpuEvaluate','cpuSearch','cpuWorker'])
 modules = '\n'.join(inline_module(name) for name in ['turnPolicies', 'engine', 'turnDraft', 'cpuSession', 'gameSave', 'cpuMoves', 'cpuEvaluate', 'cpuSearch', 'cpuPlanner', 'cpuController', 'boardTargets', 'boardView', 'feedback', 'haptics', 'dialogs', 'contextHelp', 'illustratedManual', 'navigation', 'matchup', 'participationEvents', 'territoryEvents', 'territoryFeedback', 'participationFeedback', 'resultEvents', 'resultFeedback', 'explorationData', 'exploration', 'liveInspection', 'app'])
 toolkit=(root/'arena/src/regionInspection.mjs').read_text(encoding='utf-8').replace('export class ','class ').replace('export function ','function ')
+modules=inline_module('finalPresentation')+'\n'+modules
 modules='const {InspectionModel,inspectionDescription,inspectionAnnotation,inspectionBoundary}=(()=>{'+toolkit+'\nreturn {InspectionModel:RegionInspection,inspectionDescription:regionDescription,inspectionAnnotation:regionAnnotation,inspectionBoundary:regionBoundary};})();\n'+modules
 html=html.replace('<link rel="stylesheet" href="../src/gameShell.css">','').replace('<link rel="stylesheet" href="../src/experience.css">','')
 modules = modules.replace("new URL('./cpuWorker.mjs',import.meta.url)", 'URL.createObjectURL(new Blob([' + json.dumps(worker,ensure_ascii=True).replace('</','<\\/') + '],{type:"text/javascript"}))')

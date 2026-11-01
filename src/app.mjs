@@ -10,6 +10,7 @@ import {createTerritoryFeedback,TERRITORY_MS} from './territoryFeedback.mjs';
 import {createParticipationFeedback} from './participationFeedback.mjs';
 import {finalPresentation} from './resultEvents.mjs';
 import {createResultFeedback} from './resultFeedback.mjs';
+import {createFinalPresenter} from './finalPresentation.mjs';
 import {bindDialog} from './dialogs.mjs';
 import {setupContextHelp} from './contextHelp.mjs';
 import {mountIllustratedManual} from './illustratedManual.mjs';
@@ -34,6 +35,7 @@ const haptics=createHaptics();
 const territorialFeedback=createTerritoryFeedback({view:boardView,banner:$('turnBanner'),notice:$('territoryNotice'),scores:{A:$('scoreA'),B:$('scoreB')}});
 const participationFeedback=createParticipationFeedback({view:boardView,banner:$('turnBanner'),notice:$('recentEvent'),prompt:$('prompt'),announcement:$('participationAnnouncement')});
 const resultFeedback=createResultFeedback({banner:$('turnBanner'),result:$('endScreen'),title:$('winnerTitle'),subtitle:$('winnerDetails'),detail:$('winnerDifference'),announcement:$('resultAnnouncement'),scores:{A:$('scoreA'),B:$('scoreB')}});
+const resultSkin=createFinalPresenter({element:$('endScreen'),title:$('winnerTitle'),haptics});
 let game=initialState(),draft=beginDraft(game),control=null,cpuPlan=null,saved=false,stored=false,cpuPhase='idle',pausing=false,boardKeyboard=false,recoveryMessage='';
 function safeStore(nextGame=game,nextDraft=draft,session={control,cpuPlan}){
   try{writeGameSave(localStorage,nextGame,nextDraft,session);saved=true;stored=true;return true;}
@@ -121,6 +123,7 @@ async function build(to,automatic=false){
   draft=nextDraft;
   render();
   if(game.over)resultFeedback.enter();
+  if(game.over)resultSkin.celebrate();
   else{announceTurn();participationFeedback.announce(events.participation,{mode:turnMode(game)});}
   if(automatic&&!game.over&&boardKeyboard&&document.activeElement===document.body&&!document.querySelector('dialog[open]'))$('interactionLayer').querySelector('[role="button"]')?.focus({preventScroll:true});
   queueMicrotask(()=>cpu.resume());
@@ -141,6 +144,7 @@ function render(){
   for(const team of ['A','B'])$(`score${team}`).setAttribute('aria-label',`${score[team]} casillas aseguradas`);
   renderDistribution(score);
   renderPlayers(actor,active,score);
+  resultSkin.render({finished:game.over,winners:game.winner==='Empate'?['A','B']:[game.winner],viewerTeam:control?.humanTeam,shared:!control});
   renderCpuIdentity();
   exploration.update(game,game.over&&finalInspect&&!gate.busy&&navigation.playing);
   liveInspection.update(components,game.pieces.map(p=>({...p,pos:p.id===draft.actor&&draft.path.length?draft.path.at(-1):p.pos})),inspecting&&!game.over&&!gate.busy&&navigation.playing);

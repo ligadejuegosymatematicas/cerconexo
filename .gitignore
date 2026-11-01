@@ -223,3 +223,7 @@
 !/docs/online/
 !/M6_BETA.md
 !/scripts/online_offline.py
+!/src/finalPresentation.mjs
+!/docs/src/finalPresentation.mjs
+!/tests/final-presentation.test.mjs
+!/M6_UX.md
