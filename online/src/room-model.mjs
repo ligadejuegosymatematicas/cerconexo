@@ -97,7 +97,7 @@ export function advanceRoom(room, now) {
     if (seated(room).length !== participantCount(room.config) || seated(room).some(p => !p.online || !p.ready || isArenaRoom(room)&&!p.arenaCapable || needsConfigClient(room.config) && !p.classicConfigCapable)) {
       room.status = 'lobby'; room.startsAt = null; room.expiresAt = now + RETENTION_MS; events.push({ type: 'countdown-cancelled' });
     } else {
-      room.status = 'active'; room.startsAt = null; room.decision = normalDecision(room); syncDecision(room, now); events.push({ type: isClassicRoom(room) ? 'game-started' : 'probe-started' });
+      room.status = 'active'; room.startsAt = null; room.decision = normalDecision(room); syncDecision(room, now); events.push({ type: isClassicRoom(room)||isArenaRoom(room) ? 'game-started' : 'probe-started' });
     }
     touch(room, now);
   }

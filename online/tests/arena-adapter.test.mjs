@@ -5,6 +5,7 @@ import {arenaCpuActions} from '../../arena/src/cpuStrategy.mjs';
 import {arenaRoom,arenaCommand} from './arena-helper.mjs';
 import {arenaDecision,isArenaRoom} from '../src/arena-adapter.mjs';
 import {createRoom,advanceRoom,publicRoom,presence,clientFeatures,applyCommand} from '../src/room-model.mjs';
+import {createDecisionNotice} from '../decision-notice.mjs';
 
 test('Arena: modo versionado, cuatro fichas, diez minutos y sondas antiguas independientes',()=>{
   const r=arenaRoom();assert.ok(isArenaRoom(r));assert.equal(r.config.clockMs,600000);assert.deepEqual(r.arena.game,createArena({mode:'duo',policy:'piece'}));assert.equal(r.clock.owner,'A');
@@ -29,6 +30,11 @@ test('Arena: salto asegura durante el turno sin muro, y demolición reactiva y r
   const d=structuredClone(expected);d.pieces.find(p=>p.id==='B1').pos=12;d.turn={team:'B',actor:'B1',steps:0,path:[12],committed:false,actions:0};d.inventories.B1=[{id:'demo-test',type:'demolition'}];r.arena.game=d;r.decision=arenaDecision(r);
   const demolished=applyArena(d,{type:'demolition',to:11,power:'demo-test'});arenaCommand(r,{type:'demolition',to:11,power:'demo-test'});
   assert.deepEqual(r.arena.game,demolished);assert.ok(demolished.lastEvents.some(e=>e.type==='reactivated'&&e.actor==='A1'));assert.ok(analyzeArena(demolished).score.A<analyzeArena(d).score.A);
+  // Later recoverable position: A1 has left the reopened pocket. B1 can
+  // jump into it and close the opening, changing its official owner to B.
+  const reclaim=structuredClone(demolished);reclaim.drops=[];reclaim.pieces.find(p=>p.id==='A1').pos=12;reclaim.pieces.find(p=>p.id==='B1').pos=20;reclaim.turn={team:'B',actor:'B1',steps:0,path:[20],committed:false,actions:0};reclaim.inventories.B1=[{id:'reclaim-jump',type:'jump'}];r.arena.game=reclaim;r.decision=arenaDecision(r);
+  let reclaimed=applyArena(reclaim,{type:'jump',to:11,power:'reclaim-jump'});arenaCommand(r,{type:'jump',to:11,power:'reclaim-jump'});assert.deepEqual(r.arena.game,reclaimed);
+  reclaimed=applyArena(reclaimed,{type:'wall',to:12});arenaCommand(r,{type:'wall',to:12});assert.deepEqual(r.arena.game,reclaimed);assert.equal(analyzeArena(reclaimed).components[analyzeArena(reclaimed).byCell[11]].type,'B');assert.equal(analyzeArena(reclaimed).score.B,1);
 });
 test('Arena: descarte obligatorio persistido, propietario rival, reloj y recuperación sin resolverlo',()=>{
   let r=arenaRoom();r.arena.game.pending={kind:'discard',owner:'B1',team:'B',capacity:1,reason:'capacity'};r.arena.game.inventories.B1=[{id:'one',type:'jump'},{id:'two',type:'demolition'}];r.decision=arenaDecision(r);
@@ -65,4 +71,21 @@ test('Arena: revancha unánime y cliente antiguo no habilitado',()=>{
   clientFeatures(r,players[1].id,['rematch-v1'],603001);advanceRoom(r,606001);assert.equal(r.matchNumber,1);
   clientFeatures(r,players[1].id,['rematch-v1','arena-duo-v1'],606002);advanceRoom(r,609002);assert.equal(r.matchNumber,2);assert.deepEqual(r.arena.game,createArena());assert.deepEqual(r.clock.remainingMs,{A:600000,B:600000});assert.equal(r.previousResults.length,1);
   const view=publicRoom(r,r.hostId,609002);assert.ok(view.arena);assert.equal(view.features.rematch,true);
+});
+
+test('Arena: una decisión conserva su aviso durante los pasos y no se repite al recuperar',()=>{
+  const r=arenaRoom(),records=new Map(),shown=[],storage={getItem:k=>records.get(k),setItem:(k,v)=>records.set(k,v)};
+  const make=()=>createDecisionNotice({storage,visible:()=>true,show:text=>shown.push(text)}),notice=make();
+  const first=publicRoom(r,r.hostId,3000);assert.equal(notice.update(first),true);
+  arenaCommand(r,{type:'move',to:11},4000);const partial=publicRoom(r,r.hostId,4000);assert.equal(partial.decisionId,first.decisionId);assert.equal(notice.update(partial),false);assert.equal(make().update(partial),false);
+  arenaCommand(r,{type:'wall',to:2},5000);assert.equal(notice.update(publicRoom(r,r.hostId,5000)),false);
+  assert.deepEqual(shown,['¡Tu turno, A1!']);
+});
+
+test('Arena: un cliente anterior conserva la sesión pero no puede preparar ni comenzar una sala',()=>{
+  const r=arenaRoom(),id=Object.values(r.participants).find(p=>p.seat==='B1').id;r.status='lobby';
+  clientFeatures(r,id,['rematch-v1','classic-config-v2'],3000);
+  assert.throws(()=>applyCommand(r,id,{type:'ready',params:{ready:true}},3000),{code:'UPDATE_REQUIRED'});
+  assert.throws(()=>applyCommand(r,r.hostId,{type:'start'},3000),{code:'UPDATE_REQUIRED'});
+  assert.equal(publicRoom(r,id,3000).self.id,id);assert.equal(publicRoom(r,id,3000).self.seat,'B1');
 });

@@ -72,13 +72,12 @@ $('copyInvite').addEventListener('click',()=>{const invite=new URL(entryPath,loc
 $('copyCredential').addEventListener('click',()=>copy(session.credential,'Acceso privado copiado. Consérvalo solo para recuperar tu posición.'));
 function render() {
   $('connection').textContent=phases[session?.phase]??'Sin conexión';$('connection').dataset.phase=session?.phase??'idle';
-  if(!state)return;$('publicState').textContent=JSON.stringify(state,null,2);
+  if(!state)return;$('publicState').textContent=JSON.stringify(state,null,2);if(state.arena)arenaText();
   const playing=!!(state.classic||state.arena)&&['active','finished'].includes(state.status)&&state.self.admitted;
   document.body.classList.toggle('playing-classic',playing);$('classicPanel').hidden=!playing;$('lobbyPanel').hidden=playing;
   if(playing){classic??=(state.arena?mountArena:mountClassic)($('classicPanel'),session);classic.update(state);return;}
   const enabled=session.phase==='connected'&&!session.pending,count=state.config.playerCount??state.config.seats.length;
   $('modeLabel').textContent=`${state.config.mode==='arena-duo'?'Arena':'Clásico'} · ${count===2?'1 vs. 1':'2 vs. 2'}${count===2?' · '+(state.config.policy==='team'?'Por equipo':'Por ficha'):''}`;
-  if(state.arena)arenaText();
   $('roomCode').textContent=state.code;$('selfLabel').textContent=`${state.self.name} · ${state.self.seat??'Esperando aprobación'}${state.self.host?' · Anfitrión':''}`;
   $('seatCount').textContent=`${state.participants.length}/${count}`;
   $('seats').replaceChildren(...state.config.seats.map(seat=>{
