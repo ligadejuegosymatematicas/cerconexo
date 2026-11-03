@@ -15,7 +15,7 @@ export async function startUX({port=8815,apiPort=8820,stateDir=path.join(online,
   const child=spawn(process.execPath,[path.join(online,'node_modules/wrangler/bin/wrangler.js'),'dev','--config',configPath,'--local','--ip','127.0.0.1','--port',String(apiPort),'--inspector-port',String(apiPort+1000),'--persist-to',path.join(stateDir,'sqlite')],{cwd:stateDir,env,stdio:['ignore','pipe','pipe'],windowsHide:true});
   let log='';child.stdout.on('data',d=>{log+=d;});child.stderr.on('data',d=>{log+=d;});
   const allowed=new Set(['.nojekyll',...JSON.parse(await readFile(path.join(repo,'scripts/pages-files.json'),'utf8'))]);
-  const types={html:'text/html; charset=utf-8',mjs:'text/javascript; charset=utf-8',css:'text/css',png:'image/png'};
+  const types={html:'text/html; charset=utf-8',mjs:'text/javascript; charset=utf-8',css:'text/css',png:'image/png',webp:'image/webp'};
   const server=http.createServer(async(req,res)=>{try{
     const pathname=new URL(req.url,origin).pathname;
     if(pathname==='/'){res.writeHead(302,{location:'/cerconexo/'});res.end();return;}

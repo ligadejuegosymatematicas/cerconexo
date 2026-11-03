@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
-import {chromium} from 'playwright';import {startUX} from './ux-local.mjs';import {eventually} from './runtime.mjs';import {reviewTraces} from './arena-trace.mjs';
+import {chromium,devices} from 'playwright';import {startUX} from './ux-local.mjs';import {eventually} from './runtime.mjs';import {reviewTraces} from './arena-trace.mjs';
 const remote = process.env.ARENA_TEST_ORIGIN;
 const origin = remote && new URL(remote);
 if (origin && (origin.protocol !== 'https:' || !origin.hostname.endsWith('.workers.dev') || origin.origin !== remote)) {
@@ -15,13 +15,27 @@ const contexts = [];
 const evidence = new URL(remote ? '../evidence/https/' : '../evidence/', import.meta.url);
 await mkdir(evidence, { recursive: true });
 const capture = (page, name) => page.screenshot({ path: fileURLToPath(new URL(name, evidence)), fullPage: true });
+async function checkMedals(page, selector) {
+  const medals = await page.locator(selector).evaluateAll(async nodes => {
+    return Promise.all(nodes.map(async node => {
+      const url = node.getAttribute('href');
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      return { url, width: image.naturalWidth };
+    }));
+  });
+  assert.ok(medals.length > 0, selector);
+  assert.ok(medals.every(({url,width}) => /\.webp$/.test(url) && width === 112));
+  return new Set(medals.map(({url}) => url)).size;
+}
 const read=p=>p.locator('#publicState').textContent().then(JSON.parse),seats=['A1','B1','A2','B2'];await mkdir(new URL('../evidence/',import.meta.url),{recursive:true});let diagnostic;
 try{
   const pages=[];
   const sockets = Array.from({ length: 4 }, () => []);
   for (let i = 0; i < 4; i++) {
-    const c = await browser.newContext({ viewport: { width: i === 0 ? 390 : 1440, height: i === 0 ? 844 : 1000 },
-      hasTouch: i === 0, isMobile: i === 0, reducedMotion: i === 3 ? 'reduce' : 'no-preference' });
+    const c = await browser.newContext({ ...(i === 0 ? devices['Pixel 7'] : { viewport: { width: 1440, height: 1000 } }),
+      reducedMotion: i === 3 ? 'reduce' : 'no-preference' });
     contexts.push(c);
     await c.route('**/*', r => {
       const url = new URL(r.request().url());
@@ -139,9 +153,12 @@ try{
       if(!discardReloaded&&expected.pending){
         const owner=pages[seats.indexOf(expected.pending.owner)],before=await read(owner);await owner.reload();await owner.locator('[data-arena-connection][data-phase=connected]').waitFor();assert.deepEqual((await read(owner)).arena,before.arena);assert.equal(await owner.locator('section[data-arena-discard]').isVisible(),true);discardReloaded=true;
         assert.equal(await owner.locator('[data-arena-feedback]').isVisible(), false);
+        await checkMedals(owner, 'section[data-arena-discard] button svg.power-icon image');
         await capture(owner, 'arena-discard.png');
+        if(owner===host)await capture(owner, 'arena-discard-mobile.png');
       }
       if (round === 0 && n === 1) {
+        assert.equal(await checkMedals(host, '.drop-token svg.power-icon image'), 3);
         await capture(host, 'arena-active-mobile.png');
         await capture(pages[1], 'arena-active-desktop.png');
       }

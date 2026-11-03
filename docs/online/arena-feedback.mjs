@@ -1,6 +1,6 @@
 import { POWER_LABELS } from '../arena/src/config.mjs';
 import { arenaCpuPresentation } from '../arena/src/cpuPresentation.mjs';
-import { powerIcon } from '../arena/src/powerIcons.mjs';
+import { powerIcon } from '../arena/src/powerMedals.mjs';
 import { FINAL_COLORS } from '../src/finalPresentation.mjs';
 
 export function arenaFeedback(previous, next, connected) {

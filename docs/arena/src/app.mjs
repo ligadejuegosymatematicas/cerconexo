@@ -1,5 +1,5 @@
 import {RegionInspection,regionDescription,regionAnnotation,regionBoundary} from './regionInspection.mjs';
-import {powerIcon} from './powerIcons.mjs';
+import {powerIcon} from './powerMedals.mjs';
 import {arenaCoords,arenaWall,analyzeArena} from './geometry.mjs';
 import {ARENA_MODES,DEFAULT_EXPERIMENT,POWER_LABELS} from './config.mjs';
 import {createArena,legalArenaActions,arenaPiece,inventoryOwner,inventoryCapacity,eligibleActors} from './engine.mjs';
@@ -61,7 +61,7 @@ function renderBoard(s,view,legal){
     const p=point(c),type=view.components[view.byCell[c]].type;
     markup+=`<rect class="cell ${type}" data-cell-bg="${c}" x="${p.x-50}" y="${p.y-50}" width="100" height="100"/>`;
   }
-  for(const drop of s.drops){const p=point(drop.cell);markup+=`<g class="drop-token" role="img" aria-label="${POWER_LABELS[drop.type]}"><rect class="drop" x="${p.x-24}" y="${p.y-24}" width="48" height="48" rx="8"/>${powerIcon(drop.type,{x:p.x-20,y:p.y-20,size:40})}</g>`;}
+  for(const drop of s.drops){const p=point(drop.cell);markup+=`<g class="drop-token" role="img" aria-label="${POWER_LABELS[drop.type]}">${powerIcon(drop.type,{x:p.x-31,y:p.y-31,size:62})}</g>`;}
   if(inspection.enabled&&inspection.selected){
     const component=inspection.selected,set=new Set(component.cells);
     markup+=Array.from({length:81},(_,c)=>{const p=point(c);return `<rect class="${set.has(c)?'region-highlight':'region-muted'}" x="${p.x-50}" y="${p.y-50}" width="100" height="100"/>`;}).join('');
@@ -142,7 +142,15 @@ function renderInventory(s,view,legal){
     $('decisionTitle').textContent=`Decide ${s.pending.owner}`;
     $('decisionOwner').textContent=`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}`;
     $('decisionDescription').textContent=manual?'Selecciona qué poder deseas descartar para continuar jugando.':s.pending.reason==='pickup'?'Puedes rechazar el poder recién recogido.':`Conserva ${s.pending.capacity} ${s.pending.capacity===1?'poder':'poderes'}.`;
-    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.type='button';btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=presentation.active||inspection.enabled||cpu.owns(s);btn.addEventListener('click',event=>dispatch({type:'discard',owner:s.pending.owner,power:item.id},event.detail===0));discards.append(btn);}
+    for (const item of s.inventories[s.pending.owner]) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.innerHTML = `${powerIcon(item.type)} Descartar ${POWER_LABELS[item.type]}`;
+      btn.dataset.discard = item.id;
+      btn.disabled = presentation.active || inspection.enabled || cpu.owns(s);
+      btn.addEventListener('click', event => dispatch({ type: 'discard', owner: s.pending.owner, power: item.id }, event.detail === 0));
+      discards.append(btn);
+    }
     const key=`${s.pending.owner}:${s.pending.capacity}:${s.inventories[s.pending.owner].map(p=>p.id).join(',')}`;
     if(ready&&!document.querySelector('.arena-app').hidden&&!document.querySelector('dialog[open]')){
       const retained=[...discards.children].find(b=>b.dataset.discard===focusedDiscard);

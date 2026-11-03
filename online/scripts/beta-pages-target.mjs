@@ -13,7 +13,7 @@ export async function betaPagesTarget() {
   const operator = await betaOperator(); assert.equal(operator.origin, API_BASE);
   const origin = 'https://ligadejuegosymatematicas.github.io', prefix = '/cerconexo/';
   const allowed = new Set(JSON.parse(await readFile(new URL('../../scripts/pages-files.json', import.meta.url), 'utf8')));
-  const types = { html: 'text/html', mjs: 'text/javascript', css: 'text/css', png: 'image/png' };
+  const types = { html: 'text/html', mjs: 'text/javascript', css: 'text/css', png: 'image/png', webp: 'image/webp' };
   return { base: origin + '/cerconexo', entry: origin + prefix + 'online/', backend: API_BASE, origin, headers: {}, suffix: 'staging-pages', publicServer: true,
     async install(context) {
       // Only this isolated browser sees the candidate; GitHub Pages is unchanged.

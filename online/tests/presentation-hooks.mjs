@@ -16,7 +16,27 @@ const additions={
     '  finalResultPending=false;'
   ]
 };
+// Normalize only the exact rendering changes for the approved medals.
+const medalHooks = [
+  ["import {powerIcon} from './powerMedals.mjs';",
+   "import {powerIcon} from './powerIcons.mjs';"],
+  ["  for(const drop of s.drops){const p=point(drop.cell);markup+=`<g class=\"drop-token\" role=\"img\" aria-label=\"${POWER_LABELS[drop.type]}\">${powerIcon(drop.type,{x:p.x-31,y:p.y-31,size:62})}</g>`;}",
+   "  for(const drop of s.drops){const p=point(drop.cell);markup+=`<g class=\"drop-token\" role=\"img\" aria-label=\"${POWER_LABELS[drop.type]}\"><rect class=\"drop\" x=\"${p.x-24}\" y=\"${p.y-24}\" width=\"48\" height=\"48\" rx=\"8\"/>${powerIcon(drop.type,{x:p.x-20,y:p.y-20,size:40})}</g>`;}"],
+  ["    for (const item of s.inventories[s.pending.owner]) {\n      const btn = document.createElement('button');\n      btn.type = 'button';\n      btn.innerHTML = `${powerIcon(item.type)} Descartar ${POWER_LABELS[item.type]}`;\n      btn.dataset.discard = item.id;\n      btn.disabled = presentation.active || inspection.enabled || cpu.owns(s);\n      btn.addEventListener('click', event => dispatch({ type: 'discard', owner: s.pending.owner, power: item.id }, event.detail === 0));\n      discards.append(btn);\n    }",
+   "    for(const item of s.inventories[s.pending.owner]){const btn=document.createElement('button');btn.type='button';btn.textContent=`Descartar ${POWER_LABELS[item.type]}`;btn.dataset.discard=item.id;btn.disabled=presentation.active||inspection.enabled||cpu.owns(s);btn.addEventListener('click',event=>dispatch({type:'discard',owner:s.pending.owner,power:item.id},event.detail===0));discards.append(btn);}"],
+];
+export function originalMedalControllerBytes(file, bytes) {
+  if (file !== 'arena/src/app.mjs') return bytes;
+  let source = bytes.toString('utf8');
+  for (const [after, before] of medalHooks) {
+    if (source.split(after).length !== 2) throw new Error('Gancho de medalla ausente o repetido: '+file);
+    source = source.replace(after, before);
+  }
+  return Buffer.from(source);
+}
+
 export function originalControllerBytes(file,bytes){
+  bytes = originalMedalControllerBytes(file, bytes);
   if(!additions[file])return bytes;
   let text=bytes.toString('utf8');
   for(const line of additions[file]){
