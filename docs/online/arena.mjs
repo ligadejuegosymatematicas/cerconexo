@@ -7,6 +7,7 @@ import {createHaptics} from '../src/haptics.mjs';
 import {createFinalPresenter,FINAL_COLORS} from '../src/finalPresentation.mjs';
 import {createDecisionNotice} from './decision-notice.mjs';
 import {mountRematch} from './rematch-panel.mjs';
+import { arenaFeedback, mountArenaFeedback } from './arena-feedback.mjs';
 import {bindOnlineHome} from './navigation.mjs';
 
 const COLORS=FINAL_COLORS,SEATS=['A1','B1','A2','B2'];
@@ -18,13 +19,14 @@ function css(){if(document.querySelector('[data-arena-online-styles]'))return;co
 export function mountArena(container,session){
   css();const root=document.createElement('section');root.className='arena-online classic-online';root.setAttribute('aria-label','Arena Online');
   root.innerHTML=`<header class="classic-header topbar"><div class="classic-brand"><img class="official-logo" src="${new URL('../assets/Cerconexo_wordmark_transparente.png',import.meta.url).href}" alt="CERCONEXO"><span>ARENA <small>ONLINE · 2 VS. 2</small></span></div><div class="classic-room-tools"><div class="classic-room-meta"><span>Sala <strong data-arena-code></strong></span><span data-arena-connection class="classic-connection" role="status"></span></div><details data-arena-menu class="classic-actions-menu"><summary aria-label="Opciones de partida">⋯</summary><div class="classic-session-actions"><a href="../" data-arena-home>Inicio</a><button data-arena-reconnect>Reconectar</button><details class="classic-access"><summary>Mi acceso</summary><button data-arena-copy>Copiar mi acceso privado</button><button data-arena-disconnect>Desconectar este navegador</button></details></div></details></div></header>
-  <div class="classic-table"><section class="classic-arena panel"><div class="classic-board-topline"><span>Tablero</span><span>9 × 9 · 81 casillas</span></div><div class="classic-board-wrap"><svg data-arena-board data-classic-board class="arena-svg" viewBox="0 0 900 900" role="group" aria-label="Tablero Arena 9 por 9" aria-describedby="arena-online-help"></svg><p data-arena-notice class="online-turn-notice" role="status" hidden></p></div><p class="arena-help" id="arena-online-help" data-arena-help></p><p data-arena-inspection class="arena-inspection" role="status" hidden></p><button data-arena-inspect>Inspeccionar regiones</button></section>
+  <div class="classic-table"><section class="classic-arena panel"><div class="classic-board-topline"><span>Tablero</span><span>9 × 9 · 81 casillas</span></div><div class="classic-board-wrap"><svg data-arena-board data-classic-board class="arena-svg" viewBox="0 0 900 900" role="group" aria-label="Tablero Arena 9 por 9" aria-describedby="arena-online-help"></svg><p data-arena-notice class="online-turn-notice" role="status" hidden></p></div><p class="arena-feedback" data-arena-feedback role="status" hidden></p><p class="arena-help" id="arena-online-help" data-arena-help></p><p data-arena-inspection class="arena-inspection" role="status" hidden></p><button data-arena-inspect>Inspeccionar regiones</button></section>
   <aside class="arena-sidebar classic-sidebar"><section class="classic-turn panel"><p data-arena-self class="classic-self"></p><strong data-arena-turn></strong><p data-arena-prompt class="classic-prompt" role="status"></p><section data-arena-result class="classic-result" hidden role="status"><h2 data-arena-result-title></h2><p data-arena-result-detail></p><button data-arena-propose-rematch hidden>Proponer revancha</button><p data-arena-rematch-status role="status" hidden></p></section><section data-arena-discard class="arena-discard" hidden aria-label="Descarte obligatorio"><strong data-arena-discard-title></strong><p data-arena-discard-help></p><div data-arena-discard-options></div></section></section>
   <section class="classic-clocks panel" aria-label="Tiempo de equipos"><div class="classic-clock-grid"><div class="classic-clock" data-arena-clock="A"><div>Equipo A</div><strong data-arena-time="A"></strong><small data-arena-clock-status="A"></small></div><div class="classic-clock" data-arena-clock="B"><div>Equipo B</div><strong data-arena-time="B"></strong><small data-arena-clock-status="B"></small></div></div><p data-arena-grace class="classic-grace" role="status" hidden></p><p data-arena-idle class="classic-clock-note" role="status" hidden>Tu reloj sigue corriendo.</p></section>
   <section class="arena-powers panel"><strong>Poderes de tu ficha</strong><div data-arena-powers class="arena-inventory"></div><button data-arena-cancel-power hidden>Cancelar poder</button><p data-arena-power-note class="arena-power-note"></p></section>
   <details class="classic-secondary panel"><summary><span data-arena-summary-score></span><span data-arena-summary-presence></span><span>Detalles</span></summary><div class="arena-scores" data-arena-scores></div><div class="arena-roster" data-arena-roster></div><p data-arena-distribution></p></details><details class="classic-history panel" data-arena-history hidden><summary>Resultados anteriores</summary><ul data-arena-history-list></ul></details></aside></div>
   <details class="classic-preferences panel"><summary>Preferencias</summary><label><input type="checkbox" data-arena-vibration> Vibración</label><p data-arena-vibration-help></p></details><p data-arena-message class="classic-message" role="status" hidden></p>`;
   container.append(root);const $=name=>root.querySelector(`[data-arena-${name}]`),board=$('board'),haptics=createHaptics(),inspection=new RegionInspection();
+  const feedback = mountArenaFeedback(board, $('feedback'), { point, edge });
   const presenter=createFinalPresenter({element:$('result'),title:$('result-title'),haptics});
   const rematch=mountRematch({container:root.querySelector('.classic-board-wrap'),propose:$('propose-rematch'),status:$('rematch-status'),session});
   const mobile=matchMedia('(max-width:700px)'),adapt=()=>{root.querySelector('.classic-secondary').open=!mobile.matches;$('menu').open=!mobile.matches;};adapt();mobile.addEventListener('change',adapt);
@@ -49,7 +51,7 @@ export function mountArena(container,session){
       if(['move','jump'].includes(a.type)){const p=point(a.to);markup+=`<g role="button" tabindex="0" data-arena-action="${i}" data-kind="${a.type}" data-to="${a.to}" aria-label="${label}"><circle class="move-preview" cx="${p.x}" cy="${p.y}" r="17"/><rect class="hit" x="${p.x-31}" y="${p.y-31}" width="62" height="62"/><rect class="focus-ring" x="${p.x-34}" y="${p.y-34}" width="68" height="68"/></g>`;}
       else{const actor=game.pieces.find(p=>p.id===game.turn.actor),e=edge(actor.pos,a.to);markup+=`<g role="button" tabindex="0" data-arena-action="${i}" data-kind="${a.type}" data-to="${a.to}" aria-label="${label}"><line class="${a.type==='wall'?'wall-preview':'power-preview'}" x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}"/><rect class="hit" x="${e.x}" y="${e.y}" width="${e.width}" height="${e.height}"/><rect class="focus-ring" x="${e.x}" y="${e.y}" width="${e.width}" height="${e.height}"/></g>`;}
     });
-    board.innerHTML=markup;board.setAttribute('aria-busy',String(!!session.pending));
+    board.innerHTML=markup;feedback.restoreLayer();board.setAttribute('aria-busy',String(!!session.pending));
   }
   function paintClocks(){
     if(!state||destroyed)return;const current=state.serverNow+Math.max(0,performance.now()-receivedAt),clock=state.clock,paused=clock.graceUntil??state.serverNow,grace=state.status==='active'&&current<paused;
@@ -79,11 +81,31 @@ export function mountArena(container,session){
     $('help').textContent=keyboard?'Tab para recorrer acciones; Enter o Espacio para jugar.':inspection.enabled?'Toca una región para consultar sus casillas.':'Toca puntos para moverte y bordes para construir.';
     if(session.phase!=='connected'||document.hidden||state.status!=='active'||!state.canDecide)$('notice').hidden=true;notice.update(state,session.phase==='connected');rematch.update(state,state.serverNow+performance.now()-receivedAt);paintClocks();
   }
-  function update(next){if(destroyed)return;const live=state?.status==='active'&&next.status==='finished'&&state.matchId===next.matchId&&session.phase==='connected';if(state?.matchId!==next.matchId){selectedPower=null;inspection.reset();wasFinished=false;boardKey='';}if(state!==next){state=next;receivedAt=session.receivedAt??performance.now();}render();if(live)presenter.celebrate();}
+  function update(next) {
+    if (destroyed) return;
+    const sameMatch = state?.matchId === next.matchId;
+    const connected = session.phase === 'connected' && !document.hidden;
+    const live = sameMatch && connected && state.status === 'active' && next.status === 'finished';
+    const change = arenaFeedback(state, next, connected);
+    if (!sameMatch) {
+      selectedPower = null;
+      inspection.reset();
+      wasFinished = false;
+      boardKey = '';
+    }
+    if (!sameMatch || !connected || state?.arena.game.revision !== next.arena.game.revision) feedback.clear();
+    if (state !== next) {
+      state = next;
+      receivedAt = session.receivedAt ?? performance.now();
+    }
+    render();
+    if (change) feedback.show(change);
+    if (live) presenter.celebrate();
+  }
   function interact(event){if(event.type==='keydown'){if(inspection.enabled&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();inspection.moveFocus(event.key);render();board.querySelector(`[data-inspect="${inspection.focusCell}"]`)?.focus();return;}if(!['Enter',' '].includes(event.key))return;event.preventDefault();if(event.repeat)return;}const target=event.target.closest('[data-arena-action],[data-inspect]');if(!target)return;if(target.dataset.inspect!==undefined){if(inspection.select(+target.dataset.inspect))render();}else{const action=actions[+target.dataset.arenaAction];if(action)send(action);}}
   board.addEventListener('click',interact);board.addEventListener('keydown',interact);$('inspect').onclick=()=>{inspection.toggle();selectedPower=null;render();};$('cancel-power').onclick=()=>{selectedPower=null;render();};$('disconnect').onclick=()=>session.disconnect();$('reconnect').onclick=()=>{message();session.connect();};$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(session.credential);message('Acceso privado copiado.');}catch{message('No se pudo copiar.');}};
   $('vibration').checked=haptics.enabled;$('vibration').disabled=!haptics.supported;$('vibration-help').textContent=haptics.supported?'Solo cuando el navegador lo permite.':'Este navegador no permite vibración.';$('vibration').onchange=()=>haptics.setEnabled($('vibration').checked);
-  const onState=e=>update(e.detail),control=()=>render(),key=e=>{if(e.key==='Tab'){keyboard=true;render();}},pointer=e=>{if(e.pointerType==='touch'){keyboard=false;render();}};
+  const onState=e=>update(e.detail),control=()=>{if(session.phase!=='connected'||document.hidden)feedback.clear();render();},key=e=>{if(e.key==='Tab'){keyboard=true;render();}},pointer=e=>{if(e.pointerType==='touch'){keyboard=false;render();}};
   session.addEventListener('state',onState);session.addEventListener('phase',control);session.addEventListener('pending',control);document.addEventListener('visibilitychange',control);document.addEventListener('keydown',key);root.addEventListener('pointerdown',pointer);const timer=setInterval(paintClocks,200);if(session.state)update(session.state);
-  return{update,destroy(){destroyed=true;clearInterval(timer);clearTimeout(noticeTimer);mobile.removeEventListener('change',adapt);unbindHome();rematch.destroy();presenter.destroy();haptics.stop();session.removeEventListener('state',onState);session.removeEventListener('phase',control);session.removeEventListener('pending',control);document.removeEventListener('visibilitychange',control);document.removeEventListener('keydown',key);root.removeEventListener('pointerdown',pointer);root.remove();}};
+  return{update,destroy(){destroyed=true;clearInterval(timer);clearTimeout(noticeTimer);mobile.removeEventListener('change',adapt);unbindHome();rematch.destroy();presenter.destroy();feedback.clear();haptics.stop();session.removeEventListener('state',onState);session.removeEventListener('phase',control);session.removeEventListener('pending',control);document.removeEventListener('visibilitychange',control);document.removeEventListener('keydown',key);root.removeEventListener('pointerdown',pointer);root.remove();}};
 }

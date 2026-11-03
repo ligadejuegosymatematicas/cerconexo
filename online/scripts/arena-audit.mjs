@@ -15,7 +15,7 @@ const config=await readFile(new URL('online/config.mjs',root),'utf8');
 assert.match(config,/ARENA_DUO_ENABLED = false/);
 assert.equal(config,git('show',base+':online/config.mjs').toString()+'// The isolated local launcher enables the candidate in its response only.\nexport const ARENA_DUO_ENABLED = false;\n');
 const files=JSON.parse(await readFile(new URL('scripts/pages-files.json',root))),all=['.nojekyll',...files];
-assert.equal(new Set(all).size,all.length);assert.equal(all.length,78);
+assert.equal(new Set(all).size,all.length);assert.equal(all.length,79);
 for(const file of files){
   assert.ok(!/node_modules|\.state|\.env|wrangler|online\/(src|scripts|tests|evidence)\//.test(file),file);
   const bytes=await readFile(new URL(file,root));assert.deepEqual(await readFile(new URL('docs/'+file,root)),bytes,file);

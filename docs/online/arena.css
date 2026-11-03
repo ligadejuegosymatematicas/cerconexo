@@ -1,4 +1,5 @@
 @import url('../arena/src/styles.css') layer(arena-native);
+.arena-online .arena-feedback{padding:6px 8px;color:#ffe2a4;font-size:13px;line-height:1.35}
 .arena-online{--ink:#fbf7ef;--raised:#102a43;--a:#f59e0b;--b:#38bdf8}
 .arena-online .arena-svg{display:block;width:100%;height:auto;aspect-ratio:1;touch-action:manipulation;background:#f6eedb;border:5px solid #d4a64a;border-radius:8px}
 .arena-online .classic-arena{min-width:0}.arena-online .classic-board-wrap{padding:8px}.arena-online .classic-turn{height:auto;overflow:visible;display:flex;flex-direction:column;gap:5px}.arena-online [data-arena-turn]{order:0}.arena-online .classic-self{order:1}.arena-online .classic-prompt{order:2;min-height:0;margin:0}.arena-online .classic-result,.arena-online .arena-discard{order:3}
