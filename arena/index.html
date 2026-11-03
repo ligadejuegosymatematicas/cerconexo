@@ -17,11 +17,21 @@
   <style>html[data-entry="loading"] #homeScreen{display:none} [hidden]{display:none!important}</style>
   <link rel="stylesheet" href="../src/experience.css">
   <style>
-    .arena-app .discard-options .discard-medal {
-      display: grid;
-      grid-template-columns: 20px minmax(0, 1fr);
-      align-items: center;
-      gap: 4px;
+    .discard-action .power-icon { margin-inline-end: 4px; }
+    @media (max-width: 760px) {
+      .discard-medal .discard-action {
+        display: block;
+        position: relative;
+        width: fit-content;
+        margin-inline: auto;
+        padding-inline-start: 24px;
+      }
+      .discard-medal .discard-action .power-icon {
+        position: absolute;
+        inset-inline-start: 0;
+        bottom: 0;
+      }
+      .discard-medal .discard-name { display: block; }
     }
   </style>
 <link rel="stylesheet" href="../online/new-game.css"></head>

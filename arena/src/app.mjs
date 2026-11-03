@@ -146,7 +146,7 @@ function renderInventory(s,view,legal){
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'discard-medal';
-      btn.innerHTML = `${powerIcon(item.type, { size: 20 })}<span>Descartar ${POWER_LABELS[item.type]}</span>`;
+      btn.innerHTML = `<span class="discard-action">${powerIcon(item.type, { size: 20 })}Descartar</span> <span class="discard-name">${POWER_LABELS[item.type]}</span>`;
       btn.dataset.discard = item.id;
       btn.disabled = presentation.active || inspection.enabled || cpu.owns(s);
       btn.addEventListener('click', event => dispatch({ type: 'discard', owner: s.pending.owner, power: item.id }, event.detail === 0));
