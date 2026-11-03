@@ -2,7 +2,7 @@ import {ARENA_DUO_ENABLED} from './config.mjs';
 // Capture navigation only. The official Local/CPU form handlers stay untouched.
 const dialog=document.querySelector('#newDialog'),radio=dialog?.querySelector('[name=opponent][value=online]');
 if(ARENA_DUO_ENABLED&&radio){
-  radio.disabled=false;const label=radio.closest('label');label.classList.remove('online-pending');label.querySelector('small').textContent='2 vs. 2';document.querySelector('#arenaOnlinePending').textContent='Candidata local · cuatro personas · por ficha · diez minutos por equipo.';
+  radio.disabled=false;const label=radio.closest('label');label.classList.remove('online-pending');label.querySelector('small').textContent='2 vs. 2';document.querySelector('#arenaOnlinePending').textContent='Cuatro personas · por ficha · diez minutos por equipo.';
   let selected=false,concealed=[];const fieldsets=[...dialog.querySelectorAll('fieldset')].filter(f=>!f.contains(radio)),advanced=dialog.querySelector('details'),button=dialog.querySelector('#startArena');let originalLabel=button.textContent;
   const layout=()=>{const next=radio.checked;if(next&&!selected){concealed=[...fieldsets,...(advanced?[advanced]:[])].map(node=>[node,node.hidden]);originalLabel=button.textContent;for(const[node]of concealed)node.hidden=true;button.textContent='Continuar';}else if(!next&&selected){for(const[node,hidden]of concealed)node.hidden=hidden;button.textContent=originalLabel;}selected=next;};
   document.addEventListener('change',event=>{if(!event.target.matches('[name=opponent]')||!dialog.contains(event.target))return;layout();if(selected)event.stopImmediatePropagation();},true);
