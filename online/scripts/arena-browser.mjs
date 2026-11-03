@@ -35,6 +35,15 @@ try{
       assert.equal(landing.status(), 303);
       const login = await c.request.post(remote + '/pilot/session', { headers: { Origin: remote }, data: { credential } });
       assert.equal(login.status(), 200);
+      if (i === 0) {
+        const healthResponse = await c.request.get(remote + '/api/health');
+        assert.equal(healthResponse.status(), 200);
+        const health = await healthResponse.json();
+        assert.equal(health.capabilities.arena, 'duo-online');
+        assert.equal(health.publicCreation, false);
+        if (process.env.ARENA_TEST_SHA) assert.equal(health.candidateSha, process.env.ARENA_TEST_SHA);
+        report.workerCommit = health.candidateSha;
+      }
     }
     await c.addInitScript(() => {
       window.arenaWire = { replies: new Map() };
