@@ -145,10 +145,24 @@ async function metric(page){return page.evaluate(()=>{
     await context.close();
     report.checks.push('Simetría, teclado, transición directa a 1 vs. 1, confirmaciones simultáneas, fin de partida prioritario, sin conquista, recarga durante/después, reinicio y movimiento reducido');
     // El HTML autónomo restaura los mismos distintivos y no repite avisos.
-    const offline=await browser.newContext({viewport:{width:360,height:740},hasTouch:true,reducedMotion:'reduce'}),single=await offline.newPage();
-    single.on('pageerror',e=>errors.push(e.message));await single.goto(pathToFileURL(path.join(root,'Cerconexo_Premium_Listo_Para_Jugar.html')).href);await idle(single);
-    await load(single,a.before);await choose(single,a.to);await single.reload();await idle(single);
-    assert.deepEqual(await saved(single),a.after);assert.equal((await roster(single)).filter(p=>p.badge).length,1);assert.ok(await single.locator('#recentEvent').isHidden());await offline.close();
+    const offline = await require('./navigation.cjs').offlineContext(chromium, {
+      viewport: { width: 360, height: 740 }, hasTouch: true, reducedMotion: 'reduce',
+    });
+    try {
+      const single = await offline.newPage();
+      single.on('pageerror', e => errors.push(e.message));
+      await single.goto(pathToFileURL(path.join(root, 'Cerconexo_Premium_Listo_Para_Jugar.html')).href);
+      await load(single, a.before);
+      assert.deepEqual(await saved(single), a.before, 'La partida preparada debe estar cargada antes de jugar.');
+      await choose(single, a.to);
+      await single.reload();
+      await idle(single);
+      assert.deepEqual(await saved(single), a.after);
+      assert.equal((await roster(single)).filter(p => p.badge).length, 1);
+      assert.ok(await single.locator('#recentEvent').isHidden());
+    } finally {
+      await offline.close();
+    }
     report.checks.push('HTML autónomo file://: confirmación, turnos, guardado, distintivo persistente y recarga sin celebraciones');
     assert.deepEqual(errors,[]);report.errors=errors;await fs.writeFile(path.join(out,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
   }finally{await browser.close();await site.close();}
