@@ -30,7 +30,12 @@ try{
       const p=pages[i];await p.goto(site.entry+'?room='+code);await p.locator('#joinForm [name=name]').fill('Persona '+(i+1));await p.locator('#joinForm button[type=submit]').click();await p.locator('#connection[data-phase=connected]').waitFor();
       const request=host.locator('#requests .request');await request.locator('select').selectOption(seats[i]);await request.getByRole('button',{name:'Admitir',exact:true}).click();await p.locator('#readyButton:visible').waitFor();
     }
-    for(const p of pages)await p.locator('#readyButton').click();await host.locator('#startButton:enabled').click();for(const p of pages)await p.locator('[data-classic-connection][data-phase=connected]').waitFor();
+    for(const p of pages){
+      await eventually(async()=>{const states=await Promise.all(pages.map(read));return states.every(s=>s.revision===states[0].revision);},'Preparación con revisiones distintas');
+      const id=(await read(p)).self.id;await p.locator('#readyButton').click();
+      await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.participants.find(player=>player.id===id)?.ready),'Preparación no compartida');
+    }
+    await host.locator('#startButton:enabled').click();for(const p of pages)await p.locator('[data-classic-connection][data-phase=connected]').waitFor();
     let official=(await read(host)).classic.game,turns=0,duplicate=false,reloaded=false;
     while(!official.over){
       assert.ok(turns++<100);const all=await Promise.all(pages.map(read)),s=all[0],actor=s.classic.draft.actor??legalActors(official)[0],index=all.findIndex(v=>v.self.controlledPieces.includes(actor)),p=pages[index];
@@ -67,5 +72,5 @@ try{
     for(const p of pages)await p.context().close();
   }
   assert.deepEqual(report.errors,[]);assert.deepEqual(report.external,[]);report.ok=true;
-}catch(e){report.error=e.stack??e.message;process.exitCode=1;}
+}catch(e){report.error=e.stack??e.message;report.failedStates=await Promise.all(contexts.map(async c=>c.pages()[0]?.evaluate(()=>{const s=JSON.parse(document.querySelector('#publicState')?.textContent??'null');return {status:s?.status,revision:s?.revision,self:s?.self?.seat,participants:s?.participants?.map(p=>({seat:p.seat,ready:p.ready,online:p.online})),problem:document.querySelector('#problem')?.textContent,errors:window.__uxMessages?.filter(m=>m.type==='error').map(m=>m.error?.code)};}).catch(()=>null)));process.exitCode=1;}
 finally{for(const c of contexts)await c.close();await browser.close();await site.stop();await writeFile(new URL(`../evidence/ux-configurations-browser${publicPages?'-public':''}.json`,import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}
