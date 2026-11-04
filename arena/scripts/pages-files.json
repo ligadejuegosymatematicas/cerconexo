@@ -8,5 +8,9 @@
   "src/session.mjs",
   "src/regionInspection.mjs",
   "src/powerIcons.mjs",
+  "src/powerMedals.mjs",
+  "assets/powers/demolition.webp",
+  "assets/powers/jump.webp",
+  "assets/powers/extra-wall.webp",
   "assets/wordmark.png"
 ]

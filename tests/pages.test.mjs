@@ -38,6 +38,7 @@ test('Raíz /cerconexo/, recursos y módulos se sirven con MIME correcto y sin r
       if(name.endsWith('.mjs'))assert.match(result.headers.get('content-type'),/javascript/);
       if(name.endsWith('.css'))assert.match(result.headers.get('content-type'),/text\/css/);
       if(name.endsWith('.png'))assert.equal(result.headers.get('content-type'),'image/png');
+      if(name.endsWith('.webp'))assert.equal(result.headers.get('content-type'),'image/webp');
     }
     const references=[...html.matchAll(/(?:src|href)="([^"]+)"/g)].map(m=>['index.html',m[1]]);
     for(const name of files){

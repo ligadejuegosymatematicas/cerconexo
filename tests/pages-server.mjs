@@ -9,7 +9,7 @@ export async function publicFiles(){
 }
 export async function startPagesServer({entry='clasico/'}={}){
   const allowed=new Set(await publicFiles());
-  const types={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png'};
+  const types={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.webp':'image/webp'};
   const server=http.createServer(async(req,res)=>{
     const pathname=new URL(req.url,'http://localhost').pathname;
     if(pathname===prefix.slice(0,-1)){res.writeHead(301,{Location:prefix});res.end();return;}

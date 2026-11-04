@@ -22,10 +22,19 @@ def worker_source():
         parts.append(re.sub(r'\bexport (const|async function|function|class)\b',r'\1',source))
     return '\n'.join(parts)
 modules.append('globalThis.CERCONEXO_ARENA_CPU_WORKER_SOURCE='+json.dumps(worker_source())+';')
-for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerIcons', 'cpuConfig','cpuEvaluation','cpuStrategy','cpuController','cpuPresentation','app']:
+def embed_medal(match):
+    asset = (root / 'src' / match[1]).resolve()
+    data = base64.b64encode(asset.read_bytes()).decode('ascii')
+    return json.dumps('data:image/webp;base64,' + data)
+
+for name in ['geometry', 'config', 'engine', 'session', 'regionInspection', 'powerMedals', 'cpuConfig','cpuEvaluation','cpuStrategy','cpuController','cpuPresentation','app']:
     source = (root / f'src/{name}.mjs').read_text(encoding='utf-8')
     source = '\n'.join(line for line in source.splitlines() if not line.startswith(('import ', 'export {')))
     source = re.sub(r'\bexport (const|async function|function|class)\b', r'\1', source)
+    if name == 'powerMedals':
+        source, count = re.subn(r"new URL\('(\.\./assets/powers/[a-z-]+\.webp)', import\.meta\.url\)\.href", embed_medal, source)
+        if count != 3:
+            raise ValueError('Arena autónomo necesita tres medallas incrustadas.')
     modules.append(source)
 html = html.replace('<link rel="stylesheet" href="./src/styles.css">', f'<style>\n{css}\n</style>')
 html = html.replace('<script type="module" src="./src/app.mjs"></script>', '<script type="module">\n' + '\n'.join(modules) + '\n</script>')

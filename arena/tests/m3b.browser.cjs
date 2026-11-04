@@ -12,7 +12,7 @@ const {pathToFileURL}=require('node:url');
       if(!pathname.startsWith('/cerconexo/'))throw new Error('Fuera de ruta');
       let relative=decodeURIComponent(pathname.slice('/cerconexo/'.length));if(relative.endsWith('/')||!relative)relative+='index.html';
       const file=path.resolve(stage,relative);if(!file.startsWith(stage+path.sep))throw new Error('Ruta no válida');
-      const bytes=await fs.readFile(file);res.writeHead(200,{'Content-Type':file.endsWith('.mjs')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.png')?'image/png':'text/html'});res.end(bytes);
+      const bytes=await fs.readFile(file);res.writeHead(200,{'Content-Type':file.endsWith('.mjs')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.png')?'image/png':file.endsWith('.webp')?'image/webp':'text/html'});res.end(bytes);
     }catch{res.writeHead(404);res.end('404');}
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base=`http://127.0.0.1:${server.address().port}/cerconexo/`,url=base+'arena/';

@@ -10,12 +10,14 @@ import { pilotGate } from './pilot-gate.mjs';
 import { normalizeMatch, UPDATE_MESSAGE } from './rematch.mjs';
 import { authorizeCreation } from './beta-admission.mjs';
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
+import {arenaConfiguration} from './arena-adapter.mjs';
 
 const utf8 = new TextEncoder();
 const PARAMS = { admit: ['playerId', 'seat'], reject: ['playerId'], ready: ['ready'], start: [],
   'probe.complete': [], 'probe.discard': [], 'probe.resolve': [], 'classic.step': ['to', 'matchId'], 'classic.wall': ['to', 'matchId'],
   'rematch.propose': ['matchId'], 'rematch.respond': ['matchId', 'proposalId', 'accept'] };
 PARAMS['classic.select'] = ['actor', 'matchId'];
+PARAMS['arena.action']=['action','matchId'];
 const json = (value, status = 200, extra = {}) => new Response(JSON.stringify(value), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store',
     'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', ...extra }
@@ -45,7 +47,7 @@ export default {
             candidateSha: env.CANDIDATE_SHA ?? null,
             serviceMode: env.SERVICE_MODE ?? 'local', publicCreation: env.PUBLIC_CREATION === 'true',
             localOnly: !publicSite, heartbeatMs: HEARTBEAT_MS, leaseMs: LEASE_MS,
-            capabilities: { classic: 'online', arena: publicSite ? 'local-and-cpu-only' : 'connection-probe-only' },
+            capabilities: { classic: 'online', arena: env.ARENA_DUO_ENABLED==='true'?'duo-online':publicSite ? 'local-and-cpu-only' : 'connection-probe-only' },
             engines: { classic: { pieces: classic.pieces.length }, arenaDuo: { pieces: duo.pieces.length, cells: analyzeArena(duo).score.shared },
               arenaFfa: { pieces: ffa.pieces.length, cells: analyzeArena(ffa).score.shared } } }, 200, cors);
         }
@@ -54,7 +56,8 @@ export default {
           await authorizeCreation(request, env);
           payload = await bodyOf(request); code = roomCode(payload.code); route = 'create';
           nameOf(payload.name); credential(payload.credential); configuration(payload.mode, payload.policy, payload.players);
-          if (publicSite) requireThat(payload.mode === 'classic', 'MODE', 'En esta prueba solo está disponible Clásico online.');
+          if (publicSite) requireThat(payload.mode === 'classic'||env.ARENA_DUO_ENABLED==='true'&&payload.mode==='arena-duo', 'MODE', 'Modalidad online no habilitada.');
+          if(env.ARENA_DUO_ENABLED==='true')requireThat(['classic','arena-duo'].includes(payload.mode),'MODE','Esta candidata admite Clásico y Arena 2 vs. 2.');
         } else {
           const match = /^\/api\/rooms\/([^/]+)\/(join|resume|socket)$/.exec(url.pathname);
           requireThat(match, 'ROUTE', 'Ruta no disponible.', 404); code = roomCode(match[1]); route = match[2];
@@ -201,6 +204,7 @@ export class Room extends DurableObject {
         if (route === 'create') {
           const input = await bodyOf(request), tokenHash = await digest(credential(input.credential));
           const requested = configuration(input.mode, input.policy, input.players);
+          if(!room&&input.mode==='arena-duo'&&this.env.ARENA_DUO_ENABLED==='true')Object.assign(requested,arenaConfiguration(requested));
           // A retry belongs to the immutable parameters with which this room
           // was created, including rooms surviving a local version update.
           const persisted = room && room.config.mode === requested.mode && room.config.policy === requested.policy && participantCount(room.config) === participantCount(requested) ? room.config : requested;
@@ -210,7 +214,7 @@ export class Room extends DurableObject {
             requireThat(room.participants[room.hostId].tokenHash === tokenHash && room.creationFingerprint === fingerprint, 'EXISTS', 'Ese código ya está ocupado.', 409);
           } else {
             requireThat(!retiredClassicConfiguration(requested), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
-            room = createRoom({ code, name: input.name, mode: input.mode, policy: input.policy, players: input.players, tokenHash }, now); room.creationFingerprint = fingerprint;
+            room = createRoom({ code, name: input.name, mode: input.mode, policy: input.policy, players: input.players, tokenHash, arenaOnline:requested.ruleset==='arena-duo-online-v1' }, now); room.creationFingerprint = fingerprint;
             this.write(room, [{ type: 'created', at: now }]);
           }
           await this.schedule(room, now); return json({ state: publicRoom(room, room.hostId, now) }, 201);
