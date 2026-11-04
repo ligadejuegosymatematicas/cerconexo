@@ -1,17 +1,23 @@
 import {createArena,applyArena} from '../../arena/src/engine.mjs';
 import {analyzeArena} from '../../arena/src/geometry.mjs';
 import {Fault,requireThat,participantCount} from './protocol.mjs';
+import {ARENA_FFA_RULESET,isArenaFfaRoom,ffaOutcome} from './arena-timeout.mjs';
 
 export const ARENA_RULESET='arena-duo-online-v1';
 export const ARENA_UPDATE='Actualiza esta página para jugar Arena. Se conservará tu acceso.';
-export const isArenaRoom=room=>room.config.ruleset===ARENA_RULESET;
+export const isArenaRoom=room=>room.config.ruleset===ARENA_RULESET || isArenaFfaRoom(room);
 export function arenaConfiguration(config){
   const count = participantCount(config);
-  requireThat(config.mode === 'arena-duo' && (count === 2 || count === 4 && config.policy === 'piece'),
-    'CONFIG', 'Arena 2 vs. 2 utiliza turnos por ficha.');
-  return{...config,ruleset:ARENA_RULESET};
+  const ffa = config.mode === 'arena-ffa';
+  requireThat(ffa ? count === 4 && config.policy === 'piece'
+    : config.mode === 'arena-duo' && (count === 2 || count === 4 && config.policy === 'piece'),
+    'CONFIG', 'Configuración de Arena Online no admitida.');
+  return {...config, ruleset: ffa ? ARENA_FFA_RULESET : ARENA_RULESET};
 }
-export const createOnlineArena = config => ({game: createArena({mode: 'duo', policy: config.policy})});
+export const createOnlineArena = config => ({
+  game: createArena({mode: config.mode === 'arena-ffa' ? 'ffa' : 'duo', policy: config.policy}),
+  ...(config.mode === 'arena-ffa' ? {eliminations: []} : {}),
+});
 export const arenaOneVsOne = config => config.mode === 'arena-duo' && participantCount(config) === 2;
 
 export function arenaControlledPieces(room, seat) {
@@ -33,7 +39,7 @@ export function arenaDecision(room) {
     : `${game.completedTurns}:${actor ?? team}`;
   return {kind: pending ? 'arena-discard' : 'arena', team, actor, eligible, key, ...(game.policy === 'team' && !pending ? {selecting: !turn.actor} : {})};
 }
-export const arenaView=room=>({game:room.arena.game,territory:analyzeArena(room.arena.game)});
+export const arenaView=room=>({game:room.arena.game,territory:analyzeArena(room.arena.game),...(isArenaFfaRoom(room)?{eliminations:room.arena.eliminations}:{})});
 export function applyOnlineArena(room,seat,action){
   requireThat(isArenaRoom(room)&&room.status==='active','ARENA','Arena no está activa.',409);
   requireThat(action&&typeof action==='object'&&!Array.isArray(action),'PARAMS','Indica una acción válida.');
@@ -53,10 +59,11 @@ export function applyOnlineArena(room,seat,action){
       requireThat(arenaControlledPieces(room, seat).includes(action.actor), 'DECISION', 'Selecciona una ficha de tu equipo.', 403);
     }
   }
-  try{room.arena={game:applyArena(game,action)};}catch(e){if(e instanceof Fault)throw e;throw new Fault('ILLEGAL_ACTION',e.message);}
+  try{room.arena={...room.arena,game:applyArena(game,action)};}catch(e){if(e instanceof Fault)throw e;throw new Fault('ILLEGAL_ACTION',e.message);}
   return{finished:room.arena.game.over};
 }
 export function arenaOutcome(room,timedOutTeam=null){
+  if (isArenaFfaRoom(room)) return ffaOutcome(room);
   const game=room.arena.game,score=analyzeArena(game).score;
   if(timedOutTeam)return{reason:'timeout',timedOutTeam,losers:[timedOutTeam],winners:game.teams.filter(t=>t!==timedOutTeam),score};
   requireThat(game.over,'RESULT','La partida continúa.',409);return{reason:'territory',winners:[...game.winners],score};

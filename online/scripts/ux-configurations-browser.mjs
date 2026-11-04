@@ -4,8 +4,11 @@ import {chromium} from 'playwright';
 import {startUX} from './ux-local.mjs';
 import {eventually} from './runtime.mjs';
 import {applyTurn,legalActors,wallOptions,availableMoves,territory} from '../../src/engine.mjs';
-const site=await startUX({port:8818,apiPort:8823}),browser=await chromium.launch({channel:'msedge',headless:true});
-const report={ok:false,configurations:[],errors:[],external:[]},contexts=[];
+import {API_BASE} from '../config.mjs';
+const publicPages=process.argv.includes('--public-pages');
+const pagesOrigin='https://ligadejuegosymatematicas.github.io';
+const site=publicPages?{entry:pagesOrigin+'/cerconexo/online/',stop:async()=>{}}:await startUX({port:8818,apiPort:8823}),browser=await chromium.launch({channel:'msedge',headless:true});
+const report={ok:false,publicPages,frontendIntercepted:false,configurations:[],errors:[],external:[]},contexts=[];
 const read=p=>p.locator('#publicState').textContent().then(JSON.parse);
 await mkdir(new URL('../evidence/',import.meta.url),{recursive:true});
 try{
@@ -13,7 +16,7 @@ try{
     const pages=[],seats=count===2?['A','B']:['A1','B1','A2','B2'];
     for(let i=0;i<count;i++){
       const context=await browser.newContext({viewport:{width:i===0?390:1440,height:i===0?844:1000},hasTouch:i===0,isMobile:i===0,reducedMotion:'no-preference'});contexts.push(context);
-      await context.route('**/*',r=>{if(new URL(r.request().url()).hostname==='127.0.0.1')return r.continue();report.external.push(r.request().url());return r.abort();});
+      await context.route('**/*',r=>{const url=new URL(r.request().url());if(publicPages?[pagesOrigin,API_BASE].includes(url.origin):url.hostname==='127.0.0.1')return r.continue();report.external.push(url.origin);return r.abort();});
       await context.addInitScript(()=>{
         const Original=WebSocket;window.__uxMessages=[];
         window.WebSocket=class extends Original{constructor(...args){super(...args);window.__uxSocket=this;this.addEventListener('message',event=>{try{const m=JSON.parse(event.data);if(m.type==='ack'||m.type==='error')window.__uxMessages.push(m);}catch{}});}send(data){try{const m=JSON.parse(data);if(m.actionId)window.__uxLast=m;}catch{}return super.send(data);}};
@@ -27,7 +30,12 @@ try{
       const p=pages[i];await p.goto(site.entry+'?room='+code);await p.locator('#joinForm [name=name]').fill('Persona '+(i+1));await p.locator('#joinForm button[type=submit]').click();await p.locator('#connection[data-phase=connected]').waitFor();
       const request=host.locator('#requests .request');await request.locator('select').selectOption(seats[i]);await request.getByRole('button',{name:'Admitir',exact:true}).click();await p.locator('#readyButton:visible').waitFor();
     }
-    for(const p of pages)await p.locator('#readyButton').click();await host.locator('#startButton:enabled').click();for(const p of pages)await p.locator('[data-classic-connection][data-phase=connected]').waitFor();
+    for(const p of pages){
+      await eventually(async()=>{const states=await Promise.all(pages.map(read));return states.every(s=>s.revision===states[0].revision);},'Preparación con revisiones distintas');
+      const id=(await read(p)).self.id;await p.locator('#readyButton').click();
+      await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.participants.find(player=>player.id===id)?.ready),'Preparación no compartida');
+    }
+    await host.locator('#startButton:enabled').click();for(const p of pages)await p.locator('[data-classic-connection][data-phase=connected]').waitFor();
     let official=(await read(host)).classic.game,turns=0,duplicate=false,reloaded=false;
     while(!official.over){
       assert.ok(turns++<100);const all=await Promise.all(pages.map(read)),s=all[0],actor=s.classic.draft.actor??legalActors(official)[0],index=all.findIndex(v=>v.self.controlledPieces.includes(actor)),p=pages[index];
@@ -52,7 +60,11 @@ try{
     }
     await host.screenshot({path:new URL(`../evidence/ux-final-${count}-${policy}-mobile.png`,import.meta.url).pathname.replace(/^\/(\w:)/,'$1'),fullPage:true});
     if(count===4)await pages[1].screenshot({path:new URL('../evidence/ux-final-desktop.png',import.meta.url).pathname.replace(/^\/(\w:)/,'$1'),fullPage:true});
-    const old=(await read(host)).matchId;await host.locator('[data-classic-propose-rematch]').click();for(const p of pages.slice(1))await p.locator('[data-rematch-accept]').click();
+    const old=(await read(host)).matchId;await host.locator('[data-classic-propose-rematch]').click();for(const p of pages.slice(1)){
+      await p.locator('[data-rematch-accept]').click();
+      const id=(await read(p)).self.id;
+      await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.rematch.votes[id]===true),'Aceptación no compartida');
+    }
     await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.status==='active'&&s.matchId!==old),'Revancha sin unanimidad o no inició',15000);
     for(const p of pages){const s=await read(p);assert.equal(s.classic.game.moves,0);assert.ok(s.clock.remainingMs.A>470000);assert.equal(s.clock.remainingMs.B,480000);assert.equal(s.previousResults.length,1);assert.deepEqual(s.outcome,null);assert.equal(s.self.seat,seats[pages.indexOf(p)]);}
     await host.reload();await host.locator('[data-classic-connection][data-phase=connected]').waitFor();assert.equal(await host.evaluate(()=>window.__uxCelebrations),0);
@@ -60,5 +72,5 @@ try{
     for(const p of pages)await p.context().close();
   }
   assert.deepEqual(report.errors,[]);assert.deepEqual(report.external,[]);report.ok=true;
-}catch(e){report.error=e.stack??e.message;process.exitCode=1;}
-finally{for(const c of contexts)await c.close();await browser.close();await site.stop();await writeFile(new URL('../evidence/ux-configurations-browser.json',import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}
+}catch(e){report.error=e.stack??e.message;report.failedStates=await Promise.all(contexts.map(async c=>c.pages()[0]?.evaluate(()=>{const s=JSON.parse(document.querySelector('#publicState')?.textContent??'null');return {status:s?.status,revision:s?.revision,self:s?.self?.seat,participants:s?.participants?.map(p=>({seat:p.seat,ready:p.ready,online:p.online})),problem:document.querySelector('#problem')?.textContent,errors:window.__uxMessages?.filter(m=>m.type==='error').map(m=>m.error?.code)};}).catch(()=>null)));process.exitCode=1;}
+finally{for(const c of contexts)await c.close();await browser.close();await site.stop();await writeFile(new URL(`../evidence/ux-configurations-browser${publicPages?'-public':''}.json`,import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}

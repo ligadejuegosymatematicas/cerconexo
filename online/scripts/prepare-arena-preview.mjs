@@ -25,7 +25,7 @@ for (const name of manifest) {
   }
   let bytes = await readFile(path.join(repo, 'docs', name));
   if (name === 'online/config.mjs') {
-    bytes = Buffer.from('export const API_BASE = location.origin;\nexport const ARENA_DUO_ENABLED = true;\nexport const ARENA_1V1_ENABLED = false;\n');
+    bytes = Buffer.from('export const API_BASE = location.origin;\nexport const ARENA_DUO_ENABLED = true;\nexport const ARENA_1V1_ENABLED = false;\nexport const ARENA_FFA_ENABLED = false;\n');
   }
   if (name.endsWith('.html')) {
     for (const match of bytes.toString().matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {

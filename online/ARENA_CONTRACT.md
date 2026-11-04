@@ -41,3 +41,19 @@ Los clientes anuncian `arena-1v1-v1` para actuar en salas de dos personas. Las s
 Para probar en Windows con las dependencias de `online` disponibles, ejecuta `node online/scripts/ux-local.mjs --arena-1v1` desde el worktree. Abre `http://127.0.0.1:8815/cerconexo/arena/`, elige **Online → Crear sala → 1 vs. 1** y usa un segundo navegador o perfil para unirte. El Worker y SQLite se ejecutan en loopback. La opción se activa en esta demostración local. La candidata de publicación también habilita el selector y requiere `ARENA_1V1_ENABLED=true` en el Worker público.
 
 Las pruebas de navegador se ejecutan con `node online/scripts/arena-browser.mjs --1v1-piece` y `node online/scripts/arena-browser.mjs --1v1-team`. Cada partida se compara acción por acción con el motor oficial.
+
+## Candidata local Arena de cuatro equipos
+
+La base es `151800f1322b8f3d09ae676f5ea7f21406574e4f`. El modo usa `createArena({mode:'ffa',policy:'piece'})`, con las posiciones oficiales, el tablero de 81 casillas y los equipos A/B/C/D. Cada asiento controla su ficha y dispone de 300.000 ms. La configuración nueva tiene el reglamento `arena-ffa-online-v1` y requiere el cliente `arena-ffa-v1`. Las sondas FFA antiguas conservan su configuración.
+
+La única transición nueva de reglas online es `eliminateByTime`. El servidor la ejecuta después de resolver el vencimiento de su reloj. Retira la ficha, inutiliza su inventario y limpia su decisión y recolección pendientes. Conserva muros, posiciones de supervivientes, poderes del tablero ya aceptados, intervenciones completadas y oleadas. La geometría oficial recalcula actividad y puntuación. El nuevo turno comienza con la siguiente ficha superviviente activa y su tiempo intacto en el momento de habilitarlo. La eliminación no completa una intervención ni genera una oleada.
+
+En la política oficial por ficha, cada inventario tiene capacidad uno. El descarte normal nace de la recolección de la ficha que está actuando. Por ello, el vencimiento durante un descarte elimina a ese propietario y no exige una respuesta de un jugador retirado. Las acciones aceptadas anteriormente permanecen y el poder pendiente no vuelve al tablero. Una ficha asegurada conserva su condición territorial de superviviente hasta que se cumpla una condición final.
+
+Si queda un equipo, gana como último superviviente. Si la retirada elimina las regiones compartidas, el resultado territorial se toma de la geometría. La clasificación sigue lo acordado para M6. Los supervivientes van primero, ordenados por puntuación final con puestos compartidos en los empates. Después se sitúan los eliminados en orden inverso de eliminación. El registro conserva el territorio que tenían al ser retirados. Una reconexión permite observar y aceptar una futura revancha, pero no actuar ni reactivar una ficha retirada. La revancha exige los cuatro votos y restaura el inicio oficial, sus fichas y los cuatro relojes de cinco minutos.
+
+Las oleadas mantienen la simetría rotacional y los tamaños oficiales del modo FFA, incluso después de una eliminación. No se cambian los cálculos de regiones, capacidades, poderes ni aseguramientos del motor local.
+
+Para probar la candidata, ejecuta `node online/scripts/ux-local.mjs --arena-ffa` desde el worktree. Abre `http://127.0.0.1:8815/cerconexo/arena/`, elige Online, crea una sala y selecciona el formato de cuatro equipos. Abre la invitación en otros tres perfiles o navegadores. La configuración de prueba se sirve solo en loopback con SQLite local. La capacidad pública de cuatro equipos queda deshabilitada.
+
+La prueba `node online/scripts/arena-browser.mjs --ffa` compara dos partidas completas con el motor y observa una tercera hasta tres vencimientos reales, unos quince minutos. También comprueba las revanchas, la inspección y la recuperación del eliminado. `node online/scripts/arena-network.mjs --ffa` reinicia el Worker durante un paso y durante un descarte, y comprueba los recibos repetidos.

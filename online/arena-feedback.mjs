@@ -9,10 +9,10 @@ export function arenaFeedback(previous, next, connected) {
   const after = next.arena.game;
   if (after.revision !== before.revision + 1) return null;
 
-  const event = after.lastEvents.find(entry => entry.type === 'action' || entry.type === 'discard');
+  const event = after.lastEvents.find(entry => ['action','discard','eliminated'].includes(entry.type));
   if (!event) return null;
-  const action = event.type === 'discard' ? event : { type: event.action, to: event.to };
-  const steps = arenaCpuPresentation(before, after, action);
+  const action = event.type === 'discard' || event.type === 'eliminated' ? event : { type: event.action, to: event.to };
+  const steps = event.type === 'eliminated' ? [{text:`El equipo ${event.team} agotó su tiempo. Su ficha se retira.`}] : arenaCpuPresentation(before, after, action);
   const previousView = previous.arena.territory;
   const nextView = next.arena.territory;
   const territory = nextView.byCell.flatMap((component, cell) => {

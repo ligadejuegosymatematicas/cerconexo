@@ -4,3 +4,5 @@ export const API_BASE = 'https://cerconexo-m6-beta-staging.cerconexo-piloto-h89.
 export const ARENA_DUO_ENABLED = true;
 // Enable only with a backend that accepts Arena rooms with two players.
 export const ARENA_1V1_ENABLED = true;
+// Enable only with the authoritative four-team backend deployed and verified.
+export const ARENA_FFA_ENABLED = true;

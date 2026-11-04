@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';import {mkdir,readFile,writeFile} from '
 import {fileURLToPath} from 'node:url';
 import {API_BASE} from '../config.mjs';
 import {chromium,devices} from 'playwright';import {startUX} from './ux-local.mjs';import {eventually} from './runtime.mjs';import {reviewTraces} from './arena-trace.mjs';
+const ffa = process.argv.includes('--ffa');
 const policy = process.argv.includes('--1v1-team') ? 'team' : 'piece';
 const two = policy === 'team' || process.argv.includes('--1v1-piece');
-const seats = two ? ['A','B'] : ['A1','B1','A2','B2'];
+const seats = ffa ? ['A','B','C','D'] : two ? ['A','B'] : ['A1','B1','A2','B2'];
+const clockMs = ffa ? 300000 : 600000;
+const clockText = ffa ? '05:00' : '10:00';
+assert.ok(!ffa || !two);
 const count = seats.length;
 const candidatePages = process.argv.includes('--candidate-https');
 const publicPages = process.argv.includes('--public-pages');
@@ -13,6 +17,7 @@ assert.ok(!candidatePages || !publicPages);
 const pagesOrigin = 'https://ligadejuegosymatematicas.github.io';
 const remote = pagesMode ? API_BASE : process.env.ARENA_TEST_ORIGIN;
 assert.ok(!two || !remote || pagesMode, 'Origen Arena 1 vs. 1 no autorizado.');
+assert.ok(!ffa || !remote || pagesMode && remote === API_BASE, 'Cuatro equipos remotos requieren el backend público autorizado y Pages.');
 const origin = remote && new URL(remote);
 if (origin && (origin.protocol !== 'https:' || !origin.hostname.endsWith('.workers.dev') || origin.origin !== remote)) {
   throw new Error('Origen HTTPS de pruebas inválido.');
@@ -21,14 +26,15 @@ const credential = remote && !pagesMode && (await readFile(process.env.ARENA_TES
 const site = pagesMode ? {base: pagesOrigin+'/cerconexo', entry: pagesOrigin+'/cerconexo/online/', stop: async () => {}}
   : remote ? { base: remote, entry: remote + '/online/', stop: async () => {} }
   : await startUX({
-    port: two ? policy === 'piece' ? 8832 : 8834 : 8830,
-    apiPort: two ? policy === 'piece' ? 8833 : 8835 : 8831,
+    port: ffa ? 8844 : two ? policy === 'piece' ? 8832 : 8834 : 8830,
+    apiPort: ffa ? 8845 : two ? policy === 'piece' ? 8833 : 8835 : 8831,
+    ...(ffa ? {arena1v1:true,arenaFfa:true,stateDir:fileURLToPath(new URL('../.state/arena-ffa-browser/',import.meta.url))} : {}),
     ...(two ? {arena1v1: true, stateDir: fileURLToPath(new URL(`../.state/arena-1v1-${policy}/`, import.meta.url))} : {}),
   });
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
-const report = { ok: false, count, policy, origin: site.base, wss: Boolean(remote), frontendIntercepted: candidatePages, games: [], checks: [], errors: [], external: [] };
+const report = { ok: false, count, policy, ffa, origin: site.base, wss: Boolean(remote), frontendIntercepted: candidatePages, games: [], checks: [], errors: [], external: [] };
 const contexts = [];
-const evidence = new URL(pagesMode ? `../evidence/${candidatePages ? 'https-candidate' : 'public'}-${count}-${policy}/` : remote ? '../evidence/https/' : two ? `../evidence/arena-1v1-${policy}/` : '../evidence/', import.meta.url);
+const evidence = new URL(pagesMode ? `../evidence/${candidatePages ? 'https-candidate' : 'public'}-${ffa ? 'ffa' : count}-${policy}/` : remote ? '../evidence/https/' : ffa ? '../evidence/arena-ffa/' : two ? `../evidence/arena-1v1-${policy}/` : '../evidence/', import.meta.url);
 await mkdir(evidence, { recursive: true });
 const publicFiles = new Set(candidatePages ? JSON.parse(await readFile(new URL('../../scripts/pages-files.json',import.meta.url),'utf8')) : []);
 const capture = (page, name) => page.screenshot({ path: fileURLToPath(new URL(name, evidence)), fullPage: true });
@@ -93,6 +99,7 @@ try{
       const health = await response.json();
       assert.equal(health.capabilities.arena,'duo-online');
       assert.equal(health.capabilities.classic,'online');
+      if (ffa) assert.equal(health.capabilities.arenaFfa,'online');
       assert.equal(health.publicCreation,true);
       if(process.env.ARENA_TEST_SHA)assert.equal(health.candidateSha,process.env.ARENA_TEST_SHA);
       report.workerCommit=health.candidateSha;
@@ -142,7 +149,8 @@ try{
   await host.goto(site.base+'/arena/?new=1');await host.locator('[name=opponent][value=online]:enabled').check();assert.equal(await host.locator('[name=mode]:visible').count(),0);
   await host.locator('[name=opponent][value=cpu]').check();assert.equal(await host.locator('#humanTeamField').isVisible(),true);assert.equal(await host.locator('#experimentDetails').isVisible(),false);
   await host.locator('[name=opponent][value=local]').check();assert.equal(await host.locator('#humanTeamField').isVisible(),false);assert.equal(await host.locator('[name=mode]:visible').count(),2);
-  await host.locator('[name=opponent][value=online]').check();await host.locator('#startArena').click();await host.locator('[data-entry=create]').click();assert.equal(await host.locator('[name=players]:visible').count(),two ? 1 : 0);assert.equal(await host.locator('[name=policy]:visible').count(),0);
+  await host.locator('[name=opponent][value=online]').check();await host.locator('#startArena').click();await host.locator('[data-entry=create]').click();assert.equal(await host.locator('[name=players]:visible').count(),pagesMode || two || ffa ? 1 : 0);assert.equal(await host.locator('[name=policy]:visible').count(),0);
+  if (ffa) await host.locator('[name=players]').selectOption('ffa');
   if (two) {
     await host.locator('[name=players]').selectOption('2');
     assert.equal(await host.locator('[name=policy]:visible').inputValue(),'piece');
@@ -150,9 +158,9 @@ try{
   }
   await host.locator('#createForm [name=name]').fill('Ana');await host.locator('#createForm button[type=submit]').click();await host.locator('#connection[data-phase=connected]').waitFor();const code=(await read(host)).code;
   await capture(host, 'arena-lobby-mobile.png');
-  for(let i=1;i<count;i++){const p=pages[i];await p.goto(site.entry+'?mode=arena-duo&room='+code);await p.locator('#joinForm [name=name]').fill('Persona '+seats[i]);await p.locator('#joinForm button[type=submit]').click();await p.locator('#connection[data-phase=connected]').waitFor();const request=host.locator('#requests .request');await request.locator('select').selectOption(seats[i]);await request.getByRole('button',{name:'Admitir',exact:true}).click();await p.locator('#readyButton:visible').waitFor();}
+  for(let i=1;i<count;i++){const p=pages[i];await p.goto(site.entry+'?mode='+(ffa?'arena-ffa':'arena-duo')+'&room='+code);await p.locator('#joinForm [name=name]').fill('Persona '+seats[i]);await p.locator('#joinForm button[type=submit]').click();await p.locator('#connection[data-phase=connected]').waitFor();const request=host.locator('#requests .request');await request.locator('select').selectOption(seats[i]);await request.getByRole('button',{name:'Admitir',exact:true}).click();await p.locator('#readyButton:visible').waitFor();}
   for(let i=0;i<count;i++){await pages[i].locator('#readyButton:enabled').click();await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.participants.find(p=>p.seat===seats[i]).ready),'Listo no confirmado');}await host.locator('#startButton:enabled').click();for(const p of pages)await p.locator('[data-arena-connection][data-phase=connected]').waitFor();
-  assert.equal((await read(host)).config.clockMs,600000);assert.equal(await host.locator('[data-arena-time=B]').textContent(),'10:00');assert.equal(await host.locator('[data-cell-bg]').count(),81);assert.equal(await host.locator('[data-arena-board]').evaluate(n=>n.getBoundingClientRect().width>300),true);
+  assert.equal((await read(host)).config.clockMs,clockMs);assert.equal(await host.locator('[data-arena-time=B]').textContent(),clockText);assert.equal(await host.locator('[data-cell-bg]').count(),81);assert.equal(await host.locator('[data-arena-board]').evaluate(n=>n.getBoundingClientRect().width>300),true);
   assert.equal(await pages[1].locator('[data-arena-home]').isVisible(),true);assert.equal(await pages[1].locator('[data-arena-roster]').isVisible(),true);
   if (two) {
     for (const [i,page] of pages.entries()) {
@@ -161,7 +169,14 @@ try{
     }
     assert.equal(await host.locator('[data-arena-summary-presence]').textContent(),'2/2 conectados');
   }
-  const traces=reviewTraces(policy).slice(0,two && !pagesMode ? 1 : undefined);
+  if(ffa){
+    assert.equal((await read(host)).config.mode,'arena-ffa');
+    assert.equal(await host.locator('[data-arena-clock]').count(),4);
+    const colors=await host.locator('[data-piece]').evaluateAll(nodes=>nodes.map(n=>n.style.getPropertyValue('--team')));
+    assert.equal(new Set(colors).size,4);
+    report.checks.push('Cuatro equipos, cuatro colores y cinco minutos individuales');
+  }
+  const traces=reviewTraces(policy,ffa?'ffa':'duo').slice(0,two && !pagesMode ? 1 : undefined);
   const pictured = new Set();
   for(let round=0;round<traces.length;round++){
     const trace=traces[round];let reloaded=false,discardReloaded=false;
@@ -216,22 +231,99 @@ try{
         if(owner===host)await capture(owner, 'arena-discard-mobile.png');
       }
       if (round === 0 && n === 1) {
-        assert.equal(await checkMedals(host, '.drop-token svg.power-icon image'), 3);
+        assert.equal(await checkMedals(host, '.drop-token svg.power-icon image'), ffa ? 1 : 3);
         await capture(host, 'arena-active-mobile.png');
         await capture(pages[1], 'arena-active-desktop.png');
       }
     }
     const final=await read(host);assert.equal(final.status,'finished');assert.equal(final.outcome.reason,'territory');for(const p of pages){assert.equal(await p.locator('[data-arena-notice]').isVisible(),false);const title=await p.locator('[data-arena-result-title]').boundingBox(),prompt=await p.locator('[data-arena-prompt]').boundingBox();assert.ok(title.y>=prompt.y+prompt.height);await p.locator('[data-inspect]').first().click();assert.match(await p.locator('[data-arena-inspection]').textContent(),/Región/);}
+    if (ffa) {
+      assert.ok([1,11].includes(trace.seed), 'Fixture territorial FFA no reconocida');
+      assert.deepEqual(final.outcome.winners,['B']);
+      assert.deepEqual(final.outcome.ranking.map(r=>[r.team,r.rank,r.score]),
+        [['B',1,trace.seed===1?78:75],['A',2,1],['C',2,1],['D',2,1]]);
+    }
     await capture(host, 'arena-final-mobile.png');
     report.games.push({seed:trace.seed,actions:trace.commands.length,turns:final.arena.game.completedTurns,score:final.outcome.score,types:trace.types,events:trace.events,reloaded,discardReloaded});
     const match=final.matchId;await host.locator('[data-arena-propose-rematch]').click();for(let i=1;i<count;i++){await pages[i].locator('[data-rematch-accept]').click();await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.rematch.votes[s.participants.find(p=>p.seat===seats[i]).id]),'Aceptación no confirmada');}
-    await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.status==='active'&&s.matchId!==match),'Revancha no iniciada',15000);assert.equal((await read(host)).arena.game.completedTurns,0);assert.equal((await read(host)).clock.remainingMs.B,600000);
+    await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.status==='active'&&s.matchId!==match),'Revancha no iniciada',15000);assert.equal((await read(host)).arena.game.completedTurns,0);assert.equal((await read(host)).clock.remainingMs.B,clockMs);
   }
-  if (!two) { const idleBefore=await read(host);await host.waitForTimeout(61000);assert.equal(await host.locator('[data-arena-idle]').isVisible(),true);for(const p of pages.slice(1))assert.equal(await p.locator('[data-arena-idle]').isVisible(),false);assert.match(await host.locator('[data-arena-time=A]').textContent(),/^08:|^09:/);assert.equal(await host.locator('[data-arena-time=B]').textContent(),'10:00');assert.deepEqual((await read(host)).arena,idleBefore.arena);report.checks.push('Un minuto real de espera mantiene tablero y reloj rival; aviso de inactividad solo para quien decide'); }
+  if (!two && !ffa) { const idleBefore=await read(host);await host.waitForTimeout(61000);assert.equal(await host.locator('[data-arena-idle]').isVisible(),true);for(const p of pages.slice(1))assert.equal(await p.locator('[data-arena-idle]').isVisible(),false);assert.match(await host.locator('[data-arena-time=A]').textContent(),/^08:|^09:/);assert.equal(await host.locator('[data-arena-time=B]').textContent(),clockText);assert.deepEqual((await read(host)).arena,idleBefore.arena);report.checks.push('Un minuto real de espera mantiene tablero y reloj rival; aviso de inactividad solo para quien decide'); }
+  if (ffa) {
+    // Real server clocks: no shortened room settings, injected timestamps or
+    // client clock controls. This third game observes three five-minute turns.
+    const start = await read(host);
+    await host.locator('[data-kind=move][data-to="11"] .hit').click();
+    await eventually(async()=>(await read(host)).arena.game.turn.steps===1,'No aceptó primer paso');
+    await host.locator('[data-kind=move][data-to="20"] .hit').click();
+    await eventually(async()=>(await read(host)).arena.game.turn.steps===2,'No aceptó segundo paso');
+    const power=(await read(host)).arena.game.inventories.A[0];
+    assert.equal(power.type,'extraWall');
+    await host.locator(`[data-arena-power="${power.id}"]:enabled`).click();
+    await host.locator('[data-kind=extraWall][data-to="21"] .hit').click();
+    await eventually(async()=>(await read(host)).arena.game.walls.length===1,'No persistió el muro adicional');
+    const accepted=(await read(host)).arena.game;
+    await capture(host,'arena-before-timeout-mobile.png');
+    const began=Date.now(),timeouts=[];
+    for (const [index,team] of ['A','B','C'].entries()) {
+      const waitBegan=Date.now();let minute=-1;
+      while ((await read(host)).arena.eliminations.length <= index) {
+        assert.ok(Date.now()-waitBegan<335000,'No venció el reloj de '+team);
+        const state=await read(host);
+        const left=Number((await host.locator(`[data-arena-time=${team}]`).textContent()).split(':')[0]);
+        if(left!==minute){console.log('Reloj local de '+team+': '+left+' minutos restantes');minute=left;}
+        await host.waitForTimeout(1000);
+      }
+      await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.arena.eliminations.length===index+1),'Eliminación no compartida');
+      const states=await Promise.all(pages.map(read)),official=states[0];
+      assert.deepEqual(official.arena.game.walls,accepted.walls);
+      assert.equal(official.arena.game.completedTurns,accepted.completedTurns);
+      assert.deepEqual(official.arena.game.waveLog,accepted.waveLog);
+      assert.equal(official.arena.game.pending,null);
+      assert.equal(official.arena.game.resolution,null);
+      assert.equal(official.clock.remainingMs[team],0);
+      assert.ok(!official.arena.game.pieces.some(p=>p.team===team));
+      for(const page of pages)assert.equal(await page.locator(`[data-piece="${team}"]`).count(),0);
+      timeouts.push({team,order:index+1,remaining:official.clock.remainingMs});
+      if(index===0){
+        const id=official.self.id;
+        await host.reload();await host.locator('[data-arena-connection][data-phase=connected]').waitFor();
+        const recovered=await read(host);
+        assert.equal(recovered.self.id,id);
+        assert.equal(recovered.self.eliminated,true);
+        assert.equal(recovered.canDecide,false);
+        assert.deepEqual(recovered.arena,official.arena);
+        await capture(host,'arena-eliminated-mobile.png');
+      }
+    }
+    const final=await read(host);
+    assert.equal(final.status,'finished');
+    assert.equal(final.outcome.reason,'last-survivor');
+    assert.deepEqual(final.outcome.winners,['D']);
+    assert.deepEqual(final.outcome.ranking.map(r=>[r.team,r.rank]),[['D',1],['C',2],['B',3],['A',4]]);
+    for(const page of pages){
+      assert.equal(await page.locator('[data-arena-ranking] li').count(),4);
+      assert.equal(await page.locator('[data-arena-result]').getAttribute('data-final-winner'),'D');
+    }
+    await capture(host,'arena-timeout-final-mobile.png');
+    await capture(pages[3],'arena-timeout-winner-desktop.png');
+    await host.locator('[data-arena-propose-rematch]').click();
+    for(let i=1;i<4;i++){
+      await pages[i].locator('[data-rematch-accept]').click();
+      await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.rematch.votes[s.participants.find(p=>p.seat===seats[i]).id]),'Falta voto de revancha');
+    }
+    await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.status==='active'&&s.matchId!==final.matchId),'No empezó la revancha FFA',15000);
+    const restored=await read(host);
+    assert.equal(restored.arena.game.pieces.length,4);
+    assert.deepEqual(restored.arena.eliminations,[]);
+    assert.equal(restored.self.eliminated,false);
+    assert.deepEqual(restored.previousResults.at(-1).outcome,final.outcome);
+    report.timeoutGame={realClocks:true,clockMs,elapsedMs:Date.now()-began,timeouts,ranking:final.outcome.ranking,wallsPreserved:true,turnsUnchanged:true,recoveredEliminated:true,rematchRestored:true,match:start.matchNumber};
+  }
   report.connections = sockets.map(urls => urls.length);
   assert.ok(sockets.every(urls => urls.length && urls.every(url => remote
     ? url.startsWith('wss://' + origin.host + '/api/rooms/')
     : url.startsWith('ws://127.0.0.1:'))));
-  report.checks.push(`${traces.length} partida(s) entre ${count} navegadores, con poderes, recarga e inspección`,'Revancha unánime y diez minutos por equipo');assert.deepEqual(report.errors,[]);assert.deepEqual(report.external,[]);report.ok=true;
+  report.checks.push(`${traces.length} partida(s) entre ${count} navegadores, con poderes, recarga e inspección`,ffa?'Revancha unánime y cinco minutos por equipo':'Revancha unánime y diez minutos por equipo');assert.deepEqual(report.errors,[]);assert.deepEqual(report.external,[]);report.ok=true;
 }catch(e){report.error=e.stack??e.message;if(diagnostic&&!diagnostic.isClosed()){report.diagnostic=await diagnostic.locator('body').innerText();await capture(diagnostic, 'arena-failure.png');}process.exitCode=1;}
 finally{for(const c of contexts)await c.close();await browser.close();await site.stop();await writeFile(new URL('arena-browser.json',evidence),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}

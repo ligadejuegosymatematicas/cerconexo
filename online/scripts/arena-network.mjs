@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';import {mkdir,writeFile} from 'node:fs/promises';import {fileURLToPath} from 'node:url';
 import {startUX} from './ux-local.mjs';import {SocketClient} from './socket-client.mjs';import {eventually} from './runtime.mjs';import {reviewTraces} from './arena-trace.mjs';
-const opts={port:8832,apiPort:8833,stateDir:fileURLToPath(new URL('../.state/arena-restart-'+Date.now()+'/',import.meta.url))};let site=await startUX(opts),clients=[];
+const ffa=process.argv.includes('--ffa'),clockMs=ffa?300000:600000;
+const opts={port:ffa?8846:8832,apiPort:ffa?8847:8833,arenaFfa:ffa,stateDir:fileURLToPath(new URL('../.state/arena-restart-'+Date.now()+'/',import.meta.url))};let site=await startUX(opts),clients=[];
 const token=()=>Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url'),code=[...crypto.getRandomValues(new Uint8Array(10))].map(b=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b&31]).join(''),credentials=Array.from({length:4},token),report={ok:false,checks:[]};
-const features=['rematch-v1','classic-config-v2','arena-duo-v1'],seats=['A1','B1','A2','B2'];
+const features=['rematch-v1','classic-config-v2',ffa?'arena-ffa-v1':'arena-duo-v1'],seats=ffa?['A','B','C','D']:['A1','B1','A2','B2'];
 async function post(path,body,status=200,credential){const response=await fetch(site.api+path,{method:'POST',headers:{Origin:site.origin,'content-type':'application/json',...(credential?{authorization:'Bearer '+credential}:{})},body:JSON.stringify(body)});assert.equal(response.status,status);return response.json();}
 async function connect(i){return new SocketClient(site.api,code,credentials[i],{},features,site.origin).connect();}
 const same=()=>clients.every(c=>c.state.revision===clients[0].state.revision),sync=()=>eventually(same,'Revisiones no convergentes');
@@ -10,10 +11,10 @@ async function restart(before,envelope,index){for(const c of clients)await c.clo
 await mkdir(new URL('../evidence/',import.meta.url),{recursive:true});
 try{
   assert.equal((await(await fetch(site.api+'/api/health',{headers:{Origin:site.origin}})).json()).capabilities.arena,'duo-online');
-  await post('/api/rooms',{code,credential:credentials[0],name:'Ana',mode:'arena-duo',policy:'piece',players:4},201);clients.push(await connect(0));
+  await post('/api/rooms',{code,credential:credentials[0],name:'Ana',mode:ffa?'arena-ffa':'arena-duo',policy:'piece',players:4},201);clients.push(await connect(0));
   for(let i=1;i<4;i++){const j=await post(`/api/rooms/${code}/join`,{credential:credentials[i],name:'Jugador '+i});await clients[0].command('admit',{playerId:j.state.self.id,seat:seats[i]});clients.push(await connect(i));}
   for(const c of clients){await sync();await c.command('ready',{ready:true});}await sync();await clients[0].command('start');await eventually(()=>clients.every(c=>c.state.status==='active'),'Arena no comenzó');
-  const trace=reviewTraces()[0];let stepRestart=false,discardRestart=false,duplicate=false;
+  const trace=reviewTraces('piece',ffa?'ffa':'duo')[0];let stepRestart=false,discardRestart=false,duplicate=false;
   for(let n=0;n<trace.commands.length;n++){
     await sync();const s=clients[0].state,index=seats.indexOf(s.decision.actor),c=clients[index],action=trace.commands[n],other=clients[(index+1)%4];
     if(n===0){const bad=await other.request(other.envelope('arena.action',{matchId:s.matchId,action}));assert.equal(bad.error.code,'DECISION');assert.deepEqual(bad.state.arena,s.arena);const shape=await c.request(c.envelope('arena.action',{matchId:s.matchId,action:{...action,remainingMs:0}}));assert.equal(shape.error.code,'PARAMS');report.checks.push('Servidor rechaza ficha ajena y parámetros de reloj/estado inyectados');}
@@ -23,9 +24,9 @@ try{
     if(!discardRestart&&clients[0].state.arena.game.pending){const before=structuredClone(clients[0].state);await restart(before,envelope,index);assert.deepEqual(clients[0].state.arena.game.pending,before.arena.game.pending);const owner=seats.indexOf(before.decision.actor),unauthorized=clients[(owner+1)%4],item=before.arena.game.inventories[before.decision.actor][0];const denied=await unauthorized.request(unauthorized.envelope('arena.action',{matchId:before.matchId,action:{type:'discard',owner:before.decision.actor,power:item.id}}));assert.equal(denied.error.code,'DECISION');discardRestart=true;report.checks.push('Descarte persiste tras reinicio, sin resolución automática; otro participante no puede decidirlo');}
   }
   const final=clients[0].state;assert.equal(final.outcome.reason,'territory');report.actions=trace.commands.length;report.score=final.outcome.score;
-  await sync();await clients[0].command('rematch.propose',{matchId:final.matchId});for(const c of clients.slice(1)){await sync();await c.command('rematch.respond',{matchId:final.matchId,proposalId:c.state.rematch.id,accept:true});}await eventually(()=>clients.every(c=>c.state.matchNumber===2),'Revancha no comenzó');assert.equal(clients[0].state.clock.remainingMs.B,600000);
+  await sync();await clients[0].command('rematch.propose',{matchId:final.matchId});for(const c of clients.slice(1)){await sync();await c.command('rematch.respond',{matchId:final.matchId,proposalId:c.state.rematch.id,accept:true});}await eventually(()=>clients.every(c=>c.state.matchNumber===2),'Revancha no comenzó');assert.equal(clients[0].state.clock.remainingMs.B,clockMs);
   await sync();const stale=await clients[0].request(clients[0].envelope('arena.action',{matchId:final.matchId,action:{type:'move',to:11}}));assert.equal(stale.error.code,'MATCH');
-  const host=clients[0],before=structuredClone(host.state),requestId=crypto.randomUUID(),start=host.messages.length;host.ws.send(JSON.stringify({type:'view-away',protocolVersion:1,roomId:code,requestId}));await eventually(()=>host.messages.slice(start).some(m=>m.type==='view-left'),'Sin confirmación de salida');await new Promise(r=>setTimeout(r,1100));const away=(await post(`/api/rooms/${code}/resume`,{},200,credentials[1])).state;assert.equal(away.clock.graceUntil,null);assert.ok(away.clock.remainingMs.A<before.clock.remainingMs.A-1000);report.checks.push('Revancha reinicia diez minutos; partido antiguo rechazado; Inicio no pausa Arena');
+  const host=clients[0],before=structuredClone(host.state),requestId=crypto.randomUUID(),start=host.messages.length;host.ws.send(JSON.stringify({type:'view-away',protocolVersion:1,roomId:code,requestId}));await eventually(()=>host.messages.slice(start).some(m=>m.type==='view-left'),'Sin confirmación de salida');await new Promise(r=>setTimeout(r,1100));const away=(await post(`/api/rooms/${code}/resume`,{},200,credentials[1])).state;assert.equal(away.clock.graceUntil,null);assert.ok(away.clock.remainingMs.A<before.clock.remainingMs.A-1000);report.checks.push(`Revancha reinicia ${clockMs/60000} minutos; partido antiguo rechazado; Inicio no pausa Arena`);
   assert.ok(stepRestart&&discardRestart);report.ok=true;
 }catch(e){report.error=e.stack??e.message;process.exitCode=1;}
-finally{for(const c of clients){clearInterval(c.ping);c.ws?.terminate();}await site.stop();await writeFile(new URL('../evidence/arena-network.json',import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}
+finally{for(const c of clients){clearInterval(c.ping);c.ws?.terminate();}await site.stop();await writeFile(new URL(ffa?'../evidence/arena-ffa-network.json':'../evidence/arena-network.json',import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}

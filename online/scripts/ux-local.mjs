@@ -5,10 +5,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { eventually } from './runtime.mjs';
 const online=fileURLToPath(new URL('../',import.meta.url)),repo=path.dirname(online);
-export async function startUX({port=8815,apiPort=8820,arena1v1=false,stateDir=path.join(online,'.state/ux-local'),worker=path.join(online,'src/worker.mjs')}={}) {
+export async function startUX({port=8815,apiPort=8820,arena1v1=false,arenaFfa=false,stateDir=path.join(online,'.state/ux-local'),worker=path.join(online,'src/worker.mjs')}={}) {
   await mkdir(stateDir,{recursive:true});
   const origin=`http://127.0.0.1:${port}`,api=`http://127.0.0.1:${apiPort}`;
-  const config={name:'cerconexo-ux-local',main:worker,compatibility_date:'2026-10-23',workers_dev:false,preview_urls:false,send_metrics:false,durable_objects:{bindings:[{name:'ROOMS',class_name:'Room'},{name:'ADMISSION',class_name:'AdmissionGate'}]},migrations:[{tag:'ux-local-1',new_sqlite_classes:['Room','AdmissionGate']}],vars:{LOCAL_DEMO:'true',ARENA_DUO_ENABLED:'true',ARENA_1V1_ENABLED:String(arena1v1),ALLOWED_ORIGINS:origin+','+api}};
+  const config={name:'cerconexo-ux-local',main:worker,compatibility_date:'2026-10-23',workers_dev:false,preview_urls:false,send_metrics:false,durable_objects:{bindings:[{name:'ROOMS',class_name:'Room'},{name:'ADMISSION',class_name:'AdmissionGate'}]},migrations:[{tag:'ux-local-1',new_sqlite_classes:['Room','AdmissionGate']}],vars:{LOCAL_DEMO:'true',ARENA_DUO_ENABLED:'true',ARENA_1V1_ENABLED:String(arena1v1),ARENA_FFA_ENABLED:String(arenaFfa),ALLOWED_ORIGINS:origin+','+api}};
   const configPath=path.join(stateDir,'wrangler.jsonc');await writeFile(configPath,JSON.stringify(config));
   const env={...process.env,CI:'1',NODE_USE_SYSTEM_CA:'1',WRANGLER_SEND_METRICS:'false',XDG_CONFIG_HOME:path.join(stateDir,'config'),WRANGLER_LOG_PATH:path.join(stateDir,'logs')};
   for(const key of ['CLOUDFLARE_API_TOKEN','CLOUDFLARE_API_KEY','CLOUDFLARE_EMAIL','CLOUDFLARE_ACCOUNT_ID'])delete env[key];
@@ -22,7 +22,7 @@ export async function startUX({port=8815,apiPort=8820,arena1v1=false,stateDir=pa
     if(!pathname.startsWith('/cerconexo/')){res.writeHead(404);res.end();return;}
     let name=pathname.slice('/cerconexo/'.length);if(!name||name.endsWith('/'))name+='index.html';
     if(!allowed.has(name)){res.writeHead(404);res.end();return;}
-    const body=name==='online/config.mjs'?Buffer.from(`export const API_BASE = ${JSON.stringify(api)};\nexport const ARENA_DUO_ENABLED=true;\nexport const ARENA_1V1_ENABLED=${arena1v1};\n`):await readFile(path.join(repo,'docs',name));
+    const body=name==='online/config.mjs'?Buffer.from(`export const API_BASE = ${JSON.stringify(api)};\nexport const ARENA_DUO_ENABLED=true;\nexport const ARENA_1V1_ENABLED=${arena1v1};\nexport const ARENA_FFA_ENABLED=${arenaFfa};\n`):await readFile(path.join(repo,'docs',name));
     res.writeHead(200,{'content-type':types[name.split('.').at(-1)]??'application/octet-stream','cache-control':'no-store'});res.end(body);
   }catch{res.writeHead(500);res.end('No se pudo cargar el recurso local.');}});
   const stop=async()=>{
@@ -35,6 +35,6 @@ export async function startUX({port=8815,apiPort=8820,arena1v1=false,stateDir=pa
   return{origin,api,entry:origin+'/cerconexo/online/',base:origin+'/cerconexo',stateDir,stop};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  const site=await startUX({arena1v1:process.argv.includes('--arena-1v1')});console.log('Candidata local: '+site.base+'/');console.log('Solo loopback; SQLite aislado. No conecta con Cloudflare público.');
+  const site=await startUX({arena1v1:process.argv.includes('--arena-1v1')||process.argv.includes('--arena-ffa'),arenaFfa:process.argv.includes('--arena-ffa')});console.log('Candidata local: '+site.base+'/');console.log('Solo loopback; SQLite aislado. No conecta con Cloudflare público.');
   for(const event of ['SIGINT','SIGTERM'])process.once(event,async()=>{await site.stop();process.exit();});
 }
