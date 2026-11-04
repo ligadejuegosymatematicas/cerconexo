@@ -73,3 +73,11 @@ Las 451 pruebas y los 32 hashes se volvieron a comprobar al habilitar la candida
 La revisión de cuota previa a HTTPS registró, en toda la cuenta desde las 00:00 UTC, 197 solicitudes Workers, 2.204 solicitudes Durable Objects, 8.687 filas leídas y 10.730 escritas, sin errores de CPU o memoria. Las métricas son agregadas y pueden tener retraso; la consulta de bytes almacenados no devolvió datos y no se interpreta como almacenamiento cero. Se conservan las cuotas gratuitas y 30 salas nuevas por día. No se activó facturación ni se ampliaron límites.
 
 Informes locales: `online/evidence/https-candidate-ffa-piece/arena-browser.json`, `online/evidence/ux-configurations-browser-public.json`, `online/evidence/public-{2,4}-{piece,team}/arena-browser.json` y revisiones de infraestructura en `online/.state/ffa-release/`. Las credenciales de las salas de prueba están únicamente en estado local ignorado y no se incluyen en el paquete público.
+
+## Corrección mínima del selector CPU
+
+El primer CI de la PR #25 aprobó las 451 pruebas y 20 suites históricas, pero detectó `Inicio CPU legible sin recorte` en `arena/tests/cpu.browser.cjs:185`. Su última captura corresponde a 360 × 740 en Linux/Chromium. La descripción nueva de la tarjeta Online ocupaba varias líneas; junto al título en tres líneas de esa tipografía, desplazaba el aviso `arenaCpuHint` fuera del área visible de `.dialog-body`, detrás del pie con el botón de inicio.
+
+Se reemplaza únicamente el resumen de esa tarjeta por «2 o 4 personas» cuando está habilitado FFA. Los formatos completos permanecen en Crear sala. No se modifica CSS, tamaños de letra, botones, desplazamiento, reglas, CPU ni la aserción. La copia de Pages se genera con el constructor oficial.
+
+Una medición local con tipografía ancha reprodujo un desbordamiento de 14,8 px en 360 × 740. El resumen compacto ahorra una línea de 17,4 px y deja el aviso dentro del área visible. Las siete resoluciones de esa comprobación quedan sin recorte. La prueba histórica CPU intacta aprobó selector, A/B, políticas, pausa, recarga y HTML autónomo con/sin Worker. La validación definitiva de Chromium/Linux y del ZIP queda a cargo del CI actualizado.
