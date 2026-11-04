@@ -48,7 +48,7 @@ export default {
             candidateSha: env.CANDIDATE_SHA ?? null,
             serviceMode: env.SERVICE_MODE ?? 'local', publicCreation: env.PUBLIC_CREATION === 'true',
             localOnly: !publicSite, heartbeatMs: HEARTBEAT_MS, leaseMs: LEASE_MS,
-            capabilities: { classic: 'online', arena: env.ARENA_DUO_ENABLED==='true'?'duo-online':publicSite ? 'local-and-cpu-only' : 'connection-probe-only' },
+            capabilities: { classic: 'online', arena: env.ARENA_DUO_ENABLED==='true'?'duo-online':publicSite ? 'local-and-cpu-only' : 'connection-probe-only', arenaFfa: env.ARENA_FFA_ENABLED==='true'?'online':'pending' },
             engines: { classic: { pieces: classic.pieces.length }, arenaDuo: { pieces: duo.pieces.length, cells: analyzeArena(duo).score.shared },
               arenaFfa: { pieces: ffa.pieces.length, cells: analyzeArena(ffa).score.shared } } }, 200, cors);
         }

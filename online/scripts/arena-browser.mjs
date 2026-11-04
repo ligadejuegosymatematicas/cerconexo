@@ -17,7 +17,7 @@ assert.ok(!candidatePages || !publicPages);
 const pagesOrigin = 'https://ligadejuegosymatematicas.github.io';
 const remote = pagesMode ? API_BASE : process.env.ARENA_TEST_ORIGIN;
 assert.ok(!two || !remote || pagesMode, 'Origen Arena 1 vs. 1 no autorizado.');
-assert.ok(!ffa || !remote, 'La candidata de cuatro equipos solo se prueba localmente.');
+assert.ok(!ffa || !remote || pagesMode && remote === API_BASE, 'Cuatro equipos remotos requieren el backend público autorizado y Pages.');
 const origin = remote && new URL(remote);
 if (origin && (origin.protocol !== 'https:' || !origin.hostname.endsWith('.workers.dev') || origin.origin !== remote)) {
   throw new Error('Origen HTTPS de pruebas inválido.');
@@ -34,7 +34,7 @@ const site = pagesMode ? {base: pagesOrigin+'/cerconexo', entry: pagesOrigin+'/c
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const report = { ok: false, count, policy, ffa, origin: site.base, wss: Boolean(remote), frontendIntercepted: candidatePages, games: [], checks: [], errors: [], external: [] };
 const contexts = [];
-const evidence = new URL(pagesMode ? `../evidence/${candidatePages ? 'https-candidate' : 'public'}-${count}-${policy}/` : remote ? '../evidence/https/' : ffa ? '../evidence/arena-ffa/' : two ? `../evidence/arena-1v1-${policy}/` : '../evidence/', import.meta.url);
+const evidence = new URL(pagesMode ? `../evidence/${candidatePages ? 'https-candidate' : 'public'}-${ffa ? 'ffa' : count}-${policy}/` : remote ? '../evidence/https/' : ffa ? '../evidence/arena-ffa/' : two ? `../evidence/arena-1v1-${policy}/` : '../evidence/', import.meta.url);
 await mkdir(evidence, { recursive: true });
 const publicFiles = new Set(candidatePages ? JSON.parse(await readFile(new URL('../../scripts/pages-files.json',import.meta.url),'utf8')) : []);
 const capture = (page, name) => page.screenshot({ path: fileURLToPath(new URL(name, evidence)), fullPage: true });
@@ -99,6 +99,7 @@ try{
       const health = await response.json();
       assert.equal(health.capabilities.arena,'duo-online');
       assert.equal(health.capabilities.classic,'online');
+      if (ffa) assert.equal(health.capabilities.arenaFfa,'online');
       assert.equal(health.publicCreation,true);
       if(process.env.ARENA_TEST_SHA)assert.equal(health.candidateSha,process.env.ARENA_TEST_SHA);
       report.workerCommit=health.candidateSha;
