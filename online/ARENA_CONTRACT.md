@@ -38,6 +38,6 @@ La rama parte de `9046525129a96eae4880b6a497ea166aa5972101`. La sala conserva el
 
 Los clientes anuncian `arena-1v1-v1` para actuar en salas de dos personas. Las salas de cuatro personas conservan `arena-duo-v1` y los turnos por ficha. La revancha mantiene las fichas, la política y el resultado anterior, y repone los diez minutos de cada equipo.
 
-Para probar en Windows con las dependencias de `online` disponibles, ejecuta `node online/scripts/ux-local.mjs --arena-1v1` desde el worktree. Abre `http://127.0.0.1:8815/cerconexo/arena/`, elige **Online → Crear sala → 1 vs. 1** y usa un segundo navegador o perfil para unirte. El Worker y SQLite se ejecutan en loopback. La opción se activa en esta demostración local y queda deshabilitada en la configuración pública de la candidata.
+Para probar en Windows con las dependencias de `online` disponibles, ejecuta `node online/scripts/ux-local.mjs --arena-1v1` desde el worktree. Abre `http://127.0.0.1:8815/cerconexo/arena/`, elige **Online → Crear sala → 1 vs. 1** y usa un segundo navegador o perfil para unirte. El Worker y SQLite se ejecutan en loopback. La opción se activa en esta demostración local. La candidata de publicación también habilita el selector y requiere `ARENA_1V1_ENABLED=true` en el Worker público.
 
 Las pruebas de navegador se ejecutan con `node online/scripts/arena-browser.mjs --1v1-piece` y `node online/scripts/arena-browser.mjs --1v1-team`. Cada partida se compara acción por acción con el motor oficial.

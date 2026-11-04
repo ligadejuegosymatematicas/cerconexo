@@ -1,28 +1,36 @@
 import assert from 'node:assert/strict';import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
+import {API_BASE} from '../config.mjs';
 import {chromium,devices} from 'playwright';import {startUX} from './ux-local.mjs';import {eventually} from './runtime.mjs';import {reviewTraces} from './arena-trace.mjs';
 const policy = process.argv.includes('--1v1-team') ? 'team' : 'piece';
 const two = policy === 'team' || process.argv.includes('--1v1-piece');
 const seats = two ? ['A','B'] : ['A1','B1','A2','B2'];
 const count = seats.length;
-const remote = process.env.ARENA_TEST_ORIGIN;
-assert.ok(!two || !remote, 'Arena 1 vs. 1 se valida en el entorno local aislado.');
+const candidatePages = process.argv.includes('--candidate-https');
+const publicPages = process.argv.includes('--public-pages');
+const pagesMode = candidatePages || publicPages;
+assert.ok(!candidatePages || !publicPages);
+const pagesOrigin = 'https://ligadejuegosymatematicas.github.io';
+const remote = pagesMode ? API_BASE : process.env.ARENA_TEST_ORIGIN;
+assert.ok(!two || !remote || pagesMode, 'Origen Arena 1 vs. 1 no autorizado.');
 const origin = remote && new URL(remote);
 if (origin && (origin.protocol !== 'https:' || !origin.hostname.endsWith('.workers.dev') || origin.origin !== remote)) {
   throw new Error('Origen HTTPS de pruebas inválido.');
 }
-const credential = remote && (await readFile(process.env.ARENA_TEST_ACCESS_FILE, 'utf8')).trim();
-const site = remote ? { base: remote, entry: remote + '/online/', stop: async () => {} }
+const credential = remote && !pagesMode && (await readFile(process.env.ARENA_TEST_ACCESS_FILE, 'utf8')).trim();
+const site = pagesMode ? {base: pagesOrigin+'/cerconexo', entry: pagesOrigin+'/cerconexo/online/', stop: async () => {}}
+  : remote ? { base: remote, entry: remote + '/online/', stop: async () => {} }
   : await startUX({
     port: two ? policy === 'piece' ? 8832 : 8834 : 8830,
     apiPort: two ? policy === 'piece' ? 8833 : 8835 : 8831,
     ...(two ? {arena1v1: true, stateDir: fileURLToPath(new URL(`../.state/arena-1v1-${policy}/`, import.meta.url))} : {}),
   });
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
-const report = { ok: false, count, policy, origin: site.base, wss: Boolean(remote), games: [], checks: [], errors: [], external: [] };
+const report = { ok: false, count, policy, origin: site.base, wss: Boolean(remote), frontendIntercepted: candidatePages, games: [], checks: [], errors: [], external: [] };
 const contexts = [];
-const evidence = new URL(remote ? '../evidence/https/' : two ? `../evidence/arena-1v1-${policy}/` : '../evidence/', import.meta.url);
+const evidence = new URL(pagesMode ? `../evidence/${candidatePages ? 'https-candidate' : 'public'}-${count}-${policy}/` : remote ? '../evidence/https/' : two ? `../evidence/arena-1v1-${policy}/` : '../evidence/', import.meta.url);
 await mkdir(evidence, { recursive: true });
+const publicFiles = new Set(candidatePages ? JSON.parse(await readFile(new URL('../../scripts/pages-files.json',import.meta.url),'utf8')) : []);
 const capture = (page, name) => page.screenshot({ path: fileURLToPath(new URL(name, evidence)), fullPage: true });
 async function checkMedals(page, selector) {
   const medals = await page.locator(selector).evaluateAll(async nodes => {
@@ -45,14 +53,24 @@ try{
   for (let i = 0; i < count; i++) {
     const c = await browser.newContext({ ...(i === 0 ? devices['Pixel 7'] : { viewport: { width: 1440, height: 1000 } }),
       reducedMotion: i === 3 ? 'reduce' : 'no-preference' });
+    c.setDefaultTimeout(20000);
     contexts.push(c);
-    await c.route('**/*', r => {
+    await c.route('**/*', async r => {
       const url = new URL(r.request().url());
-      if (remote ? url.origin === remote : url.hostname === '127.0.0.1') return r.continue();
+      if (candidatePages && url.origin === pagesOrigin) {
+        assert.ok(url.pathname.startsWith('/cerconexo/'));
+        let name = url.pathname.slice('/cerconexo/'.length);
+        if (!name || name.endsWith('/')) name += 'index.html';
+        assert.ok(publicFiles.has(name), name);
+        const types = {html:'text/html',mjs:'text/javascript',css:'text/css',png:'image/png',webp:'image/webp'};
+        return r.fulfill({status:200,contentType:types[name.split('.').at(-1)],
+          body:await readFile(new URL('../../docs/'+name,import.meta.url))});
+      }
+      if (pagesMode ? [pagesOrigin,remote].includes(url.origin) : remote ? url.origin === remote : url.hostname === '127.0.0.1') return r.continue();
       report.external.push(url.origin);
       return r.abort();
     });
-    if (remote) {
+    if (remote && !pagesMode) {
       const landing = await c.request.get(remote + '/arena/', { maxRedirects: 0 });
       assert.equal(landing.headers()['x-cerconexo-preview'], 'arena-duo');
       assert.equal(landing.status(), 303);
@@ -67,6 +85,17 @@ try{
         if (process.env.ARENA_TEST_SHA) assert.equal(health.candidateSha, process.env.ARENA_TEST_SHA);
         report.workerCommit = health.candidateSha;
       }
+    }
+    if (pagesMode && i === 0) {
+      const response = await c.request.get(remote+'/api/health',{headers:{Origin:pagesOrigin,'Cache-Control':'no-cache'}});
+      assert.equal(response.status(),200);
+      assert.equal(response.headers()['access-control-allow-origin'],pagesOrigin);
+      const health = await response.json();
+      assert.equal(health.capabilities.arena,'duo-online');
+      assert.equal(health.capabilities.classic,'online');
+      assert.equal(health.publicCreation,true);
+      if(process.env.ARENA_TEST_SHA)assert.equal(health.candidateSha,process.env.ARENA_TEST_SHA);
+      report.workerCommit=health.candidateSha;
     }
     await c.addInitScript(() => {
       window.arenaWire = { replies: new Map() };
