@@ -1,4 +1,4 @@
-import { API_BASE, ARENA_DUO_ENABLED } from './config.mjs';
+import { API_BASE, ARENA_DUO_ENABLED, ARENA_1V1_ENABLED } from './config.mjs';
 import { OnlineSession, apiRequest, newCredential, newCode, loadSession, storageKey } from './session.mjs';
 import { mountClassic } from './classic.mjs';
 import {mountArena} from './arena.mjs';
@@ -16,10 +16,12 @@ function arenaText(){
   document.querySelector('.intro h1').textContent='Arena online';document.title='CERCONEXO · Arena Online';
   document.querySelectorAll('.lobby-time,#createForm>.hint').forEach(n=>n.textContent='10 minutos por equipo');
   const help=document.querySelector('.online-help');help.querySelector('summary').setAttribute('aria-label','Ayuda de Arena online');help.querySelector('strong').textContent='Arena online';
-  help.querySelector('p').textContent='Cuatro personas, una ficha por persona y diez minutos por equipo. Los movimientos y poderes aceptados no pueden deshacerse.';
+  help.querySelector('p').textContent=ARENA_1V1_ENABLED
+    ? '1 vs. 1: dos fichas por persona. 2 vs. 2: una ficha por persona. Diez minutos por equipo.'
+    : 'Cuatro personas, una ficha por persona y diez minutos por equipo. Los movimientos y poderes aceptados no pueden deshacerse.';
   const rules=help.querySelector('a');rules.href='../arena/';rules.textContent='Consultar las reglas de Arena';
 }
-if(arenaRequested){create.elements.mode.value='arena-duo';create.elements.players.value='4';create.elements.players.closest('label').hidden=true;document.querySelector('.choice-help').hidden=true;arenaText();}
+if(arenaRequested){create.elements.mode.value='arena-duo';create.elements.players.value='4';create.elements.players.closest('label').hidden=!ARENA_1V1_ENABLED;document.querySelector('.choice-help').hidden=true;arenaText();}
 function problem(text = '', code = null) { problemCode=code; $('problem').textContent=text; $('problem').hidden=!text; }
 function el(tag,text,className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
 function chooseEntry(kind) {
@@ -49,7 +51,7 @@ async function submit(form,action) {
 create.addEventListener('submit',e=>{e.preventDefault();submit(create,async data=>{
   if(url.searchParams.get('mode')==='arena-duo'&&!ARENA_DUO_ENABLED)throw new Error('Arena Online todavía no está habilitada en este entorno.');
   configurationForm();let code;do{code=newCode();}while(loadSession(localStorage,code,profile));
-  const credential=newCredential(),registration={type:'create',name:data.get('name'),mode:arenaRequested?'arena-duo':'classic',policy:arenaRequested?'piece':create.elements.policy.value,players:arenaRequested?4:Number(data.get('players'))};
+  const credential=newCredential(),registration={type:'create',name:data.get('name'),mode:arenaRequested?'arena-duo':'classic',policy:create.elements.policy.value,players:arenaRequested&&!ARENA_1V1_ENABLED?4:Number(data.get('players'))};
   saveInitial(code,credential,registration);rememberRoom(code);await apiRequest(API_BASE,'/api/rooms',{code,credential,...registration});attach(code,credential);
 });});
 $('joinForm').addEventListener('submit',e=>{e.preventDefault();submit(e.currentTarget,async data=>{
@@ -97,7 +99,7 @@ function render() {
   const self=state.participants.find(p=>p.id===state.self.id),lobby=state.status==='lobby',retired=retiredClassicConfiguration(state.config);
   $('readyButton').hidden=!state.self.admitted||!lobby||retired;$('readyButton').textContent=self?.ready?'Listo ✓':'Estoy listo';$('readyButton').disabled=!enabled;
   $('startButton').hidden=!state.self.host||!lobby||retired;
-  $('startButton').disabled=!enabled||state.participants.length!==count||state.participants.some(p=>!p.online||!p.ready||(state.arena&&!p.arenaCapable)||((count===2||state.config.policy==='team')&&!p.classicConfigCapable));
+  $('startButton').disabled=!enabled||state.participants.length!==count||state.participants.some(p=>!p.online||!p.ready||(state.arena&&!p.arenaCapable)||(state.classic&&(count===2||state.config.policy==='team')&&!p.classicConfigCapable));
   $('copyInvite').hidden=!lobby||retired;$('requests').hidden=retired;
   $('retiredNotice').hidden=!retired;$('retiredNotice').textContent=retired?RETIRED_MESSAGE:'';document.querySelector('.new-room-link').hidden=!retired;
   $('lobbyHint').textContent=!state.self.admitted?'Esperando la aprobación del anfitrión.':lobby?(state.participants.length<count?'Comparte la invitación para completar la sala.':state.participants.some(p=>!p.ready)?'Falta que todos estén listos.':state.self.host?'Todo listo para comenzar.':'Esperando al anfitrión.') : '';

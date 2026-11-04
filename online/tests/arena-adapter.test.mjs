@@ -3,6 +3,7 @@ import {createArena,applyArena,legalArenaActions} from '../../arena/src/engine.m
 import {arenaNeighbors,arenaWall,analyzeArena} from '../../arena/src/geometry.mjs';
 import {arenaCpuActions} from '../../arena/src/cpuStrategy.mjs';
 import {arenaRoom,arenaCommand} from './arena-helper.mjs';
+import {reviewTraces} from '../scripts/arena-trace.mjs';
 import {arenaDecision,isArenaRoom} from '../src/arena-adapter.mjs';
 import {createRoom,advanceRoom,publicRoom,presence,clientFeatures,applyCommand} from '../src/room-model.mjs';
 import {createDecisionNotice} from '../decision-notice.mjs';
@@ -88,4 +89,101 @@ test('Arena: un cliente anterior conserva la sesión pero no puede preparar ni c
   assert.throws(()=>applyCommand(r,id,{type:'ready',params:{ready:true}},3000),{code:'UPDATE_REQUIRED'});
   assert.throws(()=>applyCommand(r,r.hostId,{type:'start'},3000),{code:'UPDATE_REQUIRED'});
   assert.equal(publicRoom(r,id,3000).self.id,id);assert.equal(publicRoom(r,id,3000).self.seat,'B1');
+});
+
+test('Arena 1 vs. 1 por ficha: dos fichas propias con inventarios independientes', () => {
+  const room = arenaRoom({players: 2});
+  const [a,b] = Object.values(room.participants);
+  assert.deepEqual(room.config.seats, ['A','B']);
+  assert.deepEqual(publicRoom(room,a.id,3000).self.controlledPieces, ['A1','A2']);
+  assert.deepEqual(publicRoom(room,b.id,3000).self.controlledPieces, ['B1','B2']);
+  const game = room.arena.game;
+  game.drops = [{id:'pickup',type:'jump',cell:11}];
+  game.inventories.A1 = [{id:'owned',type:'demolition'}];
+  game.inventories.A2 = [{id:'other',type:'extraWall'}];
+  arenaCommand(room,{type:'move',to:11},4000,a.id);
+  assert.equal(room.arena.game.pending.owner,'A1');
+  assert.deepEqual(room.decision.eligible,[a.id]);
+  assert.throws(()=>arenaCommand(room,{type:'discard',owner:'A2',power:'other'},4000,a.id),{code:'DECISION'});
+  assert.throws(()=>arenaCommand(room,{type:'discard',owner:'A1',power:'owned'},4000,b.id),{code:'DECISION'});
+  arenaCommand(room,{type:'discard',owner:'A1',power:'owned'},5000,a.id);
+  assert.deepEqual(room.arena.game.inventories.A2,[{id:'other',type:'extraWall'}]);
+  assert.deepEqual(room.arena.game.inventories.A1,[{id:'pickup',type:'jump'}]);
+  assert.equal(room.clock.remainingMs.A,598000);
+});
+
+test('Arena 1 vs. 1 por equipo: elección de ficha con inventario y reloj compartidos', () => {
+  const room = arenaRoom({players: 2,policy:'team'}), [a,b] = Object.values(room.participants);
+  assert.equal(room.arena.game.turn.actor,null);
+  assert.deepEqual(Object.keys(room.arena.game.inventories),['A','B']);
+  const decision = publicRoom(room,a.id,3000).decisionId;
+  assert.throws(()=>arenaCommand(room,{type:'select',actor:'B1'},3000,a.id),{code:'DECISION'});
+  assert.throws(()=>arenaCommand(room,{type:'select',actor:'A2'},3000,b.id),{code:'DECISION'});
+  arenaCommand(room,{type:'select',actor:'A2'},4000,a.id);
+  assert.equal(publicRoom(room,a.id,4000).decisionId,decision);
+  assert.equal(room.clock.remainingMs.A,599000);
+  room.arena.game.inventories.A.push({id:'shared',type:'extraWall'});
+  const action = legalArenaActions(room.arena.game).find(x=>x.type==='extraWall');
+  arenaCommand(room,action,5000,a.id);
+  assert.deepEqual(room.arena.game.inventories.A,[]);
+  assert.equal(room.arena.game.turn.actor,'A2');
+  assert.throws(()=>arenaCommand(room,{type:'select',actor:'A1'},5000,a.id),{code:'ILLEGAL_ACTION'});
+  assert.equal(room.clock.remainingMs.A,598000);
+  advanceRoom(room,603000);
+  assert.equal(room.outcome.reason,'timeout');
+  applyCommand(room,a.id,{type:'rematch.propose',params:{matchId:room.code+':1'}},603000);
+  applyCommand(room,b.id,{type:'rematch.respond',params:{matchId:room.code+':1',proposalId:room.rematch.id,accept:true}},603000);
+  advanceRoom(room,606000);
+  assert.deepEqual(room.arena.game,createArena({policy:'team'}));
+  assert.deepEqual(room.clock.remainingMs,{A:600000,B:600000});
+});
+
+test('Arena 1 vs. 1: un descarte por capacidad rival cambia de responsable y se recupera', () => {
+  let room = arenaRoom({players:2,policy:'team'});
+  const [a,b] = Object.values(room.participants);
+  const game = room.arena.game;
+  game.drops = [];
+  const positions={A1:10,B1:9,A2:70,B2:64};
+  for (const piece of game.pieces) piece.pos=positions[piece.id];
+  game.walls=[...new Set([9,10].flatMap(c=>arenaNeighbors(c).filter(n=>![9,10].includes(n)).map(n=>arenaWall(c,n))))];
+  game.turn={team:'A',actor:'A1',steps:0,path:[10],committed:false,actions:0};
+  game.inventories.A=[{id:'jump',type:'jump'}];
+  game.inventories.B=[{id:'keep',type:'jump'},{id:'other',type:'demolition'}];
+  arenaCommand(room,{type:'jump',to:11,power:'jump'},4000,a.id);
+  assert.equal(room.arena.game.pending.owner,'B');
+  assert.equal(room.clock.owner,'B');
+  assert.deepEqual(room.decision.eligible,[b.id]);
+  const discard={type:'discard',owner:'B',power:'other'};
+  assert.throws(()=>arenaCommand(room,discard,4000,a.id),{code:'DECISION'});
+  advanceRoom(room,5000);
+  presence(room,b.id,false,5000);
+  assert.ok(room.clock.grace);
+  room=JSON.parse(JSON.stringify(room));
+  clientFeatures(room,b.id,['rematch-v1','arena-duo-v1'],7000);
+  presence(room,b.id,true,7000);
+  assert.equal(publicRoom(room,b.id,7000).canDecide,false);
+  assert.equal(publicRoom(room,b.id,7000).self.id,b.id);
+  assert.throws(()=>arenaCommand(room,discard,7000,b.id),{code:'UPDATE_REQUIRED'});
+  clientFeatures(room,b.id,['rematch-v1','arena-1v1-v1'],7000);
+  assert.equal(room.arena.game.pending.owner,'B');
+  const expected=applyArena(room.arena.game,discard);
+  arenaCommand(room,discard,8000,b.id);
+  assert.deepEqual(room.arena.game,expected);
+  assert.equal(room.clock.owner,'A');
+  assert.equal(room.clock.remainingMs.B,598000);
+});
+
+
+test('Arena 1 vs. 1: la reactivación y la puntuación coinciden con el motor en ambas políticas', () => {
+  for (const policy of ['piece','team']) {
+    const room = arenaRoom({players:2,policy});
+    const [,trace] = reviewTraces(policy);
+    assert.ok(trace.events.includes('reactivated'));
+    for (const [index,action] of trace.commands.entries()) {
+      arenaCommand(room,action,3000+index);
+      assert.deepEqual(room.arena.game,trace.states[index]);
+    }
+    assert.equal(room.status,'finished');
+    assert.deepEqual(room.outcome.score,analyzeArena(trace.states.at(-1)).score);
+  }
 });

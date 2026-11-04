@@ -31,3 +31,13 @@ El servicio público actual no se modifica. El arranque local usa SQLite nuevo y
 ## Aceptación
 
 Probar contra `applyArena` comando por comando; casos de poderes, descartes propios/rivales, aseguramiento sin muro, reactivación/reconquista, final inmediato, diez minutos, sesión recuperada, recibo perdido, revancha y motor/guardados/CPU/Clásico intactos. Después ejecutar la validación integral una vez preparada la candidata. Las pruebas locales automatizadas no acreditan cuatro dispositivos físicos ni una publicación HTTPS.
+
+## Candidata local Arena 1 vs. 1
+
+La rama parte de `9046525129a96eae4880b6a497ea166aa5972101`. La sala conserva el reglamento Arena y persiste la política elegida. Los asientos A y B controlan las dos fichas de su equipo. En turnos por ficha, cada ficha conserva su propio inventario. En turnos por equipo, el motor permite elegir ficha antes de comprometer la intervención y gestiona un inventario compartido. Seleccionar ficha mantiene el reloj y la identidad del aviso del turno. Cuando hay un descarte obligatorio, solo responde la persona que controla el inventario indicado y corre el reloj de ese equipo.
+
+Los clientes anuncian `arena-1v1-v1` para actuar en salas de dos personas. Las salas de cuatro personas conservan `arena-duo-v1` y los turnos por ficha. La revancha mantiene las fichas, la política y el resultado anterior, y repone los diez minutos de cada equipo.
+
+Para probar en Windows con las dependencias de `online` disponibles, ejecuta `node online/scripts/ux-local.mjs --arena-1v1` desde el worktree. Abre `http://127.0.0.1:8815/cerconexo/arena/`, elige **Online → Crear sala → 1 vs. 1** y usa un segundo navegador o perfil para unirte. El Worker y SQLite se ejecutan en loopback. La opción se activa en esta demostración local y queda deshabilitada en la configuración pública de la candidata.
+
+Las pruebas de navegador se ejecutan con `node online/scripts/arena-browser.mjs --1v1-piece` y `node online/scripts/arena-browser.mjs --1v1-team`. Cada partida se compara acción por acción con el motor oficial.

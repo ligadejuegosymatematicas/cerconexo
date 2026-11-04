@@ -12,7 +12,7 @@ export function mountRematch({ container, propose, status, session }) {
   function tick(now) {
     if (panel.hidden || !state?.rematch) return;
     const proposal = state.rematch, votes = state.participants.filter(p => proposal.votes[p.id] === true).length;
-    const count = state.config.playerCount ?? state.config.seats.length, configClient = count === 2 || state.config.policy === 'team';
+    const count = state.config.playerCount ?? state.config.seats.length, configClient = state.config.mode === 'classic' && (count === 2 || state.config.policy === 'team');
     const outdated = state.participants.filter(p => p.rematchCapable === false || state.arena&&!p.arenaCapable || configClient && !p.classicConfigCapable);
     const text = proposal.status === 'countdown' ? `Comenzamos en ${Math.max(1, Math.ceil((proposal.startsAt - now) / 1000))}…`
       : outdated.length ? `${votes} de ${count} aceptaron · ${outdated.map(p => p.seat).join(', ')} debe actualizar la página.`
