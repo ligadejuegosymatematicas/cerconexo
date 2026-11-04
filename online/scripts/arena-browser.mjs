@@ -237,6 +237,12 @@ try{
       }
     }
     const final=await read(host);assert.equal(final.status,'finished');assert.equal(final.outcome.reason,'territory');for(const p of pages){assert.equal(await p.locator('[data-arena-notice]').isVisible(),false);const title=await p.locator('[data-arena-result-title]').boundingBox(),prompt=await p.locator('[data-arena-prompt]').boundingBox();assert.ok(title.y>=prompt.y+prompt.height);await p.locator('[data-inspect]').first().click();assert.match(await p.locator('[data-arena-inspection]').textContent(),/Región/);}
+    if (ffa) {
+      assert.ok([1,11].includes(trace.seed), 'Fixture territorial FFA no reconocida');
+      assert.deepEqual(final.outcome.winners,['B']);
+      assert.deepEqual(final.outcome.ranking.map(r=>[r.team,r.rank,r.score]),
+        [['B',1,trace.seed===1?78:75],['A',2,1],['C',2,1],['D',2,1]]);
+    }
     await capture(host, 'arena-final-mobile.png');
     report.games.push({seed:trace.seed,actions:trace.commands.length,turns:final.arena.game.completedTurns,score:final.outcome.score,types:trace.types,events:trace.events,reloaded,discardReloaded});
     const match=final.matchId;await host.locator('[data-arena-propose-rematch]').click();for(let i=1;i<count;i++){await pages[i].locator('[data-rematch-accept]').click();await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.rematch.votes[s.participants.find(p=>p.seat===seats[i]).id]),'Aceptación no confirmada');}
