@@ -161,7 +161,7 @@ try{
     }
     assert.equal(await host.locator('[data-arena-summary-presence]').textContent(),'2/2 conectados');
   }
-  const traces=reviewTraces(policy).slice(0,two ? 1 : undefined);
+  const traces=reviewTraces(policy).slice(0,two && !pagesMode ? 1 : undefined);
   const pictured = new Set();
   for(let round=0;round<traces.length;round++){
     const trace=traces[round];let reloaded=false,discardReloaded=false;
