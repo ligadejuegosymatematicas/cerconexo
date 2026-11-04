@@ -55,7 +55,11 @@ try{
     }
     await host.screenshot({path:new URL(`../evidence/ux-final-${count}-${policy}-mobile.png`,import.meta.url).pathname.replace(/^\/(\w:)/,'$1'),fullPage:true});
     if(count===4)await pages[1].screenshot({path:new URL('../evidence/ux-final-desktop.png',import.meta.url).pathname.replace(/^\/(\w:)/,'$1'),fullPage:true});
-    const old=(await read(host)).matchId;await host.locator('[data-classic-propose-rematch]').click();for(const p of pages.slice(1))await p.locator('[data-rematch-accept]').click();
+    const old=(await read(host)).matchId;await host.locator('[data-classic-propose-rematch]').click();for(const p of pages.slice(1)){
+      await p.locator('[data-rematch-accept]').click();
+      const id=(await read(p)).self.id;
+      await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.rematch.votes[id]===true),'Aceptación no compartida');
+    }
     await eventually(async()=>(await Promise.all(pages.map(read))).every(s=>s.status==='active'&&s.matchId!==old),'Revancha sin unanimidad o no inició',15000);
     for(const p of pages){const s=await read(p);assert.equal(s.classic.game.moves,0);assert.ok(s.clock.remainingMs.A>470000);assert.equal(s.clock.remainingMs.B,480000);assert.equal(s.previousResults.length,1);assert.deepEqual(s.outcome,null);assert.equal(s.self.seat,seats[pages.indexOf(p)]);}
     await host.reload();await host.locator('[data-classic-connection][data-phase=connected]').waitFor();assert.equal(await host.evaluate(()=>window.__uxCelebrations),0);
