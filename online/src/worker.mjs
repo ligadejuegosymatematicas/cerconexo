@@ -12,6 +12,7 @@ import { authorizeCreation } from './beta-admission.mjs';
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
 import {ARENA_UPDATE,isArenaRoom,arenaConfiguration,arenaOneVsOne} from './arena-adapter.mjs';
 import {isArenaFfaRoom} from './arena-timeout.mjs';
+import {classicFfaCompatible} from '../classic-ffa.mjs';
 
 const utf8 = new TextEncoder();
 const PARAMS = { admit: ['playerId', 'seat'], reject: ['playerId'], ready: ['ready'], start: [],
@@ -48,7 +49,7 @@ export default {
             candidateSha: env.CANDIDATE_SHA ?? null,
             serviceMode: env.SERVICE_MODE ?? 'local', publicCreation: env.PUBLIC_CREATION === 'true',
             localOnly: !publicSite, heartbeatMs: HEARTBEAT_MS, leaseMs: LEASE_MS,
-            capabilities: { classic: 'online', arena: env.ARENA_DUO_ENABLED==='true'?'duo-online':publicSite ? 'local-and-cpu-only' : 'connection-probe-only', arenaFfa: env.ARENA_FFA_ENABLED==='true'?'online':'pending' },
+            capabilities: { classic: 'online', classicFfa:env.CLASSIC_FFA_ENABLED==='true'?'online':'pending', arena: env.ARENA_DUO_ENABLED==='true'?'duo-online':publicSite ? 'local-and-cpu-only' : 'connection-probe-only', arenaFfa: env.ARENA_FFA_ENABLED==='true'?'online':'pending' },
             engines: { classic: { pieces: classic.pieces.length }, arenaDuo: { pieces: duo.pieces.length, cells: analyzeArena(duo).score.shared },
               arenaFfa: { pieces: ffa.pieces.length, cells: analyzeArena(ffa).score.shared } } }, 200, cors);
         }
@@ -57,8 +58,8 @@ export default {
           await authorizeCreation(request, env);
           payload = await bodyOf(request); code = roomCode(payload.code); route = 'create';
           nameOf(payload.name); credential(payload.credential); configuration(payload.mode, payload.policy, payload.players);
-          if (publicSite) requireThat(payload.mode === 'classic'||env.ARENA_DUO_ENABLED==='true'&&payload.mode==='arena-duo'||env.ARENA_FFA_ENABLED==='true'&&payload.mode==='arena-ffa', 'MODE', 'Modalidad online no habilitada.');
-          if(env.ARENA_DUO_ENABLED==='true')requireThat(['classic','arena-duo'].includes(payload.mode)||env.ARENA_FFA_ENABLED==='true'&&payload.mode==='arena-ffa','MODE','Esta candidata admite Clásico y Arena 2 vs. 2.');
+          if (publicSite) requireThat(payload.mode === 'classic'||env.CLASSIC_FFA_ENABLED==='true'&&payload.mode==='classic-ffa'||env.ARENA_DUO_ENABLED==='true'&&payload.mode==='arena-duo'||env.ARENA_FFA_ENABLED==='true'&&payload.mode==='arena-ffa', 'MODE', 'Modalidad online no habilitada.');
+          if(env.ARENA_DUO_ENABLED==='true')requireThat(['classic','arena-duo'].includes(payload.mode)||env.CLASSIC_FFA_ENABLED==='true'&&payload.mode==='classic-ffa'||env.ARENA_FFA_ENABLED==='true'&&payload.mode==='arena-ffa','MODE','Esta candidata admite Clásico y Arena 2 vs. 2.');
         } else {
           const match = /^\/api\/rooms\/([^/]+)\/(join|resume|socket)$/.exec(url.pathname);
           requireThat(match, 'ROUTE', 'Ruta no disponible.', 404); code = roomCode(match[1]); route = match[2];
@@ -179,6 +180,7 @@ export class Room extends DurableObject {
       if (!p || p.rejected) { close(ws, 4003, 'Admission rejected'); continue; }
       if (p.generation !== a.generation) { send(ws, { type: 'session-replaced' }); close(ws, 4001, 'Session replaced'); continue; }
       send(ws, { type: 'snapshot', state: publicRoom(room, p.id, now) });
+      if(!classicFfaCompatible(room,p))send(ws,{type:'error',error:{code:'UPDATE_REQUIRED',message:CONFIG_UPDATE_MESSAGE}});
       if (retiredClassicConfiguration(room.config) && ['lobby','finished'].includes(room.status) && !a.simplifiedUX) {
         const notice=`${room.status}:${room.matchNumber}`;
         if(a.retiredNotice!==notice){send(ws,{type:'error',error:{code:'CONFIG_RETIRED',message:RETIRED_MESSAGE}});a.retiredNotice=notice;ws.serializeAttachment(a);}
@@ -206,6 +208,7 @@ export class Room extends DurableObject {
         if (route === 'create') {
           const input = await bodyOf(request), tokenHash = await digest(credential(input.credential));
           const requested = configuration(input.mode, input.policy, input.players);
+          if(!room && input.mode==='classic-ffa')requireThat(this.env.CLASSIC_FFA_ENABLED==='true','MODE','Clásico de cuatro equipos no está habilitado.');
           if (!room && arenaOneVsOne(requested)) requireThat(this.env.ARENA_DUO_ENABLED === 'true' && this.env.ARENA_1V1_ENABLED === 'true',
             'MODE', 'Arena Online 1 vs. 1 no está habilitada.');
           if (!room && input.mode === 'arena-ffa') {

@@ -5,6 +5,7 @@ import { normalizeMatch, matchId, checkMatch, decisionFingerprint, rematchComman
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
 import {isArenaFfaRoom,eliminateByTime,ffaOutcome} from './arena-timeout.mjs';
 import {isArenaRoom,arenaConfiguration,arenaOneVsOne,arenaControlledPieces,createOnlineArena,arenaDecision,arenaView,applyOnlineArena,arenaOutcome,ARENA_UPDATE} from './arena-adapter.mjs';
+import {isClassicFfaRoom, classicFfaCompatible, eliminateClassicFfa, ffaDraft} from '../classic-ffa.mjs';
 
 export function createRoom({ code, name, mode, policy, players, tokenHash, probeOnly = false, arenaOnline = false }, now) {
   let config = configuration(mode, policy, players); const id = randomId();
@@ -43,7 +44,7 @@ export function findPlayer(room, tokenHash) {
 function touch(room, now) { room.revision++; room.lastActivityAt = now; if (room.status === 'lobby') room.expiresAt = now + RETENTION_MS; }
 export function seated(room) { return Object.values(room.participants).filter(p => p.admitted && p.seat && !p.rejected); }
 export function teamOf(seat) { return seat?.[0] ?? null; }
-export function canDecide(room, id) { return room.status === 'active' && room.decision?.eligible.includes(id); }
+export function canDecide(room, id) { return room.status === 'active' && room.decision?.eligible.includes(id) && classicFfaCompatible(room, room.participants[id]); }
 function normalDecision(room) {
   if (isClassicRoom(room)) return classicDecision(room);
   if (isArenaRoom(room)) return arenaDecision(room);
@@ -96,7 +97,7 @@ export function advanceRoom(room, now) {
   }
   const rematchEvent = progressRematch(room, now); if (rematchEvent) events.push(rematchEvent);
   if (room.status === 'countdown' && now >= room.startsAt) {
-    if (seated(room).length !== participantCount(room.config) || seated(room).some(p => !p.online || !p.ready || isArenaRoom(room)&&!p.arenaCapable || needsConfigClient(room.config) && !p.classicConfigCapable)) {
+    if (seated(room).length !== participantCount(room.config) || seated(room).some(p => !p.online || !p.ready || !classicFfaCompatible(room,p) || isArenaRoom(room)&&!p.arenaCapable || needsConfigClient(room.config) && !p.classicConfigCapable)) {
       room.status = 'lobby'; room.startsAt = null; room.expiresAt = now + RETENTION_MS; events.push({ type: 'countdown-cancelled' });
     } else {
       room.status = 'active'; room.startsAt = null; room.decision = normalDecision(room); syncDecision(room, now); events.push({ type: isClassicRoom(room)||isArenaRoom(room) ? 'game-started' : 'probe-started' });
@@ -108,7 +109,14 @@ export function advanceRoom(room, now) {
     if (hadGrace && !room.clock.grace) { room.revision++; events.push({ type: 'grace-ended' }); }
     if (expired) {
       events.push({ type: 'clock-expired', team: expired.team, deadline: expired.at });
-      if (isClassicRoom(room)) finish(room, now, classicOutcome(room, expired.team));
+      if (isClassicFfaRoom(room)) {
+        const game=eliminateClassicFfa(room.classic.game,room.classic.draft,expired.team,now);
+        room.classic={game,draft:ffaDraft(game)};
+        events.push({type:'classic-eliminated',team:expired.team,at:now});
+        if(game.over)finish(room,now,classicOutcome(room));
+        else {room.decision=classicDecision(room);syncDecision(room,now);}
+      }
+      else if (isClassicRoom(room)) finish(room, now, classicOutcome(room, expired.team));
       else if (isArenaFfaRoom(room)) {
         const result = eliminateByTime(room, expired.team, now);
         events.push({type:'arena-eliminated', team:expired.team, at:now});
@@ -152,11 +160,17 @@ export function leaveView(room, id, now) {
   return presence(room, id, false, now, { voluntary: true });
 }
 export function clientFeatures(room, id, features, now) {
+  const ffaCapable=Array.isArray(features)&&features.includes('classic-ffa-v1');
+  const classicFfaChanged=isClassicFfaRoom(room)&&room.participants[id].classicFfaCapable!==ffaCapable;
+  if(classicFfaChanged){
+    room.participants[id].classicFfaCapable=ffaCapable;room.presenceRevision++;
+    if(room.status==='countdown'&&!ffaCapable){room.status='lobby';room.startsAt=null;touch(room,now);}
+  }
   const arenaCapable=Array.isArray(features)&&features.includes(isArenaFfaRoom(room)?'arena-ffa-v1':arenaOneVsOne(room.config)?'arena-1v1-v1':'arena-duo-v1');
   const arenaChanged=isArenaRoom(room)&&room.participants[id].arenaCapable!==arenaCapable;
   if(arenaChanged){room.participants[id].arenaCapable=arenaCapable;if(room.status==='countdown'&&!arenaCapable){room.status='lobby';room.startsAt=null;touch(room,now);}}
   const player = room.participants[id], capable = Array.isArray(features) && features.includes('rematch-v1'), configured = Array.isArray(features) && features.includes('classic-config-v2');
-  if (player.rematchCapable === capable && player.classicConfigCapable === configured&&!arenaChanged) return;
+  if (player.rematchCapable === capable && player.classicConfigCapable === configured&&!arenaChanged&&!classicFfaChanged) return;
   player.rematchCapable = capable; player.classicConfigCapable = configured; room.presenceRevision++;
   if (room.status === 'countdown' && needsConfigClient(room.config) && !configured) { room.status = 'lobby'; room.startsAt = null; touch(room, now); }
   if (room.status === 'finished') progressRematch(room, now);
@@ -191,11 +205,13 @@ export function applyCommand(room, playerId, command, now) {
       target.admitted = true; target.seat = args.seat; target.ready = false;
     }
   } else if (command.type === 'ready') {
+    requireThat(classicFfaCompatible(room,p),'UPDATE_REQUIRED',CONFIG_UPDATE_MESSAGE,409);
     requireThat(!isArenaRoom(room)||p.arenaCapable,'UPDATE_REQUIRED',ARENA_UPDATE,409);
     requireThat(!needsConfigClient(room.config) || p.classicConfigCapable, 'UPDATE_REQUIRED', CONFIG_UPDATE_MESSAGE, 409);
     requireThat(room.status === 'lobby' && p.admitted && typeof args.ready === 'boolean', 'READY', 'No puedes cambiar la preparación ahora.', 409);
     p.ready = args.ready;
   } else if (command.type === 'start') {
+    requireThat(seated(room).every(q=>classicFfaCompatible(room,q)),'UPDATE_REQUIRED',CONFIG_UPDATE_MESSAGE,409);
     requireThat(!isArenaRoom(room)||seated(room).every(q=>q.arenaCapable),'UPDATE_REQUIRED',ARENA_UPDATE,409);
     requireThat(host && room.status === 'lobby', 'PERMISSION', 'Solo el anfitrión puede iniciar la partida.', 403);
     requireThat(!retiredClassicConfiguration(room.config), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
@@ -241,7 +257,7 @@ export function publicRoom(room, playerId, now) {
   const self = room.participants[playerId];
   requireThat(self && !self.rejected, 'AUTH', 'Sesión no reconocida.', 401);
   const visible = seated(room).map(p => ({ id: p.id, name: p.name, seat: p.seat, team: teamOf(p.seat), ready: p.ready, online: p.online, rematchCapable: p.rematchCapable === true,
-    classicConfigCapable: p.classicConfigCapable === true, ...(isArenaRoom(room)?{arenaCapable:p.arenaCapable===true,controlledPieces:arenaControlledPieces(room,p.seat),...(isArenaFfaRoom(room)?{eliminated:room.arena.eliminations.some(e=>e.team===p.seat)}:{})}:{}), ...(isClassicRoom(room) ? { controlledPieces: controlledPieces(room.config, p.seat) } : {}) }));
+    classicConfigCapable: p.classicConfigCapable === true, ...(isClassicFfaRoom(room)?{classicFfaCapable:p.classicFfaCapable===true,eliminated:room.classic.game.eliminations.some(e=>e.team===p.seat),secured:!!room.classic.game.secured[p.seat]}:{}), ...(isArenaRoom(room)?{arenaCapable:p.arenaCapable===true,controlledPieces:arenaControlledPieces(room,p.seat),...(isArenaFfaRoom(room)?{eliminated:room.arena.eliminations.some(e=>e.team===p.seat)}:{})}:{}), ...(isClassicRoom(room) ? { controlledPieces: controlledPieces(room.config, p.seat) } : {}) }));
   const visibleIds = new Set(visible.map(p => p.id)), clock = publicClock(room.clock, now);
   clock.graceUsedMs = Object.fromEntries(Object.entries(clock.graceUsedMs).filter(([id]) => visibleIds.has(id)));
   clock.gracePlayers = clock.gracePlayers.filter(id => visibleIds.has(id));
@@ -250,7 +266,7 @@ export function publicRoom(room, playerId, now) {
     matchId: matchId(room), matchNumber: room.matchNumber, decisionId: room.decision ? `${matchId(room)}:${room.decisionSerial}` : null,
     rematch: room.rematch, previousResults: room.previousResults, configurationRetired: retiredClassicConfiguration(room.config),
     features: { rematch: (isClassicRoom(room)||isArenaRoom(room)) && !retiredClassicConfiguration(room.config), scopedMatches: true, viewAway: true },
-    self: { id: self.id, name: self.name, admitted: self.admitted, seat: self.seat, host: self.id === room.hostId, generation: self.generation,
+    self: { id: self.id, name: self.name, admitted: self.admitted, seat: self.seat, host: self.id === room.hostId, generation: self.generation, ...(isClassicFfaRoom(room)?{eliminated:room.classic.game.eliminations.some(e=>e.team===self.seat),secured:!!room.classic.game.secured[self.seat]}:{}),
       ...(isArenaRoom(room)?{controlledPieces:arenaControlledPieces(room,self.seat),...(isArenaFfaRoom(room)?{eliminated:room.arena.eliminations.some(e=>e.team===self.seat)}:{})}:{}),
       ...(isClassicRoom(room) ? { controlledPieces: controlledPieces(room.config, self.seat) } : {}) },
     participants: visible, requests: self.id === room.hostId ? Object.values(room.participants).filter(p => !p.admitted && !p.rejected).map(p => ({ id: p.id, name: p.name, online: p.online })) : [],
