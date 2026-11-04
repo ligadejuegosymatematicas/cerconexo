@@ -149,7 +149,7 @@ try{
   await host.goto(site.base+'/arena/?new=1');await host.locator('[name=opponent][value=online]:enabled').check();assert.equal(await host.locator('[name=mode]:visible').count(),0);
   await host.locator('[name=opponent][value=cpu]').check();assert.equal(await host.locator('#humanTeamField').isVisible(),true);assert.equal(await host.locator('#experimentDetails').isVisible(),false);
   await host.locator('[name=opponent][value=local]').check();assert.equal(await host.locator('#humanTeamField').isVisible(),false);assert.equal(await host.locator('[name=mode]:visible').count(),2);
-  await host.locator('[name=opponent][value=online]').check();await host.locator('#startArena').click();await host.locator('[data-entry=create]').click();assert.equal(await host.locator('[name=players]:visible').count(),two || ffa ? 1 : 0);assert.equal(await host.locator('[name=policy]:visible').count(),0);
+  await host.locator('[name=opponent][value=online]').check();await host.locator('#startArena').click();await host.locator('[data-entry=create]').click();assert.equal(await host.locator('[name=players]:visible').count(),pagesMode || two || ffa ? 1 : 0);assert.equal(await host.locator('[name=policy]:visible').count(),0);
   if (ffa) await host.locator('[name=players]').selectOption('ffa');
   if (two) {
     await host.locator('[name=players]').selectOption('2');
