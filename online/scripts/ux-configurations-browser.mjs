@@ -4,8 +4,11 @@ import {chromium} from 'playwright';
 import {startUX} from './ux-local.mjs';
 import {eventually} from './runtime.mjs';
 import {applyTurn,legalActors,wallOptions,availableMoves,territory} from '../../src/engine.mjs';
-const site=await startUX({port:8818,apiPort:8823}),browser=await chromium.launch({channel:'msedge',headless:true});
-const report={ok:false,configurations:[],errors:[],external:[]},contexts=[];
+import {API_BASE} from '../config.mjs';
+const publicPages=process.argv.includes('--public-pages');
+const pagesOrigin='https://ligadejuegosymatematicas.github.io';
+const site=publicPages?{entry:pagesOrigin+'/cerconexo/online/',stop:async()=>{}}:await startUX({port:8818,apiPort:8823}),browser=await chromium.launch({channel:'msedge',headless:true});
+const report={ok:false,publicPages,frontendIntercepted:false,configurations:[],errors:[],external:[]},contexts=[];
 const read=p=>p.locator('#publicState').textContent().then(JSON.parse);
 await mkdir(new URL('../evidence/',import.meta.url),{recursive:true});
 try{
@@ -13,7 +16,7 @@ try{
     const pages=[],seats=count===2?['A','B']:['A1','B1','A2','B2'];
     for(let i=0;i<count;i++){
       const context=await browser.newContext({viewport:{width:i===0?390:1440,height:i===0?844:1000},hasTouch:i===0,isMobile:i===0,reducedMotion:'no-preference'});contexts.push(context);
-      await context.route('**/*',r=>{if(new URL(r.request().url()).hostname==='127.0.0.1')return r.continue();report.external.push(r.request().url());return r.abort();});
+      await context.route('**/*',r=>{const url=new URL(r.request().url());if(publicPages?[pagesOrigin,API_BASE].includes(url.origin):url.hostname==='127.0.0.1')return r.continue();report.external.push(url.origin);return r.abort();});
       await context.addInitScript(()=>{
         const Original=WebSocket;window.__uxMessages=[];
         window.WebSocket=class extends Original{constructor(...args){super(...args);window.__uxSocket=this;this.addEventListener('message',event=>{try{const m=JSON.parse(event.data);if(m.type==='ack'||m.type==='error')window.__uxMessages.push(m);}catch{}});}send(data){try{const m=JSON.parse(data);if(m.actionId)window.__uxLast=m;}catch{}return super.send(data);}};
@@ -61,4 +64,4 @@ try{
   }
   assert.deepEqual(report.errors,[]);assert.deepEqual(report.external,[]);report.ok=true;
 }catch(e){report.error=e.stack??e.message;process.exitCode=1;}
-finally{for(const c of contexts)await c.close();await browser.close();await site.stop();await writeFile(new URL('../evidence/ux-configurations-browser.json',import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}
+finally{for(const c of contexts)await c.close();await browser.close();await site.stop();await writeFile(new URL(`../evidence/ux-configurations-browser${publicPages?'-public':''}.json`,import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));}
