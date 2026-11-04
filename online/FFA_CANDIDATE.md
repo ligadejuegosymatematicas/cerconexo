@@ -52,6 +52,24 @@ Las primeras comprobaciones detectaron y corrigieron dos pérdidas de metadatos:
 
 Las salas nuevas emplean `arena-ffa-online-v1` y requieren el cliente `arena-ffa-v1`; un cliente anterior conserva el acceso y recibe la instrucción de actualizar, sin permiso para actuar. Las sondas FFA históricas mantienen su reglamento. Los formatos existentes de Clásico y Arena de dos equipos no se convierten. Los guardados Local/CPU no cambian.
 
-La capacidad FFA está deshabilitada por defecto tanto en la interfaz pública generada como en el Worker. Solo el arranque local la habilita. No hubo push, PR, despliegue, cambios del piloto, namespaces públicos, secretos, cuotas ni facturación.
+En la entrega local inicial, la capacidad FFA permanecía deshabilitada fuera del arranque local. Esa entrega no hizo push, PR, despliegue ni cambios de infraestructura. La fase HTTPS posterior autorizada se registra a continuación.
 
-Esta entrega acredita HTTP/WS local y cuatro contextos automatizados; no acredita cuatro dispositivos físicos, Android real, redes diferentes ni HTTPS/WSS público. La revisión HTTPS y una eventual publicación requieren autorización posterior. La demostración está limitada a loopback; no ofrece por sí sola una dirección accesible desde otro dispositivo.
+La demostración local está limitada a loopback. Las pruebas automatizadas no acreditan cuatro dispositivos físicos, Android real ni redes diferentes.
+
+## Validación HTTPS/WSS y preparación de publicación
+
+El 4 de noviembre de 2026 se autorizó actualizar el Worker público, validar, integrar y publicar si los controles obligatorios aprueban. `origin/main` se comprobó en `151800f`. La candidata habilita el selector FFA y el Worker anuncia `capabilities.arenaFfa: online`, conservando los campos anteriores.
+
+Worker público: `cerconexo-m6-beta-staging`, versión `421494bb-c16b-4e64-ad8b-623be9595c83`, código `213fc1f61157abe48f9c84e7bdb4097323d40dd9`. Se mantuvieron los mismos namespaces SQLite, clases `Room`/`AdmissionGate`, migración `beta-1`, secretos y origen autorizado de Pages. Se rechazó un origen ajeno. El piloto privado no se modificó.
+
+Antes de actualizar se prepararon salas controladas de Clásico y Arena. Tras actualizar se recuperaron sus cuatro identidades y movimientos parciales, sin devolver tiempo ni aplicar de nuevo el recibo repetido. Ambas continuaron construyendo un muro. Arena conservó además el resultado anterior y su revancha iniciada antes del despliegue.
+
+Cuatro perfiles de Edge completaron por HTTPS/WSS dos partidas FFA de 87 y 109 acciones, con los resultados territoriales ya indicados. La tercera partida observó tres vencimientos reales de 300.000 ms, conservó el muro adicional y las intervenciones, retiró A/B/C y declaró a D último superviviente con 81 casillas. La clasificación fue D/C/B/A. La sesión eliminada se recuperó como espectadora y la revancha unánime restauró fichas y relojes. Hubo recargas con movimiento y descarte pendientes, uso de los tres poderes, aseguramiento, reactivación, inspección y rechazo de acciones ajenas, ilegales y duplicadas. La interfaz candidata se sustituyó solamente dentro de esos perfiles; el backend y WSS fueron públicos reales. La comprobación posterior desde Pages sin sustitución corresponde al cierre de publicación.
+
+Desde Pages real, sin interceptar recursos, pasaron las tres configuraciones de Clásico y las tres anteriores de Arena, con partidas completas, recuperación y revancha. El comprobador de Clásico espera la confirmación compartida de cada preparación y voto antes del siguiente. Esto no modifica el tratamiento existente de revisiones `STALE` ni las reglas del servicio.
+
+Las 451 pruebas y los 32 hashes se volvieron a comprobar al habilitar la candidata. Las 21 suites históricas locales continúan como evidencia previa; GitHub Actions ejecutará los controles integrales de la PR. Las rutas oficiales solo se actualizarán después de la aprobación de CI y la integración autorizada.
+
+La revisión de cuota previa a HTTPS registró, en toda la cuenta desde las 00:00 UTC, 197 solicitudes Workers, 2.204 solicitudes Durable Objects, 8.687 filas leídas y 10.730 escritas, sin errores de CPU o memoria. Las métricas son agregadas y pueden tener retraso; la consulta de bytes almacenados no devolvió datos y no se interpreta como almacenamiento cero. Se conservan las cuotas gratuitas y 30 salas nuevas por día. No se activó facturación ni se ampliaron límites.
+
+Informes locales: `online/evidence/https-candidate-ffa-piece/arena-browser.json`, `online/evidence/ux-configurations-browser-public.json`, `online/evidence/public-{2,4}-{piece,team}/arena-browser.json` y revisiones de infraestructura en `online/.state/ffa-release/`. Las credenciales de las salas de prueba están únicamente en estado local ignorado y no se incluyen en el paquete público.
