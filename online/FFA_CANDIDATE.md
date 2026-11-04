@@ -2,6 +2,8 @@
 
 Base pública: `151800f1322b8f3d09ae676f5ea7f21406574e4f` (PR #24). Rama: `m6-arena-ffa`. Worktree: `Cerconexo_M6_Arena_FFA`. Fecha: 4 de noviembre de 2026.
 
+Implementación funcional: `802501eb622105fc72747dc24f78b4bde64f0fba`. El cierre documental posterior registra la validación integral sin cambiar el comportamiento.
+
 ## Alcance aplicado
 
 Cuatro participantes, cuatro equipos A/B/C/D, una ficha por persona, tablero oficial 9 × 9, turnos por ficha y cinco minutos individuales. Se reutilizan el motor y la geometría oficiales de Arena, las posiciones y colores locales, poderes y medallas, inventarios individuales, descartes, aseguramientos, reactivaciones y reconquistas. Se conservan las salas, sesiones, cuenta atrás, gracia, avisos, inspección, historial y revancha existentes.
@@ -27,11 +29,13 @@ El servidor y SQLite permanecen en loopback, con estado independiente en `online
 ## Resultados
 
 - 451 pruebas automatizadas aprobadas: las 438 existentes y 13 específicas nuevas. Incluyen vencimiento tras movimiento, salto, demolición, muro adicional y descarte; alarma repetida/tardía; territorio, empates, reactivación y reconquista después de una eliminación; recuperación, cliente incompatible y revancha.
+- Las 21 suites históricas de navegador aprobaron, incluidas Local/CPU, guardados, navegación, accesibilidad, animaciones y manuales. Se generaron los HTML autónomos oficiales después de que las primeras ejecuciones de `phase2a` y `phase2b` detectaran su ausencia en este worktree nuevo. Se repitieron únicamente esas dos suites; el resumen final tiene 21 resultados satisfactorios.
 - Cuatro contextos independientes de Edge: dos partidas territoriales completas, 87 acciones/27 turnos y 109 acciones/38 turnos. Resultados A/B/C/D: **1/78/1/1** y **1/75/1/1**, con tres casillas vacías en la segunda. Cada acción se comparó con el motor oficial. Se ejercitaron los tres poderes, descartes, aseguramientos, reactivación, inspección y recargas durante movimiento y descarte.
 - Tercera partida de navegador con relojes reales de 300.000 ms: A, B y C vencieron sucesivamente en unos quince minutos. Cada retirada conservó muros, intervenciones y oleadas; el siguiente reloj recibió 300.000 ms. D ganó con 81 casillas. Clasificación: D primero, C segundo, B tercero, A cuarto. Recargar A conservó la identidad eliminada; la revancha unánime recuperó las cuatro fichas y tiempos.
 - Cuatro conexiones WebSocket y SQLite local: reinicio después de un paso y durante un descarte, sin acción automática ni tiempo devuelto; permisos y recibos duplicados comprobados; partida territorial y revancha completas.
 - Regresión en navegador: Arena 1 vs. 1 por ficha y por equipo, Arena 2 vs. 2 y las tres configuraciones vigentes de Clásico, con partidas completas, recuperación, inspección y revancha.
 - 32 hashes protegidos intactos. Los directorios canónicos `src`, `arena/src`, las medallas y la configuración del backend público no presentan cambios frente a la base.
+- Construcción oficial: 83 recursos públicos, tres HTML autónomos y paquete local de 375 archivos de proyecto. El manifiesto incorpora el módulo de eliminación, su prueba y este informe; SQLite, dependencias y evidencia privada quedan excluidos.
 
 Los informes crudos y capturas se conservan localmente, excluidos del repositorio:
 
@@ -39,6 +43,8 @@ Los informes crudos y capturas se conservan localmente, excluidos del repositori
 - `online/evidence/arena-ffa-network.json`
 - `online/evidence/arena-ffa/*.png`
 - `validation/integration/suites/summary.json`
+
+Capturas móviles con emulación Pixel 7: `arena-lobby-mobile.png`, `arena-active-mobile.png`, `arena-final-mobile.png`, `arena-eliminated-mobile.png` y `arena-timeout-final-mobile.png`. La captura `arena-timeout-winner-desktop.png` muestra el triunfo verde de D y la clasificación final. Todas se encuentran en `online/evidence/arena-ffa/`.
 
 Las primeras comprobaciones detectaron y corrigieron dos pérdidas de metadatos: el adaptador debía conservar el historial de eliminaciones al aplicar una acción y la instantánea pública debía incluirlo. Las pruebas de recuperación y las partidas completas se ejecutaron nuevamente sobre esas correcciones.
 
