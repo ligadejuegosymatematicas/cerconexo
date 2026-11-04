@@ -12,6 +12,23 @@
   color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
   background:radial-gradient(ellipse at 45% 0,#16375055,transparent 70%);
 }
+.classic-online[data-mode=ffa]{--c:#b79aff;--d:#59d6a4;--c-glow:#cbb7ff;--d-glow:#9cebc8;--territory-c:#e6ddff;--territory-d:#cef2e2}
+.classic-online[data-mode=ffa] .classic-clock-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.classic-online[data-mode=ffa] .classic-clock{padding:7px 9px}
+.classic-online[data-mode=ffa] .classic-clock-value{font-size:24px}
+.classic-online[data-mode=ffa] .classic-clock-top{font-size:10px;gap:4px}
+.classic-online[data-mode=ffa] .scores{grid-template-columns:repeat(2,minmax(0,1fr))}
+.classic-online[data-mode=ffa] .team-c,.classic-online[data-mode=ffa] .team-d{border-top:3px solid var(--c)}
+.classic-online[data-mode=ffa] .team-d{border-top-color:var(--d)}
+.classic-online[data-mode=ffa] .team-c .team-badge{background:var(--c);color:#102a43}
+.classic-online[data-mode=ffa] .team-d .team-badge{background:var(--d);color:#102a43}
+.classic-online[data-mode=ffa] .unit-C{background:var(--c)}
+.classic-online[data-mode=ffa] .unit-D{background:var(--d)}
+.classic-online[data-mode=ffa] .turn-disc[data-team=C]{background:var(--c);border-color:#e6ddff}
+.classic-online[data-mode=ffa] .turn-disc[data-team=D]{background:var(--d);border-color:#cef2e2}
+.classic-online[data-mode=ffa] [data-classic-clock=C]{border-top:3px solid var(--c)}
+.classic-online[data-mode=ffa] [data-classic-clock=D]{border-top:3px solid var(--d)}
+.classic-online[data-mode=ffa] .classic-result [data-classic-result-score]{display:block;font-size:12px;line-height:1.6;white-space:pre-line}
 .classic-online h2,.classic-online h3,.classic-online p { margin:0; letter-spacing:normal; }
 .classic-online button { min-height:44px; padding:8px 12px; gap:6px; border:1px solid #47617a; border-radius:9px; background:#102a43; color:var(--text); font-size:12px; font-weight:650; }
 .classic-online button:focus-visible,.classic-online summary:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }

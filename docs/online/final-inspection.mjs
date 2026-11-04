@@ -15,7 +15,7 @@ export function createFinalInspection({ board, info }) {
     const selected = model.selected;
     info.textContent = regionDescription(selected);
     if (selected) {
-      const owner = ['A', 'B'].includes(selected.type) ? selected.type : null;
+      const owner = ['A', 'B', 'C', 'D'].includes(selected.type) ? selected.type : null;
       info.textContent += owner ? ` · Aporta ${selected.cells.length} puntos al equipo ${owner}.` : ` · Aporta 0 puntos territoriales.${timeout ? ' La victoria se decidió por tiempo.' : ''}`;
       for (const cell of selected.cells) shade.append(element('rect', { x: 60 + cell % 7 * 80, y: 60 + Math.floor(cell / 7) * 80, width: 80, height: 80, class: 'region-shade', 'data-inspected-cell': cell }));
       shade.append(element('path', { d: regionBoundary(selected.cells, 7).map(([x, y, u, v]) => `M${60 + x * 80} ${60 + y * 80}L${60 + u * 80} ${60 + v * 80}`).join(''), class: 'region-boundary' }));
