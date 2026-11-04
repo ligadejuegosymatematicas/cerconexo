@@ -10,7 +10,8 @@ import { pilotGate } from './pilot-gate.mjs';
 import { normalizeMatch, UPDATE_MESSAGE } from './rematch.mjs';
 import { authorizeCreation } from './beta-admission.mjs';
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
-import {ARENA_RULESET,ARENA_UPDATE,arenaConfiguration,arenaOneVsOne} from './arena-adapter.mjs';
+import {ARENA_UPDATE,isArenaRoom,arenaConfiguration,arenaOneVsOne} from './arena-adapter.mjs';
+import {isArenaFfaRoom} from './arena-timeout.mjs';
 
 const utf8 = new TextEncoder();
 const PARAMS = { admit: ['playerId', 'seat'], reject: ['playerId'], ready: ['ready'], start: [],
@@ -56,8 +57,8 @@ export default {
           await authorizeCreation(request, env);
           payload = await bodyOf(request); code = roomCode(payload.code); route = 'create';
           nameOf(payload.name); credential(payload.credential); configuration(payload.mode, payload.policy, payload.players);
-          if (publicSite) requireThat(payload.mode === 'classic'||env.ARENA_DUO_ENABLED==='true'&&payload.mode==='arena-duo', 'MODE', 'Modalidad online no habilitada.');
-          if(env.ARENA_DUO_ENABLED==='true')requireThat(['classic','arena-duo'].includes(payload.mode),'MODE','Esta candidata admite Clásico y Arena 2 vs. 2.');
+          if (publicSite) requireThat(payload.mode === 'classic'||env.ARENA_DUO_ENABLED==='true'&&payload.mode==='arena-duo'||env.ARENA_FFA_ENABLED==='true'&&payload.mode==='arena-ffa', 'MODE', 'Modalidad online no habilitada.');
+          if(env.ARENA_DUO_ENABLED==='true')requireThat(['classic','arena-duo'].includes(payload.mode)||env.ARENA_FFA_ENABLED==='true'&&payload.mode==='arena-ffa','MODE','Esta candidata admite Clásico y Arena 2 vs. 2.');
         } else {
           const match = /^\/api\/rooms\/([^/]+)\/(join|resume|socket)$/.exec(url.pathname);
           requireThat(match, 'ROUTE', 'Ruta no disponible.', 404); code = roomCode(match[1]); route = match[2];
@@ -182,7 +183,7 @@ export class Room extends DurableObject {
         const notice=`${room.status}:${room.matchNumber}`;
         if(a.retiredNotice!==notice){send(ws,{type:'error',error:{code:'CONFIG_RETIRED',message:RETIRED_MESSAGE}});a.retiredNotice=notice;ws.serializeAttachment(a);}
       }
-      const incompatibleArena = arenaOneVsOne(room.config) && !p.arenaCapable;
+      const incompatibleArena = (arenaOneVsOne(room.config)||isArenaFfaRoom(room)) && !p.arenaCapable;
       const incompatibleConfig = incompatibleArena || needsConfigClient(room.config) && !p.classicConfigCapable;
       if (p.admitted && p.seat && (incompatibleConfig || !p.rematchCapable && (room.matchNumber > 1 || ['pending', 'countdown'].includes(room.rematch?.status)))) {
         const noticeId = `${incompatibleConfig ? 'config' : 'rematch'}:${room.matchNumber}:${room.rematch?.id}`;
@@ -207,6 +208,10 @@ export class Room extends DurableObject {
           const requested = configuration(input.mode, input.policy, input.players);
           if (!room && arenaOneVsOne(requested)) requireThat(this.env.ARENA_DUO_ENABLED === 'true' && this.env.ARENA_1V1_ENABLED === 'true',
             'MODE', 'Arena Online 1 vs. 1 no está habilitada.');
+          if (!room && input.mode === 'arena-ffa') {
+            requireThat(this.env.ARENA_FFA_ENABLED === 'true', 'MODE', 'Arena de cuatro equipos no está habilitada.');
+            Object.assign(requested, arenaConfiguration(requested));
+          }
           if(!room&&input.mode==='arena-duo'&&this.env.ARENA_DUO_ENABLED==='true')Object.assign(requested,arenaConfiguration(requested));
           // A retry belongs to the immutable parameters with which this room
           // was created, including rooms surviving a local version update.
@@ -217,7 +222,7 @@ export class Room extends DurableObject {
             requireThat(room.participants[room.hostId].tokenHash === tokenHash && room.creationFingerprint === fingerprint, 'EXISTS', 'Ese código ya está ocupado.', 409);
           } else {
             requireThat(!retiredClassicConfiguration(requested), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
-            room = createRoom({ code, name: input.name, mode: input.mode, policy: input.policy, players: input.players, tokenHash, arenaOnline:requested.ruleset===ARENA_RULESET }, now); room.creationFingerprint = fingerprint;
+            room = createRoom({ code, name: input.name, mode: input.mode, policy: input.policy, players: input.players, tokenHash, arenaOnline:isArenaRoom({config:requested}) }, now); room.creationFingerprint = fingerprint;
             this.write(room, [{ type: 'created', at: now }]);
           }
           await this.schedule(room, now); return json({ state: publicRoom(room, room.hostId, now) }, 201);

@@ -20,8 +20,8 @@ export function mountArena(container,session){
   css();const root=document.createElement('section');root.className='arena-online classic-online';root.setAttribute('aria-label','Arena Online');
   root.innerHTML=`<header class="classic-header topbar"><div class="classic-brand"><img class="official-logo" src="${new URL('../assets/Cerconexo_wordmark_transparente.png',import.meta.url).href}" alt="CERCONEXO"><span>ARENA <small data-arena-format></small></span></div><div class="classic-room-tools"><div class="classic-room-meta"><span>Sala <strong data-arena-code></strong></span><span data-arena-connection class="classic-connection" role="status"></span></div><details data-arena-menu class="classic-actions-menu"><summary aria-label="Opciones de partida">⋯</summary><div class="classic-session-actions"><a href="../" data-arena-home>Inicio</a><button data-arena-reconnect>Reconectar</button><details class="classic-access"><summary>Mi acceso</summary><button data-arena-copy>Copiar mi acceso privado</button><button data-arena-disconnect>Desconectar este navegador</button></details></div></details></div></header>
   <div class="classic-table"><section class="classic-arena panel"><div class="classic-board-topline"><span>Tablero</span><span>9 × 9 · 81 casillas</span></div><div class="classic-board-wrap"><svg data-arena-board data-classic-board class="arena-svg" viewBox="0 0 900 900" role="group" aria-label="Tablero Arena 9 por 9" aria-describedby="arena-online-help"></svg><p data-arena-notice class="online-turn-notice" role="status" hidden></p></div><p class="arena-feedback" data-arena-feedback role="status" hidden></p><p class="arena-help" id="arena-online-help" data-arena-help></p><p data-arena-inspection class="arena-inspection" role="status" hidden></p><button data-arena-inspect>Inspeccionar regiones</button></section>
-  <aside class="arena-sidebar classic-sidebar"><section class="classic-turn panel"><p data-arena-self class="classic-self"></p><strong data-arena-turn></strong><p data-arena-prompt class="classic-prompt" role="status"></p><section data-arena-result class="classic-result" hidden role="status"><h2 data-arena-result-title></h2><p data-arena-result-detail></p><button data-arena-propose-rematch hidden>Proponer revancha</button><p data-arena-rematch-status role="status" hidden></p></section><section data-arena-discard class="arena-discard" hidden aria-label="Descarte obligatorio"><strong data-arena-discard-title></strong><p data-arena-discard-help></p><div data-arena-discard-options></div></section></section>
-  <section class="classic-clocks panel" aria-label="Tiempo de equipos"><div class="classic-clock-grid"><div class="classic-clock" data-arena-clock="A"><div>Equipo A</div><strong data-arena-time="A"></strong><small data-arena-clock-status="A"></small></div><div class="classic-clock" data-arena-clock="B"><div>Equipo B</div><strong data-arena-time="B"></strong><small data-arena-clock-status="B"></small></div></div><p data-arena-grace class="classic-grace" role="status" hidden></p><p data-arena-idle class="classic-clock-note" role="status" hidden>Tu reloj sigue corriendo.</p></section>
+  <aside class="arena-sidebar classic-sidebar"><section class="classic-turn panel"><p data-arena-self class="classic-self"></p><strong data-arena-turn></strong><p data-arena-prompt class="classic-prompt" role="status"></p><section data-arena-result class="classic-result" hidden role="status"><h2 data-arena-result-title></h2><p data-arena-result-detail></p><ol data-arena-ranking hidden></ol><button data-arena-propose-rematch hidden>Proponer revancha</button><p data-arena-rematch-status role="status" hidden></p></section><section data-arena-discard class="arena-discard" hidden aria-label="Descarte obligatorio"><strong data-arena-discard-title></strong><p data-arena-discard-help></p><div data-arena-discard-options></div></section></section>
+  <section class="classic-clocks panel" aria-label="Tiempo de equipos"><div class="classic-clock-grid" data-arena-clock-grid></div><p data-arena-grace class="classic-grace" role="status" hidden></p><p data-arena-idle class="classic-clock-note" role="status" hidden>Tu reloj sigue corriendo.</p></section>
   <section class="arena-powers panel"><strong data-arena-powers-title></strong><div data-arena-powers class="arena-inventory"></div><button data-arena-cancel-power hidden>Cancelar poder</button><p data-arena-power-note class="arena-power-note"></p></section>
   <details class="classic-secondary panel"><summary><span data-arena-summary-score></span><span data-arena-summary-presence></span><span>Detalles</span></summary><div class="arena-scores" data-arena-scores></div><div class="arena-roster" data-arena-roster></div><p data-arena-distribution></p></details><details class="classic-history panel" data-arena-history hidden><summary>Resultados anteriores</summary><ul data-arena-history-list></ul></details></aside></div>
   <details class="classic-preferences panel"><summary>Preferencias</summary><label><input type="checkbox" data-arena-vibration> Vibración</label><p data-arena-vibration-help></p></details><p data-arena-message class="classic-message" role="status" hidden></p>`;
@@ -60,7 +60,7 @@ export function mountArena(container,session){
   }
   function paintClocks(){
     if(!state||destroyed)return;const current=state.serverNow+Math.max(0,performance.now()-receivedAt),clock=state.clock,paused=clock.graceUntil??state.serverNow,grace=state.status==='active'&&current<paused;
-    for(const team of ['A','B']){const running=state.status==='active'&&clock.owner===team,ms=Math.max(0,clock.remainingMs[team]-(running?Math.max(0,current-Math.max(state.serverNow,paused)):0));root.querySelector(`[data-arena-time="${team}"]`).textContent=timeText(ms);const card=root.querySelector(`[data-arena-clock="${team}"]`);card.dataset.running=String(running&&!grace);root.querySelector(`[data-arena-clock-status="${team}"]`).textContent=finished()?'Finalizado':running?grace?'Pausa':'En curso':'En espera';}
+    for(const team of state.config.teams){const running=state.status==='active'&&clock.owner===team,ms=Math.max(0,clock.remainingMs[team]-(running?Math.max(0,current-Math.max(state.serverNow,paused)):0));root.querySelector(`[data-arena-time="${team}"]`).textContent=timeText(ms);const card=root.querySelector(`[data-arena-clock="${team}"]`);card.dataset.running=String(running&&!grace);root.querySelector(`[data-arena-clock-status="${team}"]`).textContent=state.arena.eliminations?.some(e=>e.team===team)?'Eliminado':finished()?'Finalizado':running?grace?'Pausa':'En curso':'En espera';}
     $('grace').hidden=!grace;$('grace').textContent=grace?'Pausa de cortesía por desconexión.':'';$('idle').hidden=!(state.status==='active'&&state.canDecide&&session.phase==='connected'&&!grace&&current-state.lastActivityAt>=60000);rematch.tick(current);
   }
   function render(){
@@ -68,17 +68,36 @@ export function mountArena(container,session){
     const phase={connected:session.recoveredAt!==null&&performance.now()-session.recoveredAt<3000?'Conectado · recuperado':'Conectado',reconnecting:'Reconectando…',connecting:'Conectando…',disconnected:'Desconectado',replaced:'Abierta en otra ventana',expired:'Sala finalizada',rejected:'Acceso no disponible'}[session.phase]??'Sin conexión';$('connection').textContent=phase;$('connection').dataset.phase=session.phase;$('code').textContent=state.code;$('reconnect').hidden=session.phase==='connected';$('disconnect').hidden=session.phase!=='connected';
     const count = state.config.playerCount ?? state.config.seats.length, two = count === 2;
     const shared = game.policy === 'team', owned = state.self.controlledPieces;
+    const teams = state.config.teams, ffa = state.config.mode === 'arena-ffa', eliminated = state.self.eliminated === true;
+    root.dataset.mode = ffa ? 'ffa' : 'duo';
+    root.dataset.eliminated = String(eliminated);
+    if ($('clock-grid').dataset.teams !== teams.join(',')) {
+      $('clock-grid').dataset.teams = teams.join(',');
+      $('clock-grid').innerHTML = teams.map(team => `<div class="classic-clock" data-arena-clock="${team}" style="--team:${COLORS[team]}"><div>Equipo ${team}</div><strong data-arena-time="${team}"></strong><small data-arena-clock-status="${team}"></small></div>`).join('');
+    }
+    const scoreText = score => teams.map(team => `${team} ${score[team]}`).join(' · ');
     const ownsDiscard = shared ? game.pending?.owner === own : owned.includes(game.pending?.owner);
     const turnLabel = game.turn.actor ?? `equipo ${game.turn.team}`;
-    $('format').textContent = two ? `ONLINE · 1 VS. 1 · ${shared ? 'POR EQUIPO' : 'POR FICHA'}` : 'ONLINE · 2 VS. 2';
-    $('self').textContent = `Tú: ${state.self.name} · ${owned.join(' y ')} · Equipo ${own[0]}`;
+    $('format').textContent = ffa ? 'ONLINE · 4 EQUIPOS' : two ? `ONLINE · 1 VS. 1 · ${shared ? 'POR EQUIPO' : 'POR FICHA'}` : 'ONLINE · 2 VS. 2';
+    $('self').textContent = `Tú: ${state.self.name} · ${eliminated ? 'Eliminado por tiempo' : owned.join(' y ')} · Equipo ${own[0]}`;
     $('turn').textContent = over ? 'Partida finalizada' : game.pending ? `Decide ${game.pending.owner}` : `Turno de ${turnLabel}`;
     const legal=state.status==='active'&&state.canDecide&&session.phase==='connected'&&!inspection.enabled?legalArenaActions(game):[];if(selectedPower&&!legal.some(a=>a.power===selectedPower))selectedPower=null;
-    $('prompt').textContent=over?'Puedes inspeccionar el tablero final.':session.phase!=='connected'?'Reconecta para continuar. Tu partida sigue en curso.':session.pending?'Enviando jugada…':game.pending?ownsDiscard?'Elige qué poder descartar.':`Espera el descarte de ${game.pending.owner}.`:!state.canDecide?`Espera a ${turnLabel}.`:!game.turn.actor?'Selecciona una de tus fichas para jugar.':selectedPower?'Toca el objetivo del poder.':game.turn.steps===2?'Construye tu muro.':'Mueve hasta dos pasos o construye un muro.';
-    $('result').hidden=!over;if(over){$('result-title').textContent=state.outcome.winners.length===1?`Gana el equipo ${state.outcome.winners[0]}`:'Empate';$('result-detail').textContent=`A ${state.outcome.score.A} · ${state.outcome.score.B} B${state.outcome.reason==='timeout'?' · Victoria por tiempo':''}`;}
+    $('prompt').textContent=over?'Puedes inspeccionar el tablero final.':eliminated?'Tu tiempo se agotó. Puedes seguir e inspeccionar la partida.':session.phase!=='connected'?'Reconecta para continuar. Tu partida sigue en curso.':session.pending?'Enviando jugada…':game.pending?ownsDiscard?'Elige qué poder descartar.':`Espera el descarte de ${game.pending.owner}.`:!state.canDecide?`Espera a ${turnLabel}.`:!game.turn.actor?'Selecciona una de tus fichas para jugar.':selectedPower?'Toca el objetivo del poder.':game.turn.steps===2?'Construye tu muro.':'Mueve hasta dos pasos o construye un muro.';
+    $('result').hidden=!over;if(over){$('result-title').textContent=state.outcome.winners.length===1?`Gana el equipo ${state.outcome.winners[0]}`:'Empate';$('result-detail').textContent=`${scoreText(state.outcome.score)}${state.outcome.reason==='timeout'?' · Victoria por tiempo':state.outcome.reason==='last-survivor'?' · Último equipo superviviente':''}`;}
+    $('ranking').hidden = !over || !state.outcome.ranking;
+    if (over && state.outcome.ranking) {
+      $('ranking').replaceChildren(...state.outcome.ranking.map(entry => {
+        const row = document.createElement('li');
+        row.value = entry.rank;
+        row.dataset.team = entry.team;
+        row.style.color = COLORS[entry.team];
+        row.textContent = `Equipo ${entry.team} · ${entry.score} puntos${entry.eliminated ? ' · Eliminado por tiempo' : ''}`;
+        return row;
+      }));
+    }
     presenter.render({finished:over,winners:state.outcome?.winners,viewerTeam:own?.[0]});
     inspection.update(view.components,9);if(over&&!wasFinished){inspection.enabled=true;wasFinished=true;}if(!over)wasFinished=false;
-    $('inspect').textContent=inspection.enabled?'Salir de inspección':'Inspeccionar regiones';$('inspect').setAttribute('aria-pressed',String(inspection.enabled));$('inspection').hidden=!inspection.enabled;$('inspection').textContent=regionDescription(inspection.selected)+(inspection.selected&&['A','B'].includes(inspection.selected.type)?` · Aporta ${inspection.selected.cells.length} puntos al equipo ${inspection.selected.type}.`:'');
+    $('inspect').textContent=inspection.enabled?'Salir de inspección':'Inspeccionar regiones';$('inspect').setAttribute('aria-pressed',String(inspection.enabled));$('inspection').hidden=!inspection.enabled;$('inspection').textContent=regionDescription(inspection.selected)+(inspection.selected&&teams.includes(inspection.selected.type)?` · Aporta ${inspection.selected.cells.length} puntos al equipo ${inspection.selected.type}.`:'');
     draw(game,view,legal.filter(a=>selectedPower?a.power===selectedPower:!a.power));
     const inventories = (shared ? [own] : owned).map(owner => [owner, game.inventories[owner]]);
     const usablePowers = new Set(legal.filter(action => action.power).map(action => action.power));
@@ -110,7 +129,7 @@ export function mountArena(container,session){
         }
       }
     }
-    $('power-note').textContent = selectedPower ? 'Toca un objetivo resaltado.'
+    $('power-note').textContent = eliminated ? 'Eliminado por tiempo.' : selectedPower ? 'Toca un objetivo resaltado.'
       : usablePowers.size ? 'Selecciona un poder para ver sus objetivos.'
       : inventories.some(([, items]) => items.length) ? 'Los poderes disponibles se habilitan al actuar.'
       : two && !shared ? '' : shared ? 'Tu equipo no tiene poderes.' : 'Tu ficha no tiene poderes.';
@@ -118,8 +137,8 @@ export function mountArena(container,session){
     $('cancel-power').hidden = !selectedPower;
     $('discard').hidden=!game.pending||over;const discardKey=JSON.stringify([game.pending,game.pending?game.inventories[game.pending.owner]:[],enabled]);
     if($('discard-options').dataset.key!==discardKey){$('discard-options').dataset.key=discardKey;$('discard-options').replaceChildren();if(game.pending){$('discard-title').textContent=ownsDiscard?'¡Debes descartar un poder!':`Decide ${game.pending.owner}`;$('discard-help').textContent=`Conserva ${game.pending.capacity} ${game.pending.capacity===1?'poder':'poderes'}.`;for(const item of game.inventories[game.pending.owner]){const b=document.createElement('button');b.type='button';b.dataset.arenaDiscard=item.id;b.innerHTML=powerIcon(item.type)+' Descartar '+POWER_LABELS[item.type];b.disabled=!enabled||!ownsDiscard;b.onclick=()=>send({type:'discard',owner:game.pending.owner,power:item.id});$('discard-options').append(b);}}}
-    $('summary-score').textContent=`A ${view.score.A} · ${view.score.B} B`;$('summary-presence').textContent=`${state.participants.filter(p=>p.online).length}/${count} conectados`;
-    $('scores').innerHTML=['A','B'].map(t=>`<div class="arena-score" style="--team:${COLORS[t]}">Equipo ${t}<strong data-arena-score="${t}">${view.score[t]}</strong></div>`).join('');
+    $('summary-score').textContent=scoreText(view.score);$('summary-presence').textContent=`${state.participants.filter(p=>p.online).length}/${count} conectados`;
+    $('scores').innerHTML=teams.map(t=>`<div class="arena-score" style="--team:${COLORS[t]}">Equipo ${t}<strong data-arena-score="${t}">${view.score[t]}</strong></div>`).join('');
     const roster = state.config.seats.map(seat => state.participants.find(p => p.seat === seat)).filter(Boolean);
     $('roster').replaceChildren(...roster.map(participant => {
       const {seat, controlledPieces} = participant;
@@ -129,7 +148,7 @@ export function mountArena(container,session){
       const name = document.createElement('strong');
       name.textContent = `${seat} · ${participant.name}${seat === own ? ' · Tú' : ''}`;
       const status = document.createElement('small');
-      const pieces = controlledPieces.map(id => two
+      const pieces = participant.eliminated ? ['Eliminado por tiempo'] : controlledPieces.map(id => two
         ? `${id}: ${view.active.includes(id) ? 'En juego' : 'Asegurada'}`
         : view.active.includes(id) ? 'En juego' : 'Asegurada');
       const powers = (shared ? [seat] : controlledPieces).flatMap(id => game.inventories[id]);
@@ -138,7 +157,7 @@ export function mountArena(container,session){
       row.append(name, status);
       return row;
     }));
-    $('distribution').textContent=`${view.score.shared} en disputa · ${view.score.empty} vacías`;const history=JSON.stringify(state.previousResults);if($('history-list').dataset.key!==history){$('history-list').dataset.key=history;$('history').hidden=!state.previousResults.length;$('history-list').replaceChildren(...state.previousResults.map(r=>{const li=document.createElement('li');li.textContent=`Partida ${r.number}: A ${r.outcome.score.A} · ${r.outcome.score.B} B`;return li;}));}
+    $('distribution').textContent=`${view.score.shared} en disputa · ${view.score.empty} vacías`;const history=JSON.stringify(state.previousResults);if($('history-list').dataset.key!==history){$('history-list').dataset.key=history;$('history').hidden=!state.previousResults.length;$('history-list').replaceChildren(...state.previousResults.map(r=>{const li=document.createElement('li');li.textContent=`Partida ${r.number}: ${scoreText(r.outcome.score)}`;return li;}));}
     $('help').textContent=keyboard?'Tab para recorrer acciones; Enter o Espacio para jugar.':inspection.enabled?'Toca una región para consultar sus casillas.':'Toca puntos para moverte y bordes para construir.';
     if(session.phase!=='connected'||document.hidden||state.status!=='active'||!state.canDecide)$('notice').hidden=true;notice.update(state,session.phase==='connected');rematch.update(state,state.serverNow+performance.now()-receivedAt);paintClocks();
   }
