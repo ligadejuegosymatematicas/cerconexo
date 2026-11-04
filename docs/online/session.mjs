@@ -53,7 +53,7 @@ export class OnlineSession extends EventTarget {
     this.setPhase('connecting');
     const url = new URL(`/api/rooms/${this.code}/socket`, this.base); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(url); this.socket = ws; let authenticated = false;
-    ws.addEventListener('open', () => { if (this.socket === ws) ws.send(JSON.stringify({ type: 'authenticate', protocolVersion: VERSION, roomId: this.code, credential: this.credential, features: ['rematch-v1', 'classic-config-v2', 'ux-simplified-v1', 'arena-duo-v1'] })); });
+    ws.addEventListener('open', () => { if (this.socket === ws) ws.send(JSON.stringify({ type: 'authenticate', protocolVersion: VERSION, roomId: this.code, credential: this.credential, features: ['rematch-v1', 'classic-config-v2', 'ux-simplified-v1', 'arena-duo-v1', 'arena-1v1-v1'] })); });
     ws.addEventListener('message', event => {
       if (this.socket !== ws) return;
       if (event.data === 'm6:pong') { this.lastPong = performance.now(); return; }

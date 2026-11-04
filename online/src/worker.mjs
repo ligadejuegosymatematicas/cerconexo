@@ -10,7 +10,7 @@ import { pilotGate } from './pilot-gate.mjs';
 import { normalizeMatch, UPDATE_MESSAGE } from './rematch.mjs';
 import { authorizeCreation } from './beta-admission.mjs';
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
-import {arenaConfiguration} from './arena-adapter.mjs';
+import {ARENA_RULESET,ARENA_UPDATE,arenaConfiguration,arenaOneVsOne} from './arena-adapter.mjs';
 
 const utf8 = new TextEncoder();
 const PARAMS = { admit: ['playerId', 'seat'], reject: ['playerId'], ready: ['ready'], start: [],
@@ -182,11 +182,12 @@ export class Room extends DurableObject {
         const notice=`${room.status}:${room.matchNumber}`;
         if(a.retiredNotice!==notice){send(ws,{type:'error',error:{code:'CONFIG_RETIRED',message:RETIRED_MESSAGE}});a.retiredNotice=notice;ws.serializeAttachment(a);}
       }
-      const incompatibleConfig = needsConfigClient(room.config) && !p.classicConfigCapable;
+      const incompatibleArena = arenaOneVsOne(room.config) && !p.arenaCapable;
+      const incompatibleConfig = incompatibleArena || needsConfigClient(room.config) && !p.classicConfigCapable;
       if (p.admitted && p.seat && (incompatibleConfig || !p.rematchCapable && (room.matchNumber > 1 || ['pending', 'countdown'].includes(room.rematch?.status)))) {
         const noticeId = `${incompatibleConfig ? 'config' : 'rematch'}:${room.matchNumber}:${room.rematch?.id}`;
         if (a.updateNoticeId !== noticeId) {
-          send(ws, { type: 'error', error: { code: 'UPDATE_REQUIRED', message: incompatibleConfig ? CONFIG_UPDATE_MESSAGE : UPDATE_MESSAGE } });
+          send(ws, { type: 'error', error: { code: 'UPDATE_REQUIRED', message: incompatibleArena ? ARENA_UPDATE : incompatibleConfig ? CONFIG_UPDATE_MESSAGE : UPDATE_MESSAGE } });
           a.updateNoticeId = noticeId; ws.serializeAttachment(a);
         }
       }
@@ -204,6 +205,8 @@ export class Room extends DurableObject {
         if (route === 'create') {
           const input = await bodyOf(request), tokenHash = await digest(credential(input.credential));
           const requested = configuration(input.mode, input.policy, input.players);
+          if (!room && arenaOneVsOne(requested)) requireThat(this.env.ARENA_DUO_ENABLED === 'true' && this.env.ARENA_1V1_ENABLED === 'true',
+            'MODE', 'Arena Online 1 vs. 1 no está habilitada.');
           if(!room&&input.mode==='arena-duo'&&this.env.ARENA_DUO_ENABLED==='true')Object.assign(requested,arenaConfiguration(requested));
           // A retry belongs to the immutable parameters with which this room
           // was created, including rooms surviving a local version update.
@@ -214,7 +217,7 @@ export class Room extends DurableObject {
             requireThat(room.participants[room.hostId].tokenHash === tokenHash && room.creationFingerprint === fingerprint, 'EXISTS', 'Ese código ya está ocupado.', 409);
           } else {
             requireThat(!retiredClassicConfiguration(requested), 'CONFIG_RETIRED', RETIRED_MESSAGE, 409);
-            room = createRoom({ code, name: input.name, mode: input.mode, policy: input.policy, players: input.players, tokenHash, arenaOnline:requested.ruleset==='arena-duo-online-v1' }, now); room.creationFingerprint = fingerprint;
+            room = createRoom({ code, name: input.name, mode: input.mode, policy: input.policy, players: input.players, tokenHash, arenaOnline:requested.ruleset===ARENA_RULESET }, now); room.creationFingerprint = fingerprint;
             this.write(room, [{ type: 'created', at: now }]);
           }
           await this.schedule(room, now); return json({ state: publicRoom(room, room.hostId, now) }, 201);

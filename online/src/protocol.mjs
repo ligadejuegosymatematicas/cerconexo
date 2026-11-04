@@ -27,8 +27,8 @@ export const CONFIG_UPDATE_MESSAGE = 'Actualiza esta página para jugar con esta
 export function configuration(mode = 'classic', policy = 'piece', players = 4) {
   const preset = MODES[mode];
   requireThat(preset && preset.policies.includes(policy), 'CONFIG', 'Modalidad o política no admitida.');
-  requireThat(players === 4 || mode === 'classic' && players === 2, 'CONFIG', 'Clásico admite dos o cuatro personas; Arena sigue pendiente.');
-  return { mode, policy, playerCount: players, ruleset: mode === 'classic' ? 'classic-online-v1' : 'm6.1-connection-probe-v1', teams: [...preset.teams], seats: mode === 'classic' && players === 2 ? ['A', 'B'] : [...preset.seats], clockMs: preset.clockMs,
+  requireThat(players === 4 || players === 2 && ['classic', 'arena-duo'].includes(mode), 'CONFIG', 'Número de participantes no admitido.');
+  return { mode, policy, playerCount: players, ruleset: mode === 'classic' ? 'classic-online-v1' : 'm6.1-connection-probe-v1', teams: [...preset.teams], seats: players === 2 ? [...preset.teams] : [...preset.seats], clockMs: preset.clockMs,
     graceIncidentMs: GRACE_INCIDENT_MS, graceTotalMs: GRACE_TOTAL_MS, countdownMs: COUNTDOWN_MS };
 }
 export function nameOf(value) {

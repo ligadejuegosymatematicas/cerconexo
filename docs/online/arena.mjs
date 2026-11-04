@@ -10,7 +10,7 @@ import {mountRematch} from './rematch-panel.mjs';
 import { arenaFeedback, mountArenaFeedback } from './arena-feedback.mjs';
 import {bindOnlineHome} from './navigation.mjs';
 
-const COLORS=FINAL_COLORS,SEATS=['A1','B1','A2','B2'];
+const COLORS=FINAL_COLORS;
 const point=c=>({x:(c%9)*100+50,y:Math.floor(c/9)*100+50});
 function edge(a,b){const p=point(a),q=point(b),x=(p.x+q.x)/2,y=(p.y+q.y)/2,v=p.x!==q.x;return{x1:v?x:x-50,y1:v?y-50:y,x2:v?x:x+50,y2:v?y+50:y,x:x-(v?21:39),y:y-(v?39:21),width:v?42:78,height:v?78:42};}
 const escape=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
@@ -18,11 +18,11 @@ const timeText=ms=>{const seconds=Math.ceil(Math.max(0,ms)/1000);return`${Math.f
 function css(){if(document.querySelector('[data-arena-online-styles]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('./arena.css',import.meta.url).href;link.dataset.arenaOnlineStyles='';document.head.append(link);}
 export function mountArena(container,session){
   css();const root=document.createElement('section');root.className='arena-online classic-online';root.setAttribute('aria-label','Arena Online');
-  root.innerHTML=`<header class="classic-header topbar"><div class="classic-brand"><img class="official-logo" src="${new URL('../assets/Cerconexo_wordmark_transparente.png',import.meta.url).href}" alt="CERCONEXO"><span>ARENA <small>ONLINE · 2 VS. 2</small></span></div><div class="classic-room-tools"><div class="classic-room-meta"><span>Sala <strong data-arena-code></strong></span><span data-arena-connection class="classic-connection" role="status"></span></div><details data-arena-menu class="classic-actions-menu"><summary aria-label="Opciones de partida">⋯</summary><div class="classic-session-actions"><a href="../" data-arena-home>Inicio</a><button data-arena-reconnect>Reconectar</button><details class="classic-access"><summary>Mi acceso</summary><button data-arena-copy>Copiar mi acceso privado</button><button data-arena-disconnect>Desconectar este navegador</button></details></div></details></div></header>
+  root.innerHTML=`<header class="classic-header topbar"><div class="classic-brand"><img class="official-logo" src="${new URL('../assets/Cerconexo_wordmark_transparente.png',import.meta.url).href}" alt="CERCONEXO"><span>ARENA <small data-arena-format></small></span></div><div class="classic-room-tools"><div class="classic-room-meta"><span>Sala <strong data-arena-code></strong></span><span data-arena-connection class="classic-connection" role="status"></span></div><details data-arena-menu class="classic-actions-menu"><summary aria-label="Opciones de partida">⋯</summary><div class="classic-session-actions"><a href="../" data-arena-home>Inicio</a><button data-arena-reconnect>Reconectar</button><details class="classic-access"><summary>Mi acceso</summary><button data-arena-copy>Copiar mi acceso privado</button><button data-arena-disconnect>Desconectar este navegador</button></details></div></details></div></header>
   <div class="classic-table"><section class="classic-arena panel"><div class="classic-board-topline"><span>Tablero</span><span>9 × 9 · 81 casillas</span></div><div class="classic-board-wrap"><svg data-arena-board data-classic-board class="arena-svg" viewBox="0 0 900 900" role="group" aria-label="Tablero Arena 9 por 9" aria-describedby="arena-online-help"></svg><p data-arena-notice class="online-turn-notice" role="status" hidden></p></div><p class="arena-feedback" data-arena-feedback role="status" hidden></p><p class="arena-help" id="arena-online-help" data-arena-help></p><p data-arena-inspection class="arena-inspection" role="status" hidden></p><button data-arena-inspect>Inspeccionar regiones</button></section>
   <aside class="arena-sidebar classic-sidebar"><section class="classic-turn panel"><p data-arena-self class="classic-self"></p><strong data-arena-turn></strong><p data-arena-prompt class="classic-prompt" role="status"></p><section data-arena-result class="classic-result" hidden role="status"><h2 data-arena-result-title></h2><p data-arena-result-detail></p><button data-arena-propose-rematch hidden>Proponer revancha</button><p data-arena-rematch-status role="status" hidden></p></section><section data-arena-discard class="arena-discard" hidden aria-label="Descarte obligatorio"><strong data-arena-discard-title></strong><p data-arena-discard-help></p><div data-arena-discard-options></div></section></section>
   <section class="classic-clocks panel" aria-label="Tiempo de equipos"><div class="classic-clock-grid"><div class="classic-clock" data-arena-clock="A"><div>Equipo A</div><strong data-arena-time="A"></strong><small data-arena-clock-status="A"></small></div><div class="classic-clock" data-arena-clock="B"><div>Equipo B</div><strong data-arena-time="B"></strong><small data-arena-clock-status="B"></small></div></div><p data-arena-grace class="classic-grace" role="status" hidden></p><p data-arena-idle class="classic-clock-note" role="status" hidden>Tu reloj sigue corriendo.</p></section>
-  <section class="arena-powers panel"><strong>Poderes de tu ficha</strong><div data-arena-powers class="arena-inventory"></div><button data-arena-cancel-power hidden>Cancelar poder</button><p data-arena-power-note class="arena-power-note"></p></section>
+  <section class="arena-powers panel"><strong data-arena-powers-title></strong><div data-arena-powers class="arena-inventory"></div><button data-arena-cancel-power hidden>Cancelar poder</button><p data-arena-power-note class="arena-power-note"></p></section>
   <details class="classic-secondary panel"><summary><span data-arena-summary-score></span><span data-arena-summary-presence></span><span>Detalles</span></summary><div class="arena-scores" data-arena-scores></div><div class="arena-roster" data-arena-roster></div><p data-arena-distribution></p></details><details class="classic-history panel" data-arena-history hidden><summary>Resultados anteriores</summary><ul data-arena-history-list></ul></details></aside></div>
   <details class="classic-preferences panel"><summary>Preferencias</summary><label><input type="checkbox" data-arena-vibration> Vibración</label><p data-arena-vibration-help></p></details><p data-arena-message class="classic-message" role="status" hidden></p>`;
   container.append(root);const $=name=>root.querySelector(`[data-arena-${name}]`),board=$('board'),haptics=createHaptics(),inspection=new RegionInspection();
@@ -43,10 +43,15 @@ export function mountArena(container,session){
     for(const d of game.drops){const p=point(d.cell);markup+=`<g class="drop-token" role="img" aria-label="${POWER_LABELS[d.type]}">${powerIcon(d.type,{x:p.x-31,y:p.y-31,size:62})}</g>`;}
     if(inspection.enabled&&inspection.selected){const selected=new Set(inspection.selected.cells);for(let c=0;c<81;c++){const p=point(c);markup+=`<rect class="${selected.has(c)?'region-highlight':'region-muted'}" x="${p.x-50}" y="${p.y-50}" width="100" height="100"/>`;}const d=regionBoundary(inspection.selected.cells,9).map(([x,y,u,v])=>`M${x*100} ${y*100}L${u*100} ${v*100}`).join('');markup+=`<path class="region-boundary" d="${d}"/>`;}
     for(const wall of game.walls){const[a,b]=wall.split('-').map(Number),e=edge(a,b);markup+=`<line class="wall" data-wall="${wall}" x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}"/>`;}
-    for(const p of game.pieces){const at=point(p.pos),secured=!active.has(p.id),own=p.id===state.self.seat,current=state.status==='active'&&state.decision?.actor===p.id;markup+=`<g class="piece-token ${current?'arena-current':''}" data-piece="${p.id}" data-position="${p.pos}" data-self="${own}" data-secured="${secured}" style="--team:${COLORS[p.team]}" role="img" aria-label="${p.id}${own?', tu ficha':''}${secured?', asegurada':''}"><circle class="piece" cx="${at.x}" cy="${at.y}" r="32"/><text class="piece-label" x="${at.x}" y="${at.y}">${p.id}</text>${secured?`<circle class="secured-mark" cx="${at.x+27}" cy="${at.y-26}" r="14"/><text class="secured-text" x="${at.x+27}" y="${at.y-26}">✓</text>`:''}${own?`<text x="${at.x}" y="${at.y+46}" text-anchor="middle" font-size="16" fill="#071a2f" font-weight="800">TÚ</text>`:''}</g>`;}
+    for(const p of game.pieces){const at=point(p.pos),secured=!active.has(p.id),own=state.self.controlledPieces.includes(p.id),current=state.status==='active'&&(game.pending?.owner??game.turn.actor)===p.id;markup+=`<g class="piece-token ${current?'arena-current':''}" data-piece="${p.id}" data-position="${p.pos}" data-self="${own}" data-secured="${secured}" style="--team:${COLORS[p.team]}" role="img" aria-label="${p.id}${own?', tu ficha':''}${secured?', asegurada':''}"><circle class="piece" cx="${at.x}" cy="${at.y}" r="32"/><text class="piece-label" x="${at.x}" y="${at.y}">${p.id}</text>${secured?`<circle class="secured-mark" cx="${at.x+27}" cy="${at.y-26}" r="14"/><text class="secured-text" x="${at.x+27}" y="${at.y-26}">✓</text>`:''}${own?`<text x="${at.x}" y="${at.y+46}" text-anchor="middle" font-size="16" fill="#071a2f" font-weight="800">TÚ</text>`:''}</g>`;}
     actions=legal;
     if(inspection.enabled){for(let c=0;c<81;c++){const p=point(c),v=arenaCoords(c);markup+=`<g data-inspect="${c}" role="button" tabindex="${c===inspection.focusCell?0:-1}" aria-pressed="${inspection.selectedCell===c}" aria-label="Fila ${v.row}, columna ${v.col}. ${escape(regionDescription(view.components[view.byCell[c]]))}"><rect class="hit" x="${p.x-50}" y="${p.y-50}" width="100" height="100"/><rect class="focus-ring" x="${p.x-44}" y="${p.y-44}" width="88" height="88"/></g>`;}}
     else actions.forEach((a,i)=>{
+      if (a.type === 'select') {
+        const p = point(game.pieces.find(piece => piece.id === a.actor).pos);
+        markup += `<g role="button" tabindex="0" data-arena-action="${i}" data-kind="select" data-actor="${a.actor}" aria-label="Seleccionar ${a.actor}"><circle class="arena-select-ring" cx="${p.x}" cy="${p.y}" r="38"/><circle class="hit" cx="${p.x}" cy="${p.y}" r="44"/><circle class="focus-ring" cx="${p.x}" cy="${p.y}" r="46"/></g>`;
+        return;
+      }
       const label=`${a.type==='move'?'Mover':a.type==='wall'?'Construir muro':POWER_LABELS[a.type]} a ${a.to+1}`;
       if(['move','jump'].includes(a.type)){const p=point(a.to);const marker=a.type==='jump'?powerIcon('jump',{x:p.x-24,y:p.y-24,size:48}):`<circle class="move-preview" cx="${p.x}" cy="${p.y}" r="17"/>`;markup+=`<g role="button" tabindex="0" data-arena-action="${i}" data-kind="${a.type}" data-to="${a.to}" aria-label="${label}">${marker}<rect class="hit" x="${p.x-31}" y="${p.y-31}" width="62" height="62"/><rect class="focus-ring" x="${p.x-34}" y="${p.y-34}" width="68" height="68"/></g>`;}
       else{const actor=game.pieces.find(p=>p.id===game.turn.actor),e=edge(actor.pos,a.to);markup+=`<g role="button" tabindex="0" data-arena-action="${i}" data-kind="${a.type}" data-to="${a.to}" aria-label="${label}"><line class="${a.type==='wall'?'wall-preview':'power-preview'}" x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}"/><rect class="hit" x="${e.x}" y="${e.y}" width="${e.width}" height="${e.height}"/><rect class="focus-ring" x="${e.x}" y="${e.y}" width="${e.width}" height="${e.height}"/></g>`;}
@@ -61,22 +66,78 @@ export function mountArena(container,session){
   function render(){
     if(!state?.arena||destroyed)return;const game=state.arena.game,view=state.arena.territory,own=state.self.seat,enabled=canAct(),over=finished();root.dataset.finished=String(over);root.dataset.team=state.decision?.team??own?.[0];root.dataset.canAct=String(enabled);
     const phase={connected:session.recoveredAt!==null&&performance.now()-session.recoveredAt<3000?'Conectado · recuperado':'Conectado',reconnecting:'Reconectando…',connecting:'Conectando…',disconnected:'Desconectado',replaced:'Abierta en otra ventana',expired:'Sala finalizada',rejected:'Acceso no disponible'}[session.phase]??'Sin conexión';$('connection').textContent=phase;$('connection').dataset.phase=session.phase;$('code').textContent=state.code;$('reconnect').hidden=session.phase==='connected';$('disconnect').hidden=session.phase!=='connected';
-    $('self').textContent=`Tú: ${state.self.name} · ${own} · Equipo ${own?.[0]}`;$('turn').textContent=over?'Partida finalizada':game.pending?`Decide ${game.pending.owner}`:`Turno de ${game.turn.actor}`;
+    const count = state.config.playerCount ?? state.config.seats.length, two = count === 2;
+    const shared = game.policy === 'team', owned = state.self.controlledPieces;
+    const ownsDiscard = shared ? game.pending?.owner === own : owned.includes(game.pending?.owner);
+    const turnLabel = game.turn.actor ?? `equipo ${game.turn.team}`;
+    $('format').textContent = two ? `ONLINE · 1 VS. 1 · ${shared ? 'POR EQUIPO' : 'POR FICHA'}` : 'ONLINE · 2 VS. 2';
+    $('self').textContent = `Tú: ${state.self.name} · ${owned.join(' y ')} · Equipo ${own[0]}`;
+    $('turn').textContent = over ? 'Partida finalizada' : game.pending ? `Decide ${game.pending.owner}` : `Turno de ${turnLabel}`;
     const legal=state.status==='active'&&state.canDecide&&session.phase==='connected'&&!inspection.enabled?legalArenaActions(game):[];if(selectedPower&&!legal.some(a=>a.power===selectedPower))selectedPower=null;
-    $('prompt').textContent=over?'Puedes inspeccionar el tablero final.':session.phase!=='connected'?'Reconecta para continuar. Tu partida sigue en curso.':session.pending?'Enviando jugada…':game.pending?game.pending.owner===own?'Elige qué poder descartar.':`Espera el descarte de ${game.pending.owner}.`:!state.canDecide?`Espera a ${game.turn.actor}.`:selectedPower?'Toca el objetivo del poder.':game.turn.steps===2?'Construye tu muro.':'Mueve hasta dos pasos o construye un muro.';
+    $('prompt').textContent=over?'Puedes inspeccionar el tablero final.':session.phase!=='connected'?'Reconecta para continuar. Tu partida sigue en curso.':session.pending?'Enviando jugada…':game.pending?ownsDiscard?'Elige qué poder descartar.':`Espera el descarte de ${game.pending.owner}.`:!state.canDecide?`Espera a ${turnLabel}.`:!game.turn.actor?'Selecciona una de tus fichas para jugar.':selectedPower?'Toca el objetivo del poder.':game.turn.steps===2?'Construye tu muro.':'Mueve hasta dos pasos o construye un muro.';
     $('result').hidden=!over;if(over){$('result-title').textContent=state.outcome.winners.length===1?`Gana el equipo ${state.outcome.winners[0]}`:'Empate';$('result-detail').textContent=`A ${state.outcome.score.A} · ${state.outcome.score.B} B${state.outcome.reason==='timeout'?' · Victoria por tiempo':''}`;}
     presenter.render({finished:over,winners:state.outcome?.winners,viewerTeam:own?.[0]});
     inspection.update(view.components,9);if(over&&!wasFinished){inspection.enabled=true;wasFinished=true;}if(!over)wasFinished=false;
     $('inspect').textContent=inspection.enabled?'Salir de inspección':'Inspeccionar regiones';$('inspect').setAttribute('aria-pressed',String(inspection.enabled));$('inspection').hidden=!inspection.enabled;$('inspection').textContent=regionDescription(inspection.selected)+(inspection.selected&&['A','B'].includes(inspection.selected.type)?` · Aporta ${inspection.selected.cells.length} puntos al equipo ${inspection.selected.type}.`:'');
     draw(game,view,legal.filter(a=>selectedPower?a.power===selectedPower:!a.power));
-    const inventory=game.inventories[own]??[],powerKey=JSON.stringify([inventory,enabled,selectedPower,!!game.pending,over]);
-    if($('powers').dataset.key!==powerKey){$('powers').dataset.key=powerKey;$('powers').replaceChildren();for(const item of inventory){const button=document.createElement('button');button.type='button';button.className='power-button';button.dataset.arenaPower=item.id;button.setAttribute('aria-pressed',String(selectedPower===item.id));button.disabled=!enabled||!!game.pending||!legal.some(a=>a.power===item.id);button.innerHTML=powerIcon(item.type)+`<span>${POWER_LABELS[item.type]}</span>`;button.onclick=()=>{selectedPower=selectedPower===item.id?null:item.id;render();};$('powers').append(button);}}
-    $('power-note').textContent=inventory.length?selectedPower?'Toca un objetivo resaltado.':'Selecciona un poder para ver sus objetivos.':'Tu ficha no tiene poderes.';$('cancel-power').hidden=!selectedPower;
+    const inventories = (shared ? [own] : owned).map(owner => [owner, game.inventories[owner]]);
+    const usablePowers = new Set(legal.filter(action => action.power).map(action => action.power));
+    const powerKey = JSON.stringify([inventories, enabled, selectedPower, [...usablePowers]]);
+    $('powers-title').textContent = shared ? 'Poderes del equipo' : two ? 'Poderes de tus fichas' : 'Poderes de tu ficha';
+    if ($('powers').dataset.key !== powerKey) {
+      $('powers').dataset.key = powerKey;
+      $('powers').replaceChildren();
+      for (const [owner, items] of inventories) {
+        const group = inventories.length === 1 ? $('powers') : document.createElement('div');
+        if (group !== $('powers')) {
+          group.className = 'arena-inventory-group';
+          const label = document.createElement('small');
+          label.textContent = `Ficha ${owner}`;
+          group.append(label);
+          if (!items.length) group.append(document.createTextNode('Sin poderes'));
+          $('powers').append(group);
+        }
+        for (const item of items) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'power-button';
+          button.dataset.arenaPower = item.id;
+          button.setAttribute('aria-pressed', String(selectedPower === item.id));
+          button.disabled = !enabled || !usablePowers.has(item.id);
+          button.innerHTML = powerIcon(item.type) + `<span>${POWER_LABELS[item.type]}</span>`;
+          button.onclick = () => { selectedPower = selectedPower === item.id ? null : item.id; render(); };
+          group.append(button);
+        }
+      }
+    }
+    $('power-note').textContent = selectedPower ? 'Toca un objetivo resaltado.'
+      : usablePowers.size ? 'Selecciona un poder para ver sus objetivos.'
+      : inventories.some(([, items]) => items.length) ? 'Los poderes disponibles se habilitan al actuar.'
+      : two && !shared ? '' : shared ? 'Tu equipo no tiene poderes.' : 'Tu ficha no tiene poderes.';
+    $('power-note').hidden = !$('power-note').textContent;
+    $('cancel-power').hidden = !selectedPower;
     $('discard').hidden=!game.pending||over;const discardKey=JSON.stringify([game.pending,game.pending?game.inventories[game.pending.owner]:[],enabled]);
-    if($('discard-options').dataset.key!==discardKey){$('discard-options').dataset.key=discardKey;$('discard-options').replaceChildren();if(game.pending){$('discard-title').textContent=game.pending.owner===own?'¡Debes descartar un poder!':`Decide ${game.pending.owner}`;$('discard-help').textContent=`Conserva ${game.pending.capacity} ${game.pending.capacity===1?'poder':'poderes'}.`;for(const item of game.inventories[game.pending.owner]){const b=document.createElement('button');b.type='button';b.dataset.arenaDiscard=item.id;b.innerHTML=powerIcon(item.type)+' Descartar '+POWER_LABELS[item.type];b.disabled=!enabled||game.pending.owner!==own;b.onclick=()=>send({type:'discard',owner:game.pending.owner,power:item.id});$('discard-options').append(b);}}}
-    $('summary-score').textContent=`A ${view.score.A} · ${view.score.B} B`;$('summary-presence').textContent=`${state.participants.filter(p=>p.online).length}/4 conectados`;
+    if($('discard-options').dataset.key!==discardKey){$('discard-options').dataset.key=discardKey;$('discard-options').replaceChildren();if(game.pending){$('discard-title').textContent=ownsDiscard?'¡Debes descartar un poder!':`Decide ${game.pending.owner}`;$('discard-help').textContent=`Conserva ${game.pending.capacity} ${game.pending.capacity===1?'poder':'poderes'}.`;for(const item of game.inventories[game.pending.owner]){const b=document.createElement('button');b.type='button';b.dataset.arenaDiscard=item.id;b.innerHTML=powerIcon(item.type)+' Descartar '+POWER_LABELS[item.type];b.disabled=!enabled||!ownsDiscard;b.onclick=()=>send({type:'discard',owner:game.pending.owner,power:item.id});$('discard-options').append(b);}}}
+    $('summary-score').textContent=`A ${view.score.A} · ${view.score.B} B`;$('summary-presence').textContent=`${state.participants.filter(p=>p.online).length}/${count} conectados`;
     $('scores').innerHTML=['A','B'].map(t=>`<div class="arena-score" style="--team:${COLORS[t]}">Equipo ${t}<strong data-arena-score="${t}">${view.score[t]}</strong></div>`).join('');
-    $('roster').replaceChildren(...SEATS.map(seat=>{const p=state.participants.find(p=>p.seat===seat),row=document.createElement('div');row.className='arena-person';row.dataset.self=String(seat===own);const name=document.createElement('strong');name.textContent=`${seat} · ${p?.name??''}${seat===own?' · Tú':''}`;const status=document.createElement('small');status.textContent=`${p?.online?'Conectado':'Sin conexión'} · ${view.active.includes(seat)?'En juego':'Asegurada'} · ${(game.inventories[seat]??[]).map(i=>POWER_LABELS[i.type]).join(', ')||'Sin poderes'}`;row.append(name,status);return row;}));
+    const roster = state.config.seats.map(seat => state.participants.find(p => p.seat === seat)).filter(Boolean);
+    $('roster').replaceChildren(...roster.map(participant => {
+      const {seat, controlledPieces} = participant;
+      const row = document.createElement('div');
+      row.className = 'arena-person';
+      row.dataset.self = String(seat === own);
+      const name = document.createElement('strong');
+      name.textContent = `${seat} · ${participant.name}${seat === own ? ' · Tú' : ''}`;
+      const status = document.createElement('small');
+      const pieces = controlledPieces.map(id => two
+        ? `${id}: ${view.active.includes(id) ? 'En juego' : 'Asegurada'}`
+        : view.active.includes(id) ? 'En juego' : 'Asegurada');
+      const powers = (shared ? [seat] : controlledPieces).flatMap(id => game.inventories[id]);
+      status.textContent = [participant.online ? 'Conectado' : 'Sin conexión', ...pieces,
+        powers.map(item => POWER_LABELS[item.type]).join(', ') || 'Sin poderes'].join(' · ');
+      row.append(name, status);
+      return row;
+    }));
     $('distribution').textContent=`${view.score.shared} en disputa · ${view.score.empty} vacías`;const history=JSON.stringify(state.previousResults);if($('history-list').dataset.key!==history){$('history-list').dataset.key=history;$('history').hidden=!state.previousResults.length;$('history-list').replaceChildren(...state.previousResults.map(r=>{const li=document.createElement('li');li.textContent=`Partida ${r.number}: A ${r.outcome.score.A} · ${r.outcome.score.B} B`;return li;}));}
     $('help').textContent=keyboard?'Tab para recorrer acciones; Enter o Espacio para jugar.':inspection.enabled?'Toca una región para consultar sus casillas.':'Toca puntos para moverte y bordes para construir.';
     if(session.phase!=='connected'||document.hidden||state.status!=='active'||!state.canDecide)$('notice').hidden=true;notice.update(state,session.phase==='connected');rematch.update(state,state.serverNow+performance.now()-receivedAt);paintClocks();
