@@ -6,7 +6,7 @@ import {startUX} from './ux-local.mjs';
 import {eventually} from './runtime.mjs';
 import {SocketClient} from './socket-client.mjs';
 import {availableMoves,wallOptions,adjacent,wallKey} from '../../src/engine.mjs';
-import {initialClassicFfa,ffaDraft,ffaTerritory,stepClassicFfa,wallClassicFfa} from '../classic-ffa.mjs';
+import {initialClassicFfa,ffaDraft,ffaTerritory,stepClassicFfa,wallClassicFfa,eliminateClassicFfa} from '../classic-ffa.mjs';
 import {API_BASE} from '../config.mjs';
 
 const seedIndex=process.argv.indexOf('--seed'), seed=seedIndex<0?0:Number(process.argv[seedIndex+1]);
@@ -38,6 +38,14 @@ function independentScore(game){
   }
   return score;
 }
+function turnFor(game,seed){
+  const actor=game.currentActor;let paths=[[game.pieces.find(p=>p.id===actor).pos]];
+  for(let n=0;n<game.moves%3;n++){
+    const next=paths.flatMap(path=>availableMoves(game,actor,path.at(-1)).map(to=>[...path,to]));if(next.length)paths=next;
+  }
+  const turns=paths.flatMap(path=>wallOptions(game,path.at(-1)).map(to=>({path,to})));
+  return turns[(game.moves*17+seed*13+3)%turns.length];
+}
 async function boards(game,draft){
   await all(s=>JSON.stringify(s.classic.game)===JSON.stringify(game)&&JSON.stringify(s.classic.draft)===JSON.stringify(draft));
   const oracle=independentScore(game);
@@ -64,7 +72,7 @@ async function reconnect(page){
   await all(s=>s.participants.every(p=>p.online));
 }
 try{
-  deadline=setTimeout(()=>{console.error('Límite de ejecución: cierre controlado.');void browser?.close();},process.argv.includes('--timeout')?480000:240000);
+  deadline=setTimeout(()=>{console.error('Límite de ejecución: cierre controlado.');void browser?.close();},process.argv.includes('--timeout')?720000:240000);
   site=remote?{origin:webOrigin,api:API_BASE,base:webOrigin+'/cerconexo',entry:webOrigin+'/cerconexo/online/',stop:async()=>{}}:await startUX(options);
   browser=await chromium.launch({channel:'msedge',headless:true});
   const files=new Set(candidateHttps?JSON.parse(await readFile(new URL('../../scripts/pages-files.json',import.meta.url),'utf8')):[]);
@@ -107,12 +115,7 @@ try{
   await boards(game,draft);await shot(pages[0],'03-game-mobile.png');await shot(pages[3],'04-game-desktop.png');
   while(!game.over){
     const index=['A','B','C','D'].indexOf(game.currentActor),page=pages[index],actor=game.currentActor;
-    let paths=[[game.pieces.find(p=>p.id===actor).pos]];
-    for(let n=0;n<game.moves%3;n++){
-      const next=paths.flatMap(path=>availableMoves(game,actor,path.at(-1)).map(to=>[...path,to]));if(next.length)paths=next;
-    }
-    const turns=paths.flatMap(path=>wallOptions(game,path.at(-1)).map(to=>({path,to})));
-    const turn=turns[(game.moves*17+seed*13+3)%turns.length];lengths.add(turn.path.length-1);
+    const turn=turnFor(game,seed);lengths.add(turn.path.length-1);
     for(const to of turn.path.slice(1)){
       draft=stepClassicFfa(game,draft,to);await page.locator(`[data-to="${to}"] .move-hit`).click();await boards(game,draft);
       if(!recovered){
@@ -124,7 +127,7 @@ try{
         const duplicate=await ghost.request(envelope);assert.equal(duplicate.duplicate,true);assert.deepEqual(duplicate.state.classic,before.classic);
         await ghost.sync();const illegal=await ghost.request(ghost.envelope('classic.step',{to:48,matchId:ghost.state.matchId}));
         assert.equal(illegal.type,'error');assert.deepEqual(illegal.state.classic,before.classic);
-        await ghost.close();ghost=null;await reconnect(page);await boards(game,draft);
+        if(remote)await ghost.abort();else await ghost.close();ghost=null;await reconnect(page);await boards(game,draft);
         for(const team of ['A','B','C','D'])assert.ok((await read(page)).clock.remainingMs[team]<=before.clock.remainingMs[team]);
         recovered=true;report.checks.push('Recarga parcial, duplicado idempotente, jugada ilegal y exclusión de sesión concurrente');
       }
@@ -155,14 +158,32 @@ try{
   for(const p of pages){const s=await read(p);assert.deepEqual(s.previousResults[0].outcome,final.outcome);assert.deepEqual(s.classic.game,initialClassicFfa());assert.equal(s.clock.remainingMs.B,300000);}
   report.games.push({reason:final.outcome.reason,turns:game.moves,score:final.outcome.score,winners:final.outcome.winners,ranking:final.outcome.ranking,steps:[...lengths],fourBrowserContexts:true,partialReload:recovered,sqliteRestart:restarted,rematch:true});
   if(process.argv.includes('--timeout')){
-    await pages[0].locator('[data-to="9"] .move-hit').click();await all(s=>s.classic.draft.path.length===2);
-    const started=Date.now();console.log('Esperando vencimiento real de cinco minutos de A; los cuatro navegadores permanecen conectados.');
+    // Replay legal actions only: A secures 31 cells, B secures 3; C/D share 12.
+    // C expires mid-move. D becomes exclusive but must lose to secured A.
+    let timed=initialClassicFfa(),partial=ffaDraft(timed);
+    while(timed.moves<=28){
+      const page=pages[['A','B','C','D'].indexOf(timed.currentActor)],turn=turnFor(timed,43);
+      for(const to of turn.path.slice(1)){partial=stepClassicFfa(timed,partial,to);await page.locator(`[data-to="${to}"] .move-hit`).click();await boards(timed,partial);}
+      if(timed.moves===28)break;
+      timed=wallClassicFfa(timed,partial,turn.to);partial=ffaDraft(timed);
+      await page.locator(`[data-wall="${turn.to}"] .wall-hit`).click();await boards(timed,partial);
+    }
+    assert.equal(timed.currentActor,'C');assert.equal(timed.secured.A.score,31);assert.equal(timed.secured.B.score,3);
+    assert.deepEqual(partial.path,[43,44]);
+    const beforeWait=await read(pages[0]),started=Date.now();
+    console.log('Traza legal de 28 muros: A asegurado con 31 puntos. Esperando vencimiento real de C durante su paso parcial.');
     await eventually(async()=>{const s=await read(pages[0]);return s.classic.game.eliminations.length===1;},'No se produjo eliminación por reloj real',315000);
-    const s=await read(pages[0]);assert.equal(s.classic.game.eliminations[0].team,'A');assert.equal(s.classic.game.pieces.length,3);
-    await all(s=>s.classic.game.eliminations.length===1&&s.clock.owner==='B');
-    assert.equal(s.clock.remainingMs.A,0);assert.equal(s.clock.remainingMs.C,300000);assert.equal(s.clock.remainingMs.D,300000);
-    assert.equal(await pages[0].locator('[data-piece=A]').count(),0);assert.equal(s.classic.draft.actor,'B');
-    report.checks.push({realTimeout:true,waitedMs:Date.now()-started,partialRemoved:true,clock:s.clock.remainingMs});
+    const s=await read(pages[0]);assert.equal(s.classic.game.eliminations[0].team,'C');assert.equal(s.classic.game.pieces.length,3);
+    const expected=eliminateClassicFfa(timed,partial,'C',s.classic.game.eliminations[0].at);
+    await boards(expected,ffaDraft(expected));await all(s=>s.status==='finished'&&s.clock.owner===null);
+    assert.equal(s.clock.remainingMs.C,0);
+    for(const team of ['A','B','D'])assert.equal(s.clock.remainingMs[team],beforeWait.clock.remainingMs[team]);
+    assert.deepEqual(s.classic.game.walls,timed.walls);assert.deepEqual(s.outcome.winners,['A']);
+    assert.equal(s.outcome.score.D,12);assert.deepEqual(s.classic.game.secured.A,timed.secured.A);
+    assert.deepEqual(s.outcome.ranking.map(r=>[r.team,r.rank,r.eliminated]),[['A',1,false],['D',2,false],['B',3,false],['C',4,true]]);
+    assert.equal(await pages[0].locator('[data-piece=C]').count(),0);
+    report.games.push({reason:s.outcome.reason,timeElimination:'C',walls:timed.walls.length,score:s.outcome.score,winners:s.outcome.winners,ranking:s.outcome.ranking,securedBeatsLastActive:true});
+    report.checks.push({realTimeout:true,waitedMs:Date.now()-started,partialRemoved:true,wallsPreserved:28,securedBeatsLastActive:true,clock:s.clock.remainingMs});
     await shot(pages[0],'08-timeout-mobile.png');
   }
   for(const page of pages)for(const secret of secrets)assert.ok(!(await page.content()).includes(secret));
