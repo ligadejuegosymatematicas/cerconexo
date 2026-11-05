@@ -12,6 +12,7 @@ export const MAX_MESSAGE_BYTES = 8_192;
 export const CODE_PATTERN = /^[A-HJ-NP-Z2-9]{10}$/;
 export const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 export const MODES = Object.freeze({
+  'classic-ffa': { label: 'Clásico · cuatro equipos', teams: ['A','B','C','D'], seats: ['A','B','C','D'], clockMs:300_000, policies:['piece'] },
   classic: { label: 'Clásico', teams: ['A', 'B'], seats: ['A1', 'B1', 'A2', 'B2'], clockMs: 480_000, policies: ['piece', 'team'] },
   'arena-duo': { label: 'Arena · 2 vs. 2', teams: ['A', 'B'], seats: ['A1', 'B1', 'A2', 'B2'], clockMs: 600_000, policies: ['piece', 'team'] },
   'arena-ffa': { label: 'Arena · cuatro equipos', teams: ['A', 'B', 'C', 'D'], seats: ['A', 'B', 'C', 'D'], clockMs: 300_000, policies: ['piece'] }
@@ -28,7 +29,7 @@ export function configuration(mode = 'classic', policy = 'piece', players = 4) {
   const preset = MODES[mode];
   requireThat(preset && preset.policies.includes(policy), 'CONFIG', 'Modalidad o política no admitida.');
   requireThat(players === 4 || players === 2 && ['classic', 'arena-duo'].includes(mode), 'CONFIG', 'Número de participantes no admitido.');
-  return { mode, policy, playerCount: players, ruleset: mode === 'classic' ? 'classic-online-v1' : 'm6.1-connection-probe-v1', teams: [...preset.teams], seats: players === 2 ? [...preset.teams] : [...preset.seats], clockMs: preset.clockMs,
+  return { mode, policy, playerCount: players, ruleset: mode === 'classic-ffa' ? 'classic-ffa-online-v1' : mode === 'classic' ? 'classic-online-v1' : 'm6.1-connection-probe-v1', teams: [...preset.teams], seats: players === 2 ? [...preset.teams] : [...preset.seats], clockMs: preset.clockMs,
     graceIncidentMs: GRACE_INCIDENT_MS, graceTotalMs: GRACE_TOTAL_MS, countdownMs: COUNTDOWN_MS };
 }
 export function nameOf(value) {

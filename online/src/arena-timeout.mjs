@@ -1,6 +1,7 @@
 import {createArena} from '../../arena/src/engine.mjs';
 import {analyzeArena} from '../../arena/src/geometry.mjs';
 import {requireThat} from './protocol.mjs';
+import {rankFfa} from './ffa-ranking.mjs';
 
 export const ARENA_FFA_RULESET = 'arena-ffa-online-v1';
 export const isArenaFfaRoom = room => room.config.ruleset === ARENA_FFA_RULESET;
@@ -58,14 +59,6 @@ export function eliminateByTime(room, team, now) {
 export function ffaOutcome(room, reason = 'territory') {
   const game = room.arena.game, score = analyzeArena(game).score;
   requireThat(game.over, 'RESULT', 'La partida continúa.', 409);
-  const eliminated = new Set(room.arena.eliminations.map(entry => entry.team));
-  const survivors = game.teams.filter(team => !eliminated.has(team)).sort((a,b) => score[b]-score[a]);
-  const ranking = survivors.map(team => ({
-    team, rank: survivors.findIndex(other => score[other] === score[team])+1, score: score[team], eliminated: false,
-  }));
-  for (const entry of [...room.arena.eliminations].reverse()) {
-    ranking.push({team: entry.team, rank: ranking.length+1, score: score[entry.team], eliminated: true,
-      eliminatedAt: entry.at, scoreAtElimination: entry.score});
-  }
+  const ranking = rankFfa(game.teams, score, room.arena.eliminations);
   return {reason, winners: [...game.winners], score, ranking, eliminations: structuredClone(room.arena.eliminations)};
 }

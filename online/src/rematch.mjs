@@ -1,6 +1,7 @@
 import { requireThat, randomId, participantCount, needsConfigClient, CONFIG_UPDATE_MESSAGE } from './protocol.mjs';
 import { retiredClassicConfiguration, RETIRED_MESSAGE } from '../configuration-rules.mjs';
 import {isArenaRoom,ARENA_UPDATE} from './arena-adapter.mjs';
+import {classicFfaCompatible} from '../classic-ffa.mjs';
 
 export const REMATCH_MS = 120000;
 export const MAX_MATCHES = 20;
@@ -24,6 +25,7 @@ export function checkMatch(room, supplied, { legacy = false } = {}) {
 export function rematchCommand(room, player, command, now, participants) {
   normalizeMatch(room); const args = command.params ?? {};
   checkMatch(room, args.matchId);
+  requireThat(classicFfaCompatible(room,player),'UPDATE_REQUIRED',CONFIG_UPDATE_MESSAGE,409);
   requireThat(player.rematchCapable === true, 'UPDATE_REQUIRED', UPDATE_MESSAGE, 409);
   requireThat(!needsConfigClient(room.config) || player.classicConfigCapable, 'UPDATE_REQUIRED', CONFIG_UPDATE_MESSAGE, 409);
   requireThat(room.status === 'finished' && (room.classic||room.arena) && player.admitted && player.seat, 'REMATCH', 'La revancha solo se propone al finalizar la partida.', 409);
@@ -55,7 +57,7 @@ export function rematchProgress(room, participants, now, countdownMs) {
   if (now >= proposal.expiresAt) { proposal.status = 'expired'; proposal.startsAt = null; return 'rematch-expired'; }
   const consent = participants.length === participantCount(room.config) && participants.every(p => proposal.votes[p.id] === true);
   const connected = participants.every(p => p.online);
-  const compatible = participants.every(p => p.rematchCapable === true && (!isArenaRoom(room)||p.arenaCapable) && (!needsConfigClient(room.config) || p.classicConfigCapable));
+  const compatible = participants.every(p => classicFfaCompatible(room,p) && p.rematchCapable === true && (!isArenaRoom(room)||p.arenaCapable) && (!needsConfigClient(room.config) || p.classicConfigCapable));
   if ((!connected || !compatible) && proposal.status === 'countdown') { proposal.status = 'pending'; proposal.startsAt = null; return 'rematch-paused'; }
   if (consent && connected && compatible && proposal.status === 'pending') {
     proposal.status = 'countdown'; proposal.startsAt = now + countdownMs; return 'rematch-countdown';

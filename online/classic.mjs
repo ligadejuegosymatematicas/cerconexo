@@ -1,3 +1,4 @@
+import {createClassicFfaBoard} from './classic-ffa-board.mjs';
 import { createBoardView } from '../src/boardView.mjs';
 import { createHaptics } from '../src/haptics.mjs';
 import { createFinalPresenter } from '../src/finalPresentation.mjs';
@@ -39,9 +40,10 @@ function loadStyles() {
 /** Online presentation only. The authoritative game and draft always come from the session. */
 export function mountClassic(container, session) {
   loadStyles();
+  const ffa=session.state?.config.mode==='classic-ffa', teams=ffa?['A','B','C','D']:['A','B'], seats=ffa?teams:SEATS;
   const root = node('section', 'classic-online');
   root.setAttribute('aria-label', 'Cerconexo Clásico online');
-  root.dataset.classicView = '';
+  root.dataset.classicView = '';root.dataset.mode=ffa?'ffa':'duo';
   root.innerHTML = `
     <header class="classic-header topbar">
       <div class="classic-brand branding"><img class="official-logo" src="${new URL('../assets/Cerconexo_wordmark_transparente.png', import.meta.url).href}" alt="CERCONEXO"><span>CLÁSICO <small data-classic-format>ONLINE</small></span></div>
@@ -86,7 +88,7 @@ export function mountClassic(container, session) {
     <p class="classic-message" data-classic-message role="status" aria-live="polite" hidden></p>`;
   container.append(root);
   const $ = name => root.querySelector(`[data-classic-${name}]`);
-  const board = $('board'), view = createBoardView(board);
+  const board = $('board'), view = (ffa?createClassicFfaBoard:createBoardView)(board);
   const inspection = createFinalInspection({ board, info: $('inspection-info') }), haptics = createHaptics();
   const resultSkin = createFinalPresenter({element:$('result'),title:$('result-title'),haptics});
   const mobile = matchMedia('(max-width:700px)');
@@ -100,14 +102,14 @@ export function mountClassic(container, session) {
   $('vibration-info').textContent = !haptics.supported ? 'Este navegador no permite vibración.' : haptics.paused ? 'Reducir movimiento está activo: no se vibrará.' : 'Se utiliza solo cuando el navegador lo permite.';
   $('vibration').addEventListener('change', () => haptics.setEnabled($('vibration').checked));
   const scoreNodes = {}, players = {}, clocks = {};
-  for (const team of ['A', 'B']) {
+  for (const team of teams) {
     const card = node('section', `team-score team-${team.toLowerCase()}`);
     card.setAttribute('aria-label', `Marcador y participantes del equipo ${team}`);
     const heading = node('div', 'team-heading');
     const value = node('strong', '', '0'); value.dataset.classicScore = team;
     heading.append(node('span', 'team-badge', team), node('h3', '', `Equipo ${team}`), value);
     const roster = node('div', 'team-roster');
-    for (const seat of SEATS.filter(id => id[0] === team)) {
+    for (const seat of seats.filter(id => id[0] === team)) {
       const row = node('div', 'classic-player player'); row.dataset.classicPlayer = seat;
       const info = node('div', 'classic-player-info');
       const name = node('strong', 'classic-player-name');
@@ -172,7 +174,7 @@ export function mountClassic(container, session) {
     const anchor = state.serverNow ?? clock.anchoredAt ?? current;
     const pausedUntil = clock.graceUntil ?? anchor;
     const grace = isActive(state) && current < pausedUntil;
-    for (const team of ['A', 'B']) {
+    for (const team of teams) {
       const running = isActive(state) && clock.owner === team;
       const elapsed = running ? Math.max(0, current - Math.max(anchor, pausedUntil)) : 0;
       const remaining = Math.max(0, (clock.remainingMs?.[team] ?? 0) - elapsed);
@@ -181,7 +183,7 @@ export function mountClassic(container, session) {
       entry.clock.dataset.low = String(remaining < 60000);
       write(entry.time, timeText(remaining));
       entry.time.setAttribute('aria-label', `Tiempo del equipo ${team}: ${timeText(remaining)}`);
-      write(entry.status, isFinished(state) ? (state.outcome?.timedOutTeam === team ? 'Sin tiempo' : 'Finalizado') : running ? (grace ? 'Pausa' : 'En curso') : 'En espera');
+      write(entry.status, isFinished(state) ? (state.outcome?.timedOutTeam === team || state.classic.game.eliminations?.some(e=>e.team===team) ? 'Sin tiempo' : 'Finalizado') : state.classic.game.eliminations?.some(e=>e.team===team)?'Eliminado':state.classic.game.secured?.[team]?'Asegurado':running ? (grace ? 'Pausa' : 'En curso') : 'En espera');
     }
     $('grace').hidden = !grace;
     // Announce only the change of grace state, not a countdown every 200 ms.
@@ -205,8 +207,8 @@ export function mountClassic(container, session) {
     $('reconnect').disabled = ['connecting', 'reconnecting'].includes(session.phase);
     $('disconnect').hidden = !['connected', 'connecting', 'reconnecting'].includes(session.phase);
     $('invite').hidden = true;
-    write($('format'), `ONLINE · ${(state.config.playerCount ?? state.config.seats.length) === 2 ? '1 VS. 1' : '2 VS. 2'}${(state.config.playerCount ?? state.config.seats.length) === 2 ? ' · '+(state.config.policy === 'team' ? 'POR EQUIPO' : 'POR FICHA') : ''}`);
-    write($('self'), seat ? `Tú: ${state.self.name ?? 'Participante'} · ${owned().join(' y ')} · Equipo ${seat[0]}${owned().every(id => !active.has(id)) ? ' · Fichas aseguradas ✓' : ''}` : 'Observas esta partida');
+    write($('format'), `ONLINE · ${ffa?'CUATRO EQUIPOS':(state.config.playerCount ?? state.config.seats.length) === 2 ? '1 VS. 1' : '2 VS. 2'}${(state.config.playerCount ?? state.config.seats.length) === 2 ? ' · '+(state.config.policy === 'team' ? 'POR EQUIPO' : 'POR FICHA') : ''}`);
+    write($('self'), seat ? `Tú: ${state.self.name ?? 'Participante'} · ${owned().join(' y ')} · Equipo ${seat[0]}${state.self.eliminated?' · Eliminado por tiempo':owned().every(id => !active.has(id)) ? ' · Fichas aseguradas ✓' : ''}` : 'Observas esta partida');
     write($('turn-heading'), finished ? 'PARTIDA FINALIZADA' : 'AHORA JUEGA');
     write($('progress'), finished ? `${state.classic?.game?.moves ?? 0} muros` : `${steps} / 2 pasos`);
     $('actor').parentElement.hidden = finished;
@@ -219,8 +221,8 @@ export function mountClassic(container, session) {
       const outcome = state.outcome ?? {}, winners = outcome.winners ?? [];
       const score = outcome.score ?? state.classic.territory.score;
       write($('result-title'), winners.length === 1 ? `Gana el equipo ${winners[0]}` : 'Empate');
-      write($('result-detail'), outcome.reason === 'timeout' ? `El equipo ${outcome.timedOutTeam ?? outcome.losers?.[0] ?? '?'} agotó su tiempo.` : 'Todas las regiones están resueltas.');
-      write($('result-score'), `Equipo A ${score.A} · ${score.B} Equipo B`);
+      write($('result-detail'), outcome.reason === 'timeout' ? `El equipo ${outcome.timedOutTeam ?? outcome.losers?.[0] ?? '?'} agotó su tiempo.` : outcome.reason==='last-survivor'?'Solo queda un equipo no eliminado.': 'Todas las regiones están resueltas.');
+      write($('result-score'), state.outcome?.ranking?state.outcome.ranking.map(r=>`${r.rank}. ${r.team} · ${r.score} ${r.score===1?'punto':'puntos'}${r.eliminated?' · Eliminado':''}`).join(' / '):`Equipo A ${score.A} · ${score.B} Equipo B`);
       const retired=retiredClassicConfiguration(state.config);$('retired').hidden=!retired;write($('retired'),retired?RETIRED_MESSAGE:'');$('new-room').hidden=!retired;
       return;
     }
@@ -239,27 +241,27 @@ export function mountClassic(container, session) {
   function paintScores() {
     const classic = state.classic, score = classic.territory?.score ?? state.outcome?.score;
     if (!score) return;
-    write($('summary-score'), `A ${score.A} · ${score.B} B`);
+    write($('summary-score'), teams.map(t=>`${t} ${score[t]}`).join(' · '));
     write($('summary-presence'), `${state.participants.filter(p => p.online).length}/${state.config.playerCount ?? state.config.seats.length} conectados`);
     const actor = actorOf(), active = new Set(classic.activeIds ?? []);
-    for (const team of ['A', 'B']) {
+    for (const team of teams) {
       write(scoreNodes[team], score[team]);
       scoreNodes[team].setAttribute('aria-label', `${score[team]} casillas aseguradas por el equipo ${team}`);
     }
     write($('score-heading'), isFinished(state) && state.outcome?.reason === 'territory' ? 'CASILLAS DEFINITIVAS' : 'CASILLAS ASEGURADAS');
     write($('mixed'), score.mixed); write($('empty'), score.empty);
-    const distribution = ['A', 'mixed', 'empty', 'B'].flatMap(type => Array(Math.max(0, Math.min(49, Number(score[type]) || 0))).fill(type));
+    const distribution = (ffa?[...teams,'mixed','empty']:['A','mixed','empty','B']).flatMap(type => Array(Math.max(0, Math.min(49, Number(score[type]) || 0))).fill(type));
     units.forEach((unit, i) => { const type = distribution[i] ?? 'mixed'; if (unit.dataset.type !== type) { unit.className = `territory-unit unit-${type}`; unit.dataset.type = type; } });
-    $('meter').setAttribute('aria-label', `Casillas: equipo A ${score.A}, equipo B ${score.B}, en disputa ${score.mixed}, vacías ${score.empty}`);
+    $('meter').setAttribute('aria-label', `Casillas: ${teams.map(t=>`equipo ${t} ${score[t]}`).join(', ')}, en disputa ${score.mixed}, vacías ${score.empty}`);
     const components = classic.territory?.components ?? [];
     write($('regions'), `${components.length} ${components.length === 1 ? 'región' : 'regiones'} · ${classic.game.moves} ${classic.game.moves === 1 ? 'muro construido' : 'muros construidos'}`);
-    for (const seat of SEATS) {
+    for (const seat of seats) {
       const { row, name, status, presence } = players[seat];
       const participant = participantFor(seat);
       const own = owned().includes(seat), secured = !active.has(seat), current = !isFinished(state) && actor === seat;
-      const label = secured ? 'Asegurada ✓' : current ? 'Juega ahora' : 'En juego';
+      const label = participant?.eliminated ? 'Eliminado por tiempo' : secured ? 'Asegurada ✓' : current ? 'Juega ahora' : 'En juego';
       write(name, `${participant?.name ?? seat}${own ? ' · Tú' : ''}`); write(status, label);
-      row.classList.toggle('is-current', current); row.classList.toggle('is-isolated', secured); row.classList.toggle('is-self', own);
+      row.classList.toggle('is-current', current); row.classList.toggle('is-isolated', secured&&!participant?.eliminated); row.classList.toggle('is-self', own);
       row.dataset.online = String(!!participant?.online);
       if (current) row.setAttribute('aria-current', 'true'); else row.removeAttribute('aria-current');
       row.setAttribute('aria-label', `${seat}, ${participant?.name ?? 'sin participante'}${own ? ', tu ficha' : ''}, ${label}, ${participant?.online ? 'conectado' : 'sin conexión'}`);
@@ -277,7 +279,7 @@ export function mountClassic(container, session) {
       view.render(classic.game, classic.draft, { interactive, busy: !!session.pending }); boardKey = key;
       const locked = state.config.policy === 'team' && (state.config.playerCount ?? state.config.seats.length) === 4 && !!classic.draft.actor;
       for (const target of board.querySelectorAll('[data-actor]')) if (locked || !owned().includes(target.dataset.actor)) target.remove();
-      for (const seat of SEATS) {
+      for (const seat of seats) {
         const token = view.token(seat); if (!token) continue;
         const own = owned().includes(seat);
         if (!interactive || locked || !own) token.classList.remove('token-candidate');
@@ -308,7 +310,7 @@ export function mountClassic(container, session) {
     const history = JSON.stringify(state.previousResults ?? []);
     if (history !== historyKey) {
       historyKey = history; $('history').hidden = !(state.previousResults?.length);
-      $('history-list').replaceChildren(...(state.previousResults ?? []).map(result => node('li', '', `Partida ${result.number}: A ${result.outcome.score.A} · ${result.outcome.score.B} B · ${result.outcome.winners.length === 1 ? `Ganó ${result.outcome.winners[0]}` : 'Empate'}${result.outcome.reason === 'timeout' ? ' por tiempo' : ''}`)));
+      $('history-list').replaceChildren(...(state.previousResults ?? []).map(result => node('li', '', `Partida ${result.number}: ${teams.map(t=>`${t} ${result.outcome.score[t]}`).join(' · ')} · ${result.outcome.winners.length === 1 ? `Ganó ${result.outcome.winners[0]}` : 'Empate'}${result.outcome.reason === 'timeout' ? ' por tiempo' : ''}`)));
     }
   }
   function update(nextState) {

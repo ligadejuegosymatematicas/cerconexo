@@ -80,5 +80,7 @@
   "online/arena.mjs",
   "online/arena-feedback.mjs",
   "online/arena.css",
-  "online/arena-entry.mjs"
+  "online/arena-entry.mjs",
+  "online/classic-ffa.mjs",
+  "online/classic-ffa-board.mjs"
 ]
