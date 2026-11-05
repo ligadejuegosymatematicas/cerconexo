@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {chromium,devices} from 'playwright';
 import {startUX} from './ux-local.mjs';
@@ -7,16 +7,20 @@ import {eventually} from './runtime.mjs';
 import {SocketClient} from './socket-client.mjs';
 import {availableMoves,wallOptions,adjacent,wallKey} from '../../src/engine.mjs';
 import {initialClassicFfa,ffaDraft,ffaTerritory,stepClassicFfa,wallClassicFfa} from '../classic-ffa.mjs';
+import {API_BASE} from '../config.mjs';
 
 const seedIndex=process.argv.indexOf('--seed'), seed=seedIndex<0?0:Number(process.argv[seedIndex+1]);
 assert.ok(Number.isInteger(seed)&&seed>=0&&seed<12,'Semilla fuera del conjunto validado.');
-const evidence=new URL(`../evidence/classic-ffa/${seed?`seed-${seed}/`:''}`,import.meta.url);
+const candidateHttps=process.argv.includes('--candidate-https'),publicPages=process.argv.includes('--public-pages');
+assert.ok(!candidateHttps||!publicPages,'Elige una sola procedencia de la interfaz.');
+const remote=candidateHttps||publicPages,webOrigin='https://ligadejuegosymatematicas.github.io';
+const evidence=new URL(`../evidence/classic-ffa/${remote?(candidateHttps?'https-candidate/':'public-pages/'):''}${seed?`seed-${seed}/`:''}`,import.meta.url);
 await mkdir(evidence,{recursive:true});
 const options={port:8850,apiPort:8851,classicFfa:true,arena1v1:true,arenaFfa:true,
   stateDir:fileURLToPath(new URL(`../.state/classic-ffa-browser${seed?'-'+seed:''}/`,import.meta.url))};
 let site,browser,deadline,ghost;
 const contexts=[],pages=[],credentials=[],sent=[],errors=[],secrets=new Set();
-const report={ok:false,seed,transport:'HTTP/WS local; sin Cloudflare',physicalDevices:false,games:[],checks:[],screenshots:[]};
+const report={ok:false,seed,transport:remote?'HTTPS/WSS Cloudflare público':'HTTP/WS local; sin Cloudflare',frontendIntercepted:candidateHttps,physicalDevices:false,games:[],checks:[],screenshots:[]};
 const redact=value=>{let text=String(value);for(const secret of secrets)text=text.split(secret).join('[redacted]');return text;};
 const read=p=>p.locator('#publicState').textContent().then(JSON.parse);
 const shot=async(page,name)=>{await page.screenshot({path:fileURLToPath(new URL(name,evidence)),fullPage:true});report.screenshots.push(name);};
@@ -61,15 +65,23 @@ async function reconnect(page){
 }
 try{
   deadline=setTimeout(()=>{console.error('Límite de ejecución: cierre controlado.');void browser?.close();},process.argv.includes('--timeout')?480000:240000);
-  site=await startUX(options);browser=await chromium.launch({channel:'msedge',headless:true});
+  site=remote?{origin:webOrigin,api:API_BASE,base:webOrigin+'/cerconexo',entry:webOrigin+'/cerconexo/online/',stop:async()=>{}}:await startUX(options);
+  browser=await chromium.launch({channel:'msedge',headless:true});
+  const files=new Set(candidateHttps?JSON.parse(await readFile(new URL('../../scripts/pages-files.json',import.meta.url),'utf8')):[]);
   for(let i=0;i<4;i++){
     const c=await browser.newContext(i===0?{...devices['Pixel 7']}:{viewport:i===1?{width:360,height:740}:{width:1440,height:1000},reducedMotion:i===3?'reduce':'no-preference'});
+    if(candidateHttps)await c.route(webOrigin+'/cerconexo/**',async route=>{
+      let name=new URL(route.request().url()).pathname.slice('/cerconexo/'.length);if(!name||name.endsWith('/'))name+='index.html';
+      assert.ok(files.has(name),'Recurso fuera del inventario público: '+name);
+      const types={html:'text/html',mjs:'text/javascript',css:'text/css',png:'image/png',webp:'image/webp'};
+      await route.fulfill({status:200,contentType:types[name.split('.').at(-1)]??'application/octet-stream',body:await readFile(new URL('../../docs/'+name,import.meta.url))});
+    });
     contexts.push(c);const page=await c.newPage();page.setDefaultTimeout(15000);pages.push(page);
     page.on('pageerror',e=>errors.push(e.message));
     page.on('response',r=>{if(r.status()>=400)errors.push(`HTTP ${r.status()} ${new URL(r.url()).pathname}`);});
-    page.on('websocket',ws=>ws.on('framesent',({payload})=>{try{
+    page.on('websocket',ws=>{assert.equal(new URL(ws.url()).protocol,remote?'wss:':'ws:');ws.on('framesent',({payload})=>{try{
       const m=JSON.parse(String(payload));if(m.type==='authenticate'){credentials[i]=m.credential;secrets.add(m.credential);}else if(m.actionId)sent.push({index:i,...m});
-    }catch{}}));
+    }catch{}});});
   }
   await pages[0].goto(site.base+'/clasico/?new=1');
   await pages[0].locator('#newDialog[open]').waitFor();await pages[0].locator('[data-online-control]').click();await pages[0].locator('#startLocal').click();
@@ -116,7 +128,7 @@ try{
         for(const team of ['A','B','C','D'])assert.ok((await read(page)).clock.remainingMs[team]<=before.clock.remainingMs[team]);
         recovered=true;report.checks.push('Recarga parcial, duplicado idempotente, jugada ilegal y exclusión de sesión concurrente');
       }
-      if(!restarted&&game.moves>=2){
+      if(!remote&&!restarted&&game.moves>=2){
         const before=await read(page);await site.stop();site=await startUX(options);
         await Promise.all(pages.map(p=>p.reload()));
         await all(s=>s.participants.every(p=>p.online));await boards(game,draft);
