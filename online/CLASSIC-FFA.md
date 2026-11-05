@@ -43,8 +43,9 @@ requiere las cuatro aceptaciones y reinicia tablero, relojes y eliminaciones.
 
 ## Aislamiento y clientes anteriores
 
-`CLASSIC_FFA_ENABLED` queda desactivado en la configuración distribuible. Solo el
-servidor local lo habilita expresamente. Un cliente debe anunciar `classic-ffa-v1`
+`CLASSIC_FFA_ENABLED` se habilita en la candidata pública después de verificar
+el Worker autoritativo y la recuperación de las salas anteriores por HTTPS/WSS.
+La entrega local original lo mantenía desactivado. Un cliente debe anunciar `classic-ffa-v1`
 para prepararse, jugar o aceptar una revancha de esta variante. Un cliente anterior
 conserva su sesión y recibe una indicación para actualizar; las salas publicadas
 de Clásico y Arena conservan sus capacidades anteriores.
@@ -53,6 +54,10 @@ El renderizador reutiliza el SVG, objetivos y teclado del tablero oficial; una
 capa de presentación añade C/D y retira fichas eliminadas. La inspección de
 regiones reutiliza el componente común de Arena. No se modifican motores,
 guardados, CPU ni los recursos originales de las medallas.
+
+La evidencia de la validación remota y los controles de publicación están en
+[CLASSIC-FFA-HTTPS.md](CLASSIC-FFA-HTTPS.md). La auditoría de la candidata habilitada
+se ejecuta con `node online/scripts/classic-ffa-audit.mjs --publication`.
 
 ## Prueba local
 
